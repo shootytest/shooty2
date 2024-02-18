@@ -74,3 +74,9 @@ export const TEST_MAP = {
     ],
     icons: [],
 };
+for (const s of TEST_MAP.shapes || []) {
+    for (const v of s.vertices) {
+        v.x += 100;
+        v.y += 100;
+    }
+}

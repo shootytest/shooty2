@@ -6,6 +6,7 @@ import { color } from "../util/color.js";
 import { key, keys, mouse } from "../util/key.js";
 import { map_draw } from "../util/map_draw.js";
 import { TEST_MAP, map_serialiser, map_type } from "../util/map_type.js";
+import { settings_default } from "./settings.js";
 
 // globals, why not?
 let width = window.innerWidth;
@@ -22,7 +23,7 @@ export const ui = {
   map: TEST_MAP as map_type,
   
   settings: {
-    slot: "a",
+    slot: settings_default.slot,
   },
 
   mouse: {

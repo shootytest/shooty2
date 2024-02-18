@@ -93,7 +93,7 @@ export const key = {
             mouse.d.y = event.movementY;
             for (let b = 0; b < 3; b++) {
                 if (mouse.buttons[b] && mouse.down_position[b]) {
-                    const new_mousedrag = vector.sub(vector.create(mouse.x, mouse.y), mouse.down_position[0]);
+                    const new_mousedrag = vector.sub(vector.create(mouse.x, mouse.y), mouse.down_position[b]);
                     mouse.drag_vector[b] = new_mousedrag;
                 }
             }
