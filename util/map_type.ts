@@ -98,6 +98,7 @@ export const map_serialiser = {
 
 export const TEST_MAP: map_type = {
   shapes: [
+    /*
     {
       id: "1",
       vertices: [
@@ -105,7 +106,7 @@ export const TEST_MAP: map_type = {
         { x: 700, y: 0, z: 1, }, { x: 700, y: 100, z: 0, }, { x: 500, y: 100, z: 0, },
         { x: 500, y: 50, z: 0.5, }, { x: 300, y: 50, z: 0.5, },
         { x: 300, y: 100, z: 0, },
-        { x: 100, y: 100, z: 0, }
+        // { x: 100, y: 100, z: 0, }
       ],
       style: { stroke: "white", fill: "#563412", fill_opacity: 0.5, }
     },
@@ -116,7 +117,18 @@ export const TEST_MAP: map_type = {
         { x: 700, y: 0, z: 1, }, { x: 700, y: -100, z: 0, }, { x: 500, y: -100, z: 0, },
         { x: 500, y: -50, z: 0.5, }, { x: 300, y: -50, z: 0.5, },
         { x: 300, y: -100, z: 0, },
-        { x: 100, y: -100, z: 0, }
+        // { x: 100, y: -100, z: 0, }
+      ],
+      style: { stroke: "white", fill: "#123456", fill_opacity: 0.5, }
+    },
+    */
+    {
+      id: "0",
+      vertices: [
+        { x: 0, y: 0, z: 0, },
+        { x: 0, y: 200, z: 0, },
+        { x: 200, y: 200, z: 0, },
+        { x: 200, y: 0, z: 0, },
       ],
       style: { stroke: "white", fill: "#123456", fill_opacity: 0.5, }
     },
@@ -126,7 +138,8 @@ export const TEST_MAP: map_type = {
 
 for (const s of TEST_MAP.shapes || []) {
   for (const v of s.vertices) {
-    v.x += 100;
+    //v.x += 100;
     v.y += 100;
+    v.z = 0;
   }
 }

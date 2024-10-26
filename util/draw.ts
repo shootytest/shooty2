@@ -247,7 +247,7 @@ export class Context {
     this.ctx.stroke();
   }
   
-  lines(xs: number[], ys: number[]) {
+  lines(xs: number[], ys: number[], close_loop = true) {
     if (xs.length <= 1 || ys.length <= 1) {
       return;
     }
@@ -260,9 +260,10 @@ export class Context {
     for (let i = 1; i < xs.length; i++) {
       this.ctx.lineTo(xs[i], ys[i]);
     }
+    if (close_loop) this.ctx.lineTo(xs[0], ys[0]);
   }
   
-  lines_v(vectors: vector[]) {
+  lines_v(vectors: vector[], close_loop = true) {
     if (vectors.length <= 1) {
       return;
     }
@@ -270,6 +271,7 @@ export class Context {
     for (let i = 1; i < vectors.length; i++) {
       this.ctx.lineTo(vectors[i].x, vectors[i].y);
     }
+    if (close_loop) this.ctx.lineTo(vectors[0].x, vectors[0].y);
   }
 
   polygon(sides: number, r: number, x: number, y: number, angle = 0) {
