@@ -69,7 +69,7 @@ export const ui = {
             ui.mouse.drag_target[b] = {};
           }
         }*/
-        const MOVE_SPEED = 5;
+        const MOVE_SPEED = 10;
         let dx = 0;
         let dy = 0;
         if (keys.KeyW)

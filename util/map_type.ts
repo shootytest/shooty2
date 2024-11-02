@@ -1,5 +1,5 @@
 import { map_draw } from "./map_draw.js";
-import { vector, vector3, vector3_, AABB } from "./vector.js";
+import { vector, vector3, vector3_, AABB, AABB3 } from "./vector.js";
 
 export type line_style = {
   stroke: string,
@@ -25,6 +25,7 @@ export type map_shape_type = {
 
 export type map_shape_compute_type = {
   aabb: AABB,
+  aabb3: AABB3,
   centroid: vector3,
   vertices: vector3[],
   screen_vertices?: vector3[],
