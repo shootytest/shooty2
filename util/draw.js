@@ -258,18 +258,20 @@ export class Context {
     }
     resetTransform() {
         this.ctx.resetTransform();
+        const pixel_ratio = window.devicePixelRatio;
+        this.ctx.scale(pixel_ratio, pixel_ratio);
     }
     point_in_path(px, py, fillRule) {
-        return this.ctx.isPointInPath(px, py, fillRule);
+        return this.ctx.isPointInPath(px * window.devicePixelRatio, py * window.devicePixelRatio, fillRule);
     }
     point_in_path_v(p, fillRule) {
         return this.point_in_path(p.x, p.y, fillRule);
     }
     point_in_stroke(px, py) {
-        return this.ctx.isPointInStroke(px, py);
+        return this.ctx.isPointInStroke(px * window.devicePixelRatio, py * window.devicePixelRatio);
     }
     point_in_stroke_v(p) {
-        return this.ctx.isPointInStroke(p.x, p.y);
+        return this.point_in_stroke(p.x, p.y);
     }
     point_in_this_path(path, px, py, fillRule) {
         return this.ctx.isPointInPath(path, px, py, fillRule);

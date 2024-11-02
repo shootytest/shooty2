@@ -186,17 +186,20 @@ export const ui = {
     x = w * 0.75;
     y = size / 2;
     ctx.fillStyle = color.black;
-    ctx.strokeStyle = color.blue;
     for (const button of top) {
-      if (button.name === ui.editor.mode) {
-        ctx.line(x - w / 2, size, x + w / 2, size);
-      }
       ctx.beginPath();
       ctx.rectangle(x, y, w, size);
       hovering = ctx.point_in_path_v(mouse);
       clicking = hovering && ui.mouse.new_click;
       ctx.fillStyle = hovering ? color.red_dark : color.black;
       ctx.svg(button.icon, x, y, size * 0.8);
+      if (button.name === ui.editor.mode) {
+        ctx.strokeStyle = color.blue;
+        ctx.line(x - w / 2, size, x + w / 2, size);
+      } else if (hovering) {
+        ctx.strokeStyle = color.red_dark;
+        ctx.line(x - w / 2, size, x + w / 2, size);
+      }
       x += w;
       if (clicking) button.action();
     }

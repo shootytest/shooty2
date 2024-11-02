@@ -14,9 +14,11 @@ export const map_draw = {
 
     if (map.shapes != undefined) {
       for (const shape of map.shapes) {
+        const world_vertices = vector3.create_many(shape.vertices, shape.z);
         shape.computed = {
-          aabb: vector.make_aabb(shape.vertices),
-          centroid: vector3.mean(shape.vertices),
+          aabb: vector.make_aabb(world_vertices),
+          centroid: vector3.mean(world_vertices),
+          vertices: world_vertices,
         };
       }
     }
@@ -33,6 +35,8 @@ export const map_draw = {
           map_draw.compute(map);
         }
         if (shape.computed != undefined) {
+          // compute vertices
+          shape.computed.vertices = vector3.create_many(shape.vertices, shape.z);
           // compute distance
           shape.computed.distance2 = vector.length2(vector.sub(shape.computed?.centroid, cam));
           // compute location on screen
@@ -41,7 +45,7 @@ export const map_draw = {
           shape.computed.on_screen = vector.aabb_intersect(shape.computed.aabb, {
             min_x: 0, min_y: 0, max_x: ctx.canvas.width, max_y: ctx.canvas.height
           });
-          for (const world_v of shape.vertices) {
+          for (const world_v of shape.computed.vertices) {
             const v = camera.world3screen(world_v);
             vs.push(vector3.create2(v, world_v.z - camera.look_z));
             i++;
@@ -83,7 +87,7 @@ export const map_draw = {
     const style = shape.style;
     const id_prefix = shape.id + "__";
     
-    for (const [i, v] of shape.computed!!.screen_vertices!!.entries()) {
+    for (const [i, v] of shape!.computed!.screen_vertices!.entries()) {
       const id_ = id_prefix + i;
       if (Math.abs(v.z) <= 0.005) {
         ctx.begin();
@@ -114,7 +118,7 @@ export const map_draw = {
         ov.x += change.x;
         ov.y += change.y;
         if (ui.mouse.release_rclick && !key.shift()) {
-          o.shape.vertices[o.index] = vector3.round_2(ov, 10);
+          o.shape.vertices[o.index] = vector.round_to(ov, 10);
         }
       }
     }

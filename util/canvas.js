@@ -19,13 +19,15 @@ export const init_canvas = () => {
     resize_canvas();
 };
 export const resize_canvas = () => {
+    const pixel_ratio = window.devicePixelRatio;
     const w = window.innerWidth;
     const h = window.innerHeight;
     view.width = w;
     view.height = h;
-    canvas.width = w;
-    canvas.height = h;
-    canvas.style.width = w + "";
-    canvas.style.height = h + "";
+    canvas.width = w * pixel_ratio;
+    canvas.height = h * pixel_ratio;
+    // canvas.style.width = w + "";
+    // canvas.style.height = h + "";
+    ctx.resetTransform();
 };
 window.addEventListener("resize", resize_canvas);

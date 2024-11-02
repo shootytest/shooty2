@@ -7,7 +7,7 @@ export const map_serialiser = {
             icons: [],
         };
         for (const s of map.shapes ?? []) {
-            m.shapes.push({ id: s.id, vertices: s.vertices, style: s.style });
+            m.shapes.push({ id: s.id, z: s.z, vertices: s.vertices, style: s.style });
         }
         for (const i of map.icons ?? []) {
             m.icons.push({ icon: i.icon, color: i.color });
@@ -75,21 +75,33 @@ export const TEST_MAP = {
         */
         {
             id: "0",
+            z: 0,
             vertices: [
-                { x: 0, y: 0, z: 0, },
-                { x: 0, y: 200, z: 0, },
-                { x: 200, y: 200, z: 0, },
-                { x: 200, y: 0, z: 0, },
+                { x: 0, y: 0 },
+                { x: 0, y: 200 },
+                { x: 200, y: 200 },
+                { x: 200, y: 0 },
             ],
-            style: { stroke: "white", fill: "#123456", fill_opacity: 0.5, }
+            style: { stroke: "white", fill: "#abcdef", fill_opacity: 0.8, }
+        },
+        {
+            id: "0.5",
+            z: 0.5,
+            vertices: [
+                { x: 0, y: 0, z: 0.5, },
+                { x: 0, y: 200, z: 0.5, },
+                { x: 200, y: 200, z: 0.5, },
+                { x: 200, y: 0, z: 0.5, },
+            ],
+            style: { stroke: "white", fill: "#abcdef", fill_opacity: 0.8, }
         },
     ],
     icons: [],
 };
 for (const s of TEST_MAP.shapes || []) {
     for (const v of s.vertices) {
-        //v.x += 100;
-        v.y += 100;
-        v.z = 0;
+        // v.x += 100;
+        // v.y += 100;
+        // v.z = -0.5;
     }
 }

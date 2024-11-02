@@ -1,3 +1,4 @@
+import { canvas } from "./canvas.js";
 import { vector } from "./vector.js";
 export const keys = {};
 const key_listeners = {};
@@ -115,18 +116,18 @@ export const key = {
             mouse.drag_vector[b] = false;
             mouse.drag_vector_old[b] = false;
         };
-        window.addEventListener("mousedown", function (event) {
+        canvas.addEventListener("mousedown", function (event) {
             key_changed = true;
             mousedown(event);
             event.preventDefault();
             update_mouse(event.buttons);
         });
-        window.addEventListener("touchstart", function (event) {
+        canvas.addEventListener("touchstart", function (event) {
             key_changed = true;
             mousedown(event);
             event.preventDefault();
         });
-        window.addEventListener("contextmenu", function (event) {
+        canvas.addEventListener("contextmenu", function (event) {
             key_changed = true;
             event.preventDefault();
             update_mouse(event.buttons);
@@ -148,13 +149,13 @@ export const key = {
             mouse.drag_vector[b] = false;
             mouse.drag_vector_old[b] = false;
         };
-        window.addEventListener("mouseup", function (event) {
+        canvas.addEventListener("mouseup", function (event) {
             key_changed = true;
             mouseup(event);
             event.preventDefault();
             update_mouse(event.buttons);
         });
-        window.addEventListener("touchend", function (event) {
+        canvas.addEventListener("touchend", function (event) {
             key_changed = true;
             mouseup(event);
             event.preventDefault();
@@ -171,12 +172,12 @@ export const key = {
             return false;
         }
         ;
-        window.addEventListener("wheel", function (event) {
+        canvas.addEventListener("wheel", function (event) {
             wheel(event);
         }, {
             passive: false,
         });
-        window.addEventListener("dblclick", function (event) {
+        canvas.addEventListener("dblclick", function (event) {
             dblclick(event);
         });
     },

@@ -2,6 +2,7 @@ import { math } from "./math.js";
 
 export interface vector { x: number, y: number };
 export interface vector3 extends vector { z: number };
+export interface vector3_ extends vector { z?: number };
 export interface AABB {
   min_x: number,
   max_x: number,
@@ -128,6 +129,16 @@ export const vector = {
 export const vector3 = {
   create: (x = 0, y = 0, z = 0): vector3 => {
     return {x, y, z};
+  },
+  create_: (v: vector3_, z = 0): vector3 => {
+    return { x: v.x, y: v.y, z: v.z === undefined ? z : v.z };
+  },
+  create_many: (v_list: vector3_[], z = 0): vector3[] => {
+    const result: vector3[] = [];
+    for (const v of v_list) {
+      result.push(vector3.create_(v, z));
+    }
+    return result;
   },
   create2: (v: vector, z = 0): vector3 => {
     return { x: v.x, y: v.y, z };
