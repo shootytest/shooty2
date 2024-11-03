@@ -41,9 +41,21 @@ export type map_icon_type = {
 export type map_type = {
 
   shapes?: map_shape_type[],
+  groups?: map_type[],
   icons?: map_icon_type[],
+  // map?: map_type,
 
 };
+
+/*
+export type map_type = {
+  
+  root: map_group_type,
+  all_shapes?: map_shape_type[],
+  all_icons?: map_icon_type[],
+
+};
+*/
 
 export const map_serialiser = {
 
@@ -75,7 +87,7 @@ export const map_serialiser = {
     const raw_string = map_serialiser.stringify(map);
     localStorage.setItem("map_" + slot, raw_string);
     console.log("saved current map to slot \"" + slot + "\"!");
-    return;// JSON.parse(raw_string);
+    return; // JSON.parse(raw_string);
   },
 
   load: (slot: string): map_type => {
@@ -145,7 +157,7 @@ export const TEST_MAP: map_type = {
         { x: 200, y: 200, z: 0.5, },
         { x: 200, y: 0, z: 0.5, },
       ],
-      style: { stroke: "white", fill: "#abcdef", fill_opacity: 0.8, }
+      style: { stroke: "white", fill: "#123456", fill_opacity: 0.3, }
     },
   ],
   icons: [],

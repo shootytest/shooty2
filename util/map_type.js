@@ -1,5 +1,14 @@
 import { map_draw } from "./map_draw.js";
 ;
+/*
+export type map_type = {
+  
+  root: map_group_type,
+  all_shapes?: map_shape_type[],
+  all_icons?: map_icon_type[],
+
+};
+*/
 export const map_serialiser = {
     stringify: (map) => {
         const m = {
@@ -93,7 +102,7 @@ export const TEST_MAP = {
                 { x: 200, y: 200, z: 0.5, },
                 { x: 200, y: 0, z: 0.5, },
             ],
-            style: { stroke: "white", fill: "#abcdef", fill_opacity: 0.8, }
+            style: { stroke: "white", fill: "#123456", fill_opacity: 0.3, }
         },
     ],
     icons: [],
