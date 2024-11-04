@@ -1,6 +1,8 @@
 
 // Matter.use('matter-attractors');
-// Matter.use('matter-wrap');
+// Matter.use('matter-wrap');\
+
+export default Matter;
 
 export const Axes = Matter.Axes;
 export const Bodies = Matter.Bodies;

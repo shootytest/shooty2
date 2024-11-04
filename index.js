@@ -1,7 +1,9 @@
+import { Shape } from "./game/shape.js";
 import { Engine } from "./matter.js";
 import { camera } from "./util/camera.js";
 import { init_canvas } from "./util/canvas.js";
 import { key, mouse } from "./util/key.js";
+new Shape();
 export const engine = Engine.create();
 export const world = engine.world;
 console.log(world);
