@@ -28,6 +28,7 @@ export class Shape {
 
   constructor(thing?: Thing) {
     this.thing = thing;
+    Shape.shapes.push(this);
   }
 
   get is_added(): boolean {
@@ -76,5 +77,3 @@ export class Line extends Shape {
   static type: string = "line";
 
 }
-
-console.log(new Polygon());

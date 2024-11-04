@@ -18,6 +18,7 @@ export class Shape {
     vertices = [];
     constructor(thing) {
         this.thing = thing;
+        Shape.shapes.push(this);
     }
     get is_added() {
         return this.thing != undefined;
@@ -56,4 +57,3 @@ export class Polygon extends Shape {
 export class Line extends Shape {
     static type = "line";
 }
-console.log(new Polygon());

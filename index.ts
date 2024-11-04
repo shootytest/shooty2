@@ -1,5 +1,5 @@
 import { Shape } from "./game/shape.js";
-import { Engine } from "./matter.js";
+import { Engine, Events, Runner } from "./matter.js";
 import { camera } from "./util/camera.js";
 import { ctx, init_canvas, view } from "./util/canvas.js";
 import { key, keys, mouse } from "./util/key.js";
@@ -9,13 +9,17 @@ new Shape();
 export const engine = Engine.create();
 export const world = engine.world;
 
-console.log(world);
+export const runner = Runner.create();
+Runner.run(runner, engine);
+
 
 const init_all = () => {
   init_canvas();
   // ui.init();
   key.init();
 };
+window.addEventListener("load", init_all);
+
 
 const tick_all = () => {
 
@@ -24,9 +28,5 @@ const tick_all = () => {
   camera.tick();
   mouse.tick();
 
-  requestAnimationFrame(tick_all);
-
 };
-
-requestAnimationFrame(tick_all);
-window.addEventListener("load", init_all);
+Events.on(runner, "tick", tick_all);
