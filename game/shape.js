@@ -10,11 +10,12 @@ export class Shape {
     static from_map(o) {
         const s = new Shape();
         s.vertices = vector3.create_many(o.vertices, o.z);
+        s.style = o.style;
         s.init_computed();
         return s;
     }
-    static circle(radius, x_offset = 0, y_offset = 0) {
-        return Polygon.make(radius, 0, 0, x_offset, y_offset);
+    static circle(radius, z = 0, x_offset = 0, y_offset = 0) {
+        return Polygon.make(radius, 0, 0, z, x_offset, y_offset);
     }
     static filter(aabb) {
         const result = [];
@@ -34,6 +35,7 @@ export class Shape {
     vertices = [];
     // computed
     computed;
+    style = {};
     constructor(thing) {
         this.thing = thing;
         Shape.shapes.push(this);
@@ -62,11 +64,12 @@ export class Shape {
 }
 export class Polygon extends Shape {
     static type = "polygon";
-    static make(radius, sides, angle, x_offset, y_offset) {
+    static make(radius, sides, angle, z = 0, x_offset = 0, y_offset = 0) {
         const s = new Polygon();
         s.radius = radius;
         s.sides = sides;
         s.angle = angle;
+        s.z = z;
         s.x_offset = x_offset;
         s.y_offset = y_offset;
         return s;
@@ -83,9 +86,8 @@ export class Polygon extends Shape {
         const x = this.x_offset;
         const y = this.y_offset;
         let a = this.angle;
-        this.vertices.push(vector3.create(x + r * Math.cos(a), y + r * Math.sin(a), this.z));
-        // draw one more side because lineCap is weird if it is square 
-        for (let i = 0; i < sides + 1; ++i) {
+        // this.vertices.push(vector3.create(x + r * Math.cos(a), y + r * Math.sin(a), this.z));
+        for (let i = 0; i < sides; ++i) {
             a += Math.PI * 2 / sides;
             this.vertices.push(vector3.create(x + r * Math.cos(a), y + r * Math.sin(a), this.z));
         }

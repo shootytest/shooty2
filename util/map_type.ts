@@ -2,7 +2,7 @@ import { map_draw } from "./map_draw.js";
 import { vector, vector3, vector3_, AABB, AABB3 } from "./vector.js";
 
 export type line_style = {
-  stroke: string,
+  stroke?: string,
   width?: number,
   opacity?: number,
 };

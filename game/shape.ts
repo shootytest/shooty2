@@ -1,5 +1,5 @@
 import Matter from "../matter.js";
-import { map_shape_compute_type, map_shape_type } from "../util/map_type.js";
+import { map_shape_compute_type, map_shape_type, shape_style } from "../util/map_type.js";
 import { AABB, AABB3, vector, vector3 } from "../util/vector.js";
 import { Thing } from "./thing.js";
 
@@ -18,13 +18,14 @@ export class Shape {
     const s = new Shape();
     
     s.vertices = vector3.create_many(o.vertices, o.z);
+    s.style = o.style;
     s.init_computed();
 
     return s;
   }
 
-  static circle(radius: number, x_offset: number = 0, y_offset: number = 0): Polygon {
-    return Polygon.make(radius, 0, 0, x_offset, y_offset);
+  static circle(radius: number, z: number = 0, x_offset: number = 0, y_offset: number = 0): Polygon {
+    return Polygon.make(radius, 0, 0, z, x_offset, y_offset);
   }
 
   static filter(aabb: AABB3): Shape[] {
@@ -47,6 +48,8 @@ export class Shape {
 
   // computed
   computed?: map_shape_compute_type;
+
+  style: shape_style = {};
 
   constructor(thing?: Thing) {
     this.thing = thing;
@@ -85,11 +88,12 @@ export class Shape {
 export class Polygon extends Shape {
   static type: string = "polygon";
 
-  static make(radius: number, sides: number, angle: number, x_offset: number, y_offset: number): Polygon {
+  static make(radius: number, sides: number, angle: number, z: number = 0, x_offset: number = 0, y_offset: number = 0): Polygon {
     const s = new Polygon();
     s.radius = radius;
     s.sides = sides;
     s.angle = angle;
+    s.z = z;
     s.x_offset = x_offset;
     s.y_offset = y_offset;
     return s;
@@ -108,9 +112,8 @@ export class Polygon extends Shape {
     const x = this.x_offset;
     const y = this.y_offset;
     let a = this.angle;
-    this.vertices.push(vector3.create(x + r * Math.cos(a), y + r * Math.sin(a), this.z));
-    // draw one more side because lineCap is weird if it is square 
-    for (let i = 0; i < sides + 1; ++i) {
+    // this.vertices.push(vector3.create(x + r * Math.cos(a), y + r * Math.sin(a), this.z));
+    for (let i = 0; i < sides; ++i) {
       a += Math.PI * 2 / sides;
       this.vertices.push(vector3.create(x + r * Math.cos(a), y + r * Math.sin(a), this.z));
     }

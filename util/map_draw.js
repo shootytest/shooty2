@@ -1,5 +1,6 @@
 import { ui } from "../map/ui.js";
 import { camera } from "./camera.js";
+import { color } from "./color.js";
 import { key, mouse } from "./key.js";
 import { vector, vector3 } from "./vector.js";
 export const map_draw = {
@@ -65,8 +66,10 @@ export const map_draw = {
         ctx.begin();
         ctx.lines_v(shape.computed.screen_vertices);
         ctx.lineCap = "square";
-        ctx.strokeStyle = style.stroke;
-        ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
+        if (style.stroke) {
+            ctx.strokeStyle = style.stroke;
+            ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
+        }
         ctx.globalAlpha = style.opacity ?? 1;
         ctx.stroke();
         if (style.fill) {
@@ -86,7 +89,7 @@ export const map_draw = {
             if (Math.abs(v.z) <= 0.005) {
                 ctx.begin();
                 ctx.circle(v.x, v.y, 4);
-                ctx.fillStyle = style.stroke;
+                ctx.fillStyle = style.stroke ?? style.fill ?? color.purewhite;
                 ctx.lineWidth = camera.sqrtscale * 2;
                 ctx.fill();
             }
@@ -94,7 +97,7 @@ export const map_draw = {
                 // mouse hover
                 ctx.begin();
                 ctx.circle(v.x, v.y, 10);
-                ctx.strokeStyle = style.stroke;
+                ctx.strokeStyle = style.stroke ?? style.fill ?? color.purewhite;
                 ctx.lineWidth = camera.sqrtscale * 2;
                 ctx.stroke();
                 // also set target
