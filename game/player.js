@@ -9,6 +9,7 @@ export class Player extends Thing {
         s.thing = this;
         s.style.fill = color.red;
         this.shapes.push(s);
+        this.create_all();
         this.position = vector3.create();
     }
 }

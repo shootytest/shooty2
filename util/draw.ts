@@ -201,7 +201,7 @@ export class Context {
   clear(color?: color) {
     if (color != undefined) {
       this.fillStyle = color;
-      this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height)
+      this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
     } else {
       this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
     }

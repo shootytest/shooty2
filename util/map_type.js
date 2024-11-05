@@ -1,4 +1,4 @@
-import { map_draw } from "./map_draw.js";
+import { vector, vector3 } from "./vector.js";
 ;
 /*
 export type map_type = {
@@ -10,6 +10,19 @@ export type map_type = {
 };
 */
 export const map_serialiser = {
+    compute: (map) => {
+        if (map.shapes != undefined) {
+            for (const shape of map.shapes) {
+                const world_vertices = vector3.create_many(shape.vertices, shape.z);
+                shape.computed = {
+                    aabb: vector.make_aabb(world_vertices),
+                    aabb3: vector3.make_aabb(world_vertices),
+                    centroid: vector3.mean(world_vertices),
+                    vertices: world_vertices,
+                };
+            }
+        }
+    },
     stringify: (map) => {
         const m = {
             shapes: [],
@@ -29,7 +42,7 @@ export const map_serialiser = {
             shapes: m.shapes ?? [],
             icons: m.icons ?? [],
         };
-        map_draw.compute(map);
+        map_serialiser.compute(map);
         return map;
     },
     save: (slot, map) => {
@@ -47,7 +60,8 @@ export const map_serialiser = {
         else {
             console.log("loaded current map from slot \"" + slot + "\"!");
         }
-        return map_serialiser.parse(raw_string);
+        const map = map_serialiser.parse(raw_string);
+        return map;
     },
     delete: (slot) => {
         const map = map_serialiser.load(slot);
@@ -97,10 +111,10 @@ export const TEST_MAP = {
             id: "0.5",
             z: 0.5,
             vertices: [
-                { x: 0, y: 0, z: 0.5, },
-                { x: 0, y: 200, z: 0.5, },
-                { x: 200, y: 200, z: 0.5, },
-                { x: 200, y: 0, z: 0.5, },
+                { x: 0, y: 0, },
+                { x: 0, y: 200, },
+                { x: 200, y: 200, },
+                { x: 200, y: 0, },
             ],
             style: { stroke: "white", fill: "#123456", fill_opacity: 0.3, }
         },
@@ -109,8 +123,8 @@ export const TEST_MAP = {
 };
 for (const s of TEST_MAP.shapes || []) {
     for (const v of s.vertices) {
-        // v.x += 100;
-        // v.y += 100;
+        v.x += 100;
+        v.y += 100;
         // v.z = -0.5;
     }
 }

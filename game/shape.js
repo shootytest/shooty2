@@ -190,8 +190,11 @@ export class Polygon extends Shape {
         if (this.sides === 0) {
             if (this.computed?.centroid == undefined)
                 return;
-            const c = this.computed.centroid;
-            const r = vector3.create(this.radius, 0, this.z);
+            let c = this.computed.centroid;
+            if (this.thing)
+                c = vector3.add(c, vector3.flatten(this.thing.position));
+            let r = vector3.create(this.radius, 0, this.z);
+            r = vector3.add(r, vector3.create2(camera.position));
             const vs = [];
             for (const world_v of [c, r]) {
                 const v = camera.world3screen(world_v);

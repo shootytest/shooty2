@@ -1,8 +1,8 @@
 import { ui } from "../map/ui.js";
-import { camera, ZEPSILON } from "./camera.js";
+import { camera } from "./camera.js";
 import { color } from "./color.js";
 import { Context } from "./draw.js";
-import { key, keys, mouse } from "./key.js";
+import { key, mouse } from "./key.js";
 import { map_shape_type, map_type } from "./map_type.js";
 import { AABB3, vector, vector3 } from "./vector.js";
 

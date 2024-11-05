@@ -155,6 +155,7 @@ export const ui = {
             icon: "load",
             action: () => {
                 ui.map = map_serialiser.load(ui.settings.slot);
+                map_draw.compute(ui.map);
             },
         },
         {

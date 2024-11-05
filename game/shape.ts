@@ -1,8 +1,7 @@
-import Matter from "../matter.js";
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
 import { map_shape_compute_type, map_shape_type, shape_style } from "../util/map_type.js";
-import { AABB, AABB3, vector, vector3 } from "../util/vector.js";
+import { AABB3, vector, vector3 } from "../util/vector.js";
 import { Thing } from "./thing.js";
 
 /**
@@ -210,8 +209,10 @@ export class Polygon extends Shape {
   compute_screen() {
     if (this.sides === 0) {
       if (this.computed?.centroid == undefined) return;
-      const c = this.computed.centroid;
-      const r = vector3.create(this.radius, 0, this.z);
+      let c = this.computed.centroid;
+      if (this.thing) c = vector3.add(c, vector3.flatten(this.thing.position));
+      let r = vector3.create(this.radius, 0, this.z);
+      r = vector3.add(r, vector3.create2(camera.position));
       const vs: vector3[] = [];
       for (const world_v of [c, r]) {
         const v = camera.world3screen(world_v);

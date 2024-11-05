@@ -1,5 +1,5 @@
 import { world } from "../index.js";
-import Matter, { Bodies, Body, Composite, IBodyDefinition } from "../matter.js";
+import { Bodies, Body, Composite, IBodyDefinition } from "../matter.js";
 import { map_shape_type } from "../util/map_type.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { Polygon, Shape } from "./shape.js";
