@@ -10,6 +10,13 @@ export class Shape {
     static from_map(o) {
         const s = new Shape();
         s.vertices = vector3.create_many(o.vertices, o.z);
+        if (o.computed == undefined) {
+            throw "map shape not computed yet!";
+        }
+        for (const v of s.vertices) {
+            v.x -= o.computed.centroid.x;
+            v.y -= o.computed.centroid.y;
+        }
         s.style = o.style;
         s.init_computed();
         return s;

@@ -71,6 +71,9 @@ export const vector = {
     rad_to_deg: (radians) => {
         return radians * 180 / Math.PI;
     },
+    rad_to_vector: (radians) => {
+        return vector.create(Math.cos(radians), Math.sin(radians));
+    },
     in_rect: (p, x, y, w, h) => {
         return (p.x >= x && p.y >= y && p.x <= x + w && p.y <= y + h);
     },
@@ -112,7 +115,7 @@ export const vector = {
     aabb_intersect: (a, b) => {
         return (a.min_x <= b.max_x && a.max_x >= b.min_x) &&
             (a.min_y <= b.max_y && a.max_y >= b.min_y);
-    }
+    },
 };
 export const vector3 = {
     create: (x = 0, y = 0, z = 0) => {

@@ -77,14 +77,17 @@ export const vector = {
   createpolar: (theta: number, r = 1) => {
     return vector.create(r * Math.cos(theta), r * Math.sin(theta));
   },
-  lerp: (v1: vector, v2: vector, t: number) => {
+  lerp: (v1: vector, v2: vector, t: number): vector => {
     return vector.add(vector.mult(v1, 1 - t), vector.mult(v2, t));
   },
-  deg_to_rad: (degrees: number) => {
+  deg_to_rad: (degrees: number): number => {
     return degrees / 180 * Math.PI;
   },
-  rad_to_deg: (radians: number) => {
+  rad_to_deg: (radians: number): number => {
     return radians * 180 / Math.PI;
+  },
+  rad_to_vector: (radians: number): vector => { // copy of createpolar
+    return vector.create(Math.cos(radians), Math.sin(radians));
   },
   in_rect: (p: vector, x: number, y: number, w: number, h: number) => {
     return (p.x >= x && p.y >= y && p.x <= x + w && p.y <= y + h);
@@ -123,7 +126,7 @@ export const vector = {
   aabb_intersect: (a: AABB, b: AABB): boolean => {
     return (a.min_x <= b.max_x && a.max_x >= b.min_x) &&
            (a.min_y <= b.max_y && a.max_y >= b.min_y);
-  }
+  },
 };
 
 export const vector3 = {
