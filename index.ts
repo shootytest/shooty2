@@ -1,3 +1,4 @@
+import { Player } from "./game/player.js";
 import { Shape } from "./game/shape.js";
 import { Engine, Events, Runner } from "./matter.js";
 import { camera } from "./util/camera.js";
@@ -27,8 +28,11 @@ const tick_all = () => {
   // ui.draw();
   camera.tick();
   mouse.tick();
+  Shape.draw();
 
   // console.log(runner.delta);
 
 };
 Events.on(runner, "tick", tick_all);
+
+const player = new Player();

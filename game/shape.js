@@ -69,6 +69,7 @@ export class Shape {
     }
     ;
     static draw() {
+        Shape.compute();
         for (const s of Shape.draw_shapes) {
             s.draw();
         }
@@ -152,6 +153,8 @@ export class Polygon extends Shape {
         s.z = z;
         s.x_offset = x_offset;
         s.y_offset = y_offset;
+        s.calculate();
+        s.init_computed();
         return s;
     }
     radius = 0;
