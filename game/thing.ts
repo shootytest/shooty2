@@ -1,5 +1,6 @@
 import { world } from "../index.js";
 import Matter, { Bodies, Body, Composite, IBodyDefinition } from "../matter.js";
+import { map_shape_type } from "../util/map_type.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { Polygon, Shape } from "./shape.js";
 
@@ -39,6 +40,19 @@ export class Thing {
     Thing.things.push(this);
   }
 
+  make_map(o: map_shape_type) {
+    if (o.computed == undefined) {
+      throw "map shape not computed yet!";
+    }
+    this.shapes.push(Shape.from_map(o));
+    this.position = o.computed.centroid;
+    this.create_all();
+  }
+
+  create_all() {
+    this.create_body();
+  }
+
   create_body(shape_index: number = 0) {
     if (this.shapes.length <= shape_index) {
       throw "shape index " + shape_index + " >= length " + this.shapes.length;
@@ -52,8 +66,11 @@ export class Thing {
     else { // just use vertices
       body = Bodies.fromVertices(0, 0, [s.vertices], options);
     }
+    Body.setPosition(body, this.target.position);
+    Body.setAngle(body, this.target.angle);
     this.body = body;
     Composite.add(world, this.body);
+    Body.setVelocity(body, this.target.velocity);
   }
   
   get position(): vector3 {

@@ -137,6 +137,16 @@ export const vector3 = {
     clone: (v) => {
         return vector3.create(v.x, v.y, v.z);
     },
+    clone_list: (vs) => {
+        const result = [];
+        for (const v of vs) {
+            result.push(vector3.clone(v));
+        }
+        return result;
+    },
+    flatten: (v, z = 0) => {
+        return { x: v.x, y: v.y, z };
+    },
     mult: (v, scale) => {
         return {
             x: v.x * scale,
@@ -149,6 +159,20 @@ export const vector3 = {
             x: v.x * scale,
             y: v.y * scale,
             z: v.z * z_scale
+        };
+    },
+    neg: (v) => {
+        return {
+            x: -v.x,
+            y: -v.y,
+            z: -v.z
+        };
+    },
+    neg2: (v) => {
+        return {
+            x: -v.x,
+            y: -v.y,
+            z: v.z
         };
     },
     div: (v, scale) => {
@@ -164,6 +188,21 @@ export const vector3 = {
             y: v1.y + v2.y,
             z: v1.z + v2.z
         };
+    },
+    add_list: (vs, v1) => {
+        const result = [];
+        for (const v of vs) {
+            result.push(vector3.add(v, v1));
+        }
+        return result;
+    },
+    add_to_list: (vs, v1) => {
+        for (const v of vs) {
+            v.x += v1.x;
+            v.y += v1.y;
+            v.z += v1.z;
+        }
+        return;
     },
     sub: (v1, v2) => {
         return {
@@ -238,5 +277,15 @@ export const vector3 = {
         return (a.min_x <= b.max_x && a.max_x >= b.min_x) &&
             (a.min_y <= b.max_y && a.max_y >= b.min_y) &&
             (a.min_z <= b.max_z && a.max_z >= b.min_z);
-    }
+    },
+    aabb_add: (a, v) => {
+        return {
+            min_x: a.min_x + v.x,
+            max_x: a.max_x + v.x,
+            min_y: a.min_y + v.y,
+            max_y: a.max_y + v.y,
+            min_z: a.min_z + v.z,
+            max_z: a.max_z + v.z,
+        };
+    },
 };

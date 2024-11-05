@@ -61,8 +61,8 @@ export const map_draw = {
     draw_shape: (ctx, shape) => {
         if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0)
             return;
-        ctx.save("draw_shape");
         const style = shape.style;
+        ctx.save("draw_shape");
         ctx.begin();
         ctx.lines_v(shape.computed.screen_vertices);
         ctx.lineCap = "square";

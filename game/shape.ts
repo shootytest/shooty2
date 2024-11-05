@@ -1,4 +1,6 @@
 import Matter from "../matter.js";
+import { camera } from "../util/camera.js";
+import { ctx } from "../util/canvas.js";
 import { map_shape_compute_type, map_shape_type, shape_style } from "../util/map_type.js";
 import { AABB, AABB3, vector, vector3 } from "../util/vector.js";
 import { Thing } from "./thing.js";
@@ -10,6 +12,7 @@ import { Thing } from "./thing.js";
 export class Shape {
 
   static shapes: Shape[] = [];
+  static draw_shapes: Shape[] = [];
 
   static cumulative_id = 0;
   static type: string = "shape";
@@ -25,28 +28,59 @@ export class Shape {
       v.x -= o.computed.centroid.x;
       v.y -= o.computed.centroid.y;
     }
-    
+
     s.style = o.style;
     s.init_computed();
 
     return s;
-  }
+  };
 
   static circle(radius: number, z: number = 0, x_offset: number = 0, y_offset: number = 0): Polygon {
     return Polygon.make(radius, 0, 0, z, x_offset, y_offset);
-  }
+  };
 
   static filter(aabb: AABB3): Shape[] {
     const result: Shape[] = [];
     for (const s of Shape.shapes) {
-      if (s.computed == undefined) continue;
-      const inside = vector3.aabb_intersect(s.computed.aabb3, aabb);
+      if (s.computed == undefined || s.thing == undefined) continue;
+      s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position);
+      const inside = vector3.aabb_intersect(s.computed_aabb, aabb);
       if (inside) {
         result.push(s);
       }
     }
     return result;
-  }
+  };
+
+  static compute() {
+    const cam = vector3.create2(camera.location, camera.z);
+    const screen_topleft = camera.screen2world({ x: 0, y: 0 });
+    const screen_bottomright = camera.screen2world({ x: ctx.canvas.width, y: ctx.canvas.height });
+    const screen_aabb: AABB3 = {
+      min_x: screen_topleft.x, min_y: screen_topleft.y, max_x: screen_bottomright.x, max_y: screen_bottomright.y, min_z: -Infinity, max_z: Infinity,
+    };
+    Shape.draw_shapes = Shape.filter(screen_aabb);
+    for (const s of Shape.draw_shapes) {
+      if (s.computed == undefined) {
+        s.init_computed();
+      }
+      if (s.computed != undefined) { // always true
+        // compute vertices
+        s.computed.vertices = vector3.clone_list(s.vertices);
+        if (s.thing) vector3.add_to_list(s.computed.vertices, vector3.flatten(s.thing.position));
+        // compute distance
+        s.computed.distance2 = vector.length2(vector.sub(s.computed.centroid, cam));
+        // compute location on screen
+        s.compute_screen();
+      }
+    }
+  };
+
+  static draw() {
+    for (const s of Shape.draw_shapes) {
+      s.draw();
+    }
+  };
   
   id: number = ++Shape.cumulative_id;
   thing?: Thing;
@@ -56,6 +90,7 @@ export class Shape {
 
   // computed
   computed?: map_shape_compute_type;
+  computed_aabb?: AABB3; // for use in Shape.filter()
 
   style: shape_style = {};
 
@@ -73,7 +108,7 @@ export class Shape {
       aabb: vector.make_aabb(this.vertices),
       aabb3: vector3.make_aabb(this.vertices),
       centroid: vector3.mean(this.vertices),
-      vertices: this.vertices
+      vertices: vector3.clone_list(this.vertices),
     };
   }
 
@@ -88,7 +123,39 @@ export class Shape {
   }
 
   draw() {
+    if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0) return;
+    const style = this.style;
+    ctx.save("draw_shape");
+    ctx.begin();
+    this.draw_path();
+    ctx.lineCap = "square";
+    if (style.stroke) {
+      ctx.strokeStyle = style.stroke;
+      ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
+    }
+    ctx.globalAlpha = style.opacity ?? 1;
+    ctx.stroke();
+    if (style.fill) {
+      ctx.fillStyle = style.fill;
+      ctx.globalAlpha = style.fill_opacity ?? 1;
+      ctx.fill();
+    }
+    ctx.restore("draw_shape");
+  }
 
+  draw_path() {
+    if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0) return;
+    ctx.lines_v(this.computed.screen_vertices);
+  }
+
+  compute_screen() {
+    if (this.computed?.vertices == undefined) return;
+    const vs: vector3[] = [];
+    for (const world_v of this.computed.vertices) {
+      const v = camera.world3screen(world_v);
+      vs.push(vector3.create2(v, world_v.z - camera.look_z));
+    }
+    this.computed.screen_vertices = vs;
   }
 
 }
@@ -127,8 +194,30 @@ export class Polygon extends Shape {
     }
   }
 
-  draw() {
+  draw_path() {
+    if (this.sides === 0) {
+      if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0) return;
+      const [c, r] = this.computed.screen_vertices
+      ctx.circle(c.x, c.y, r.x);
+    } else {
+      super.draw_path();
+    }
+  }
 
+  compute_screen() {
+    if (this.sides === 0) {
+      if (this.computed?.centroid == undefined) return;
+      const c = this.computed.centroid;
+      const r = vector3.create(this.radius, 0, this.z);
+      const vs: vector3[] = [];
+      for (const world_v of [c, r]) {
+        const v = camera.world3screen(world_v);
+        vs.push(vector3.create2(v, world_v.z - camera.look_z));
+      }
+      this.computed.screen_vertices = vs;
+    } else {
+      super.compute_screen();
+    }
   }
 
 }
