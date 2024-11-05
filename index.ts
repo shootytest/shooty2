@@ -13,7 +13,7 @@ export const engine = Engine.create();
 export const world = engine.world;
 
 engine.gravity.x = 0;
-engine.gravity.y = 1;
+engine.gravity.y = 0;
 
 camera.move_by(vector.create(-window.innerWidth / 2, -window.innerHeight / 2));
 

@@ -44,7 +44,9 @@ export class Thing {
     if (o.computed == undefined) {
       throw "map shape not computed yet!";
     }
-    this.shapes.push(Shape.from_map(o));
+    const s = Shape.from_map(o);
+    s.thing = this;
+    this.shapes.push(s);
     this.position = o.computed.centroid;
     this.create_all();
   }
@@ -69,7 +71,7 @@ export class Thing {
     Body.setPosition(body, this.target.position);
     Body.setAngle(body, this.target.angle);
     this.body = body;
-    Composite.add(world, this.body);
+    if (s.z === 0) Composite.add(world, this.body);
     Body.setVelocity(body, this.target.velocity);
   }
   

@@ -181,8 +181,8 @@ export const TEST_MAP: map_type = {
 
 for (const s of TEST_MAP.shapes || []) {
   for (const v of s.vertices) {
-    v.x += 100;
-    v.y += 100;
+    v.x += 50;
+    v.y += 50;
     // v.z = -0.5;
   }
 }

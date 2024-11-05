@@ -19,6 +19,7 @@ export class Shape {
   static from_map(o: map_shape_type): Shape {
     const s = new Shape();
     
+    s.z = o.z;
     s.vertices = vector3.create_many(o.vertices, o.z);
     if (o.computed == undefined) {
       throw "map shape not computed yet!";
