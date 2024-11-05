@@ -28,5 +28,7 @@ const tick_all = () => {
   camera.tick();
   mouse.tick();
 
+  // console.log(runner.delta);
+
 };
 Events.on(runner, "tick", tick_all);

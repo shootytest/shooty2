@@ -1,6 +1,6 @@
 import Matter from "../matter.js";
-import { map_shape_type } from "../util/map_type.js";
-import { vector, vector3 } from "../util/vector.js";
+import { map_shape_compute_type, map_shape_type } from "../util/map_type.js";
+import { AABB, AABB3, vector, vector3 } from "../util/vector.js";
 import { Thing } from "./thing.js";
 
 /**
@@ -16,15 +16,37 @@ export class Shape {
 
   static from_map(o: map_shape_type): Shape {
     const s = new Shape();
+    
     s.vertices = vector3.create_many(o.vertices, o.z);
+    s.init_computed();
+
     return s;
+  }
+
+  static circle(radius: number, x_offset: number = 0, y_offset: number = 0): Polygon {
+    return Polygon.make(radius, 0, 0, x_offset, y_offset);
+  }
+
+  static filter(aabb: AABB3): Shape[] {
+    const result: Shape[] = [];
+    for (const s of Shape.shapes) {
+      if (s.computed == undefined) continue;
+      const inside = vector3.aabb_intersect(s.computed.aabb3, aabb);
+      if (inside) {
+        result.push(s);
+      }
+    }
+    return result;
   }
   
   id: number = ++Shape.cumulative_id;
-  thing?: Thing = undefined;
+  thing?: Thing;
   z: number = 0;
 
   vertices: vector3[] = [];
+
+  // computed
+  computed?: map_shape_compute_type;
 
   constructor(thing?: Thing) {
     this.thing = thing;
@@ -33,6 +55,15 @@ export class Shape {
 
   get is_added(): boolean {
     return this.thing != undefined;
+  }
+
+  init_computed() {
+    this.computed = {
+      aabb: vector.make_aabb(this.vertices),
+      aabb3: vector3.make_aabb(this.vertices),
+      centroid: vector3.mean(this.vertices),
+      vertices: this.vertices
+    };
   }
 
   add(thing: Thing) {
@@ -45,10 +76,24 @@ export class Shape {
     return;
   }
 
+  draw() {
+
+  }
+
 }
 
 export class Polygon extends Shape {
   static type: string = "polygon";
+
+  static make(radius: number, sides: number, angle: number, x_offset: number, y_offset: number): Polygon {
+    const s = new Polygon();
+    s.radius = radius;
+    s.sides = sides;
+    s.angle = angle;
+    s.x_offset = x_offset;
+    s.y_offset = y_offset;
+    return s;
+  }
 
   radius: number = 0;
   sides: number = 3;
@@ -58,7 +103,7 @@ export class Polygon extends Shape {
 
   calculate() {
     this.vertices = [];
-    const sides = this.sides;
+    const sides = (this.sides === 0) ? 16 : this.sides;
     const r = this.radius;
     const x = this.x_offset;
     const y = this.y_offset;
@@ -69,6 +114,10 @@ export class Polygon extends Shape {
       a += Math.PI * 2 / sides;
       this.vertices.push(vector3.create(x + r * Math.cos(a), y + r * Math.sin(a), this.z));
     }
+  }
+
+  draw() {
+
   }
 
 }
