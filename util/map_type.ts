@@ -180,9 +180,9 @@ export const TEST_MAP: map_type = {
 };
 
 for (const s of TEST_MAP.shapes || []) {
+  // s.z += 0.5;
   for (const v of s.vertices) {
     v.x += 50;
     v.y += 50;
-    // v.z = -0.5;
   }
 }

@@ -35,6 +35,7 @@ const tick_all = () => {
   // ui.draw();
   camera.tick();
   mouse.tick();
+  Thing.tick_things();
   // clear screen
   ctx.clear();
   ctx.begin();
@@ -53,5 +54,3 @@ for (const shape of TEST_MAP.shapes ?? []) {
   const t = new Thing();
   t.make_map(shape);
 }
-
-console.log(Thing.things);

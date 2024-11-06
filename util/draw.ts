@@ -21,7 +21,8 @@ type ctx_save = {
   textAlign: CanvasTextAlign,
   textBaseline: CanvasTextBaseline,
   direction: CanvasDirection,
-  imageSmoothingEnabled: boolean
+  imageSmoothingEnabled: boolean,
+  transform: DOMMatrix,
 };
 
 class Drawer {
@@ -148,6 +149,7 @@ export class Context {
       textBaseline: ctx.textBaseline,
       direction: ctx.direction,
       imageSmoothingEnabled: ctx.imageSmoothingEnabled,
+      transform: ctx.getTransform(),
     };
   }
 
@@ -172,6 +174,7 @@ export class Context {
     ctx.textBaseline = save.textBaseline;
     ctx.direction = save.direction;
     ctx.imageSmoothingEnabled = save.imageSmoothingEnabled;
+    ctx.setTransform(save.transform);
   }
 
   stroke() {
@@ -336,6 +339,18 @@ export class Context {
     this.ctx.resetTransform();
     const pixel_ratio = window.devicePixelRatio;
     this.ctx.scale(pixel_ratio, pixel_ratio);
+  }
+  
+  translate(x: number, y: number) {
+    this.ctx.translate(x, y);
+  }
+  
+  translate_v(v: vector) {
+    this.ctx.translate(v.x, v.y);
+  }
+  
+  rotate(angle: number) {
+    this.ctx.rotate(angle);
   }
 
   point_in_path(px: number, py: number, fillRule?: CanvasFillRule) {

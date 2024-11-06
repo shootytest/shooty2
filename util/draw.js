@@ -94,6 +94,7 @@ export class Context {
             textBaseline: ctx.textBaseline,
             direction: ctx.direction,
             imageSmoothingEnabled: ctx.imageSmoothingEnabled,
+            transform: ctx.getTransform(),
         };
     }
     restore(slot) {
@@ -117,6 +118,7 @@ export class Context {
         ctx.textBaseline = save.textBaseline;
         ctx.direction = save.direction;
         ctx.imageSmoothingEnabled = save.imageSmoothingEnabled;
+        ctx.setTransform(save.transform);
     }
     stroke() {
         this.ctx.stroke();
@@ -260,6 +262,15 @@ export class Context {
         this.ctx.resetTransform();
         const pixel_ratio = window.devicePixelRatio;
         this.ctx.scale(pixel_ratio, pixel_ratio);
+    }
+    translate(x, y) {
+        this.ctx.translate(x, y);
+    }
+    translate_v(v) {
+        this.ctx.translate(v.x, v.y);
+    }
+    rotate(angle) {
+        this.ctx.rotate(angle);
     }
     point_in_path(px, py, fillRule) {
         return this.ctx.isPointInPath(px * window.devicePixelRatio, py * window.devicePixelRatio, fillRule);

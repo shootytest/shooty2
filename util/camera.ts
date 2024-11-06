@@ -52,12 +52,13 @@ export const camera = {
   world3screen: function(world_vector: vector3, scale?: number): vector {
     if (scale == undefined) scale = this.scale;
     const sv = this.world2screen(vector.create3(world_vector), scale);
-    let z = (this.z / this.scale - this.look_z) / (this.z / this.scale - world_vector.z + ZEPSILON);
-    if (z <= 0) z = 1 / ZEPSILON;
+    let z = this.zscale(world_vector.z);
     return vector.add(this.halfscreen, vector.mult(vector.sub(sv, this.halfscreen), z));
   },
   zscale: function(z: number): number {
-    return (this.z / this.scale - this.look_z) / (this.z / this.scale - z + ZEPSILON);
+    let z_ = (this.z / this.scale - this.look_z) / (this.z / this.scale - z + ZEPSILON);
+    if (z_ <= 0) z = 1 / ZEPSILON;
+    return z_;
   },
   init: function() {
     // initial camera properties here?

@@ -16,8 +16,8 @@ export class Shape {
   static cumulative_id = 0;
   static type: string = "shape";
 
-  static from_map(o: map_shape_type): Shape {
-    const s = new Shape();
+  static from_map(thing: Thing, o: map_shape_type): Shape {
+    const s = new Shape(thing);
     
     s.z = o.z;
     s.vertices = vector3.create_many(o.vertices, o.z);
@@ -35,8 +35,8 @@ export class Shape {
     return s;
   };
 
-  static circle(radius: number, z: number = 0, x_offset: number = 0, y_offset: number = 0): Polygon {
-    return Polygon.make(radius, 0, 0, z, x_offset, y_offset);
+  static circle(thing: Thing, radius: number, z: number = 0, x_offset: number = 0, y_offset: number = 0): Polygon {
+    return Polygon.make(thing, radius, 0, 0, z, x_offset, y_offset);
   };
 
   static filter(aabb: AABB3): Shape[] {
@@ -64,10 +64,15 @@ export class Shape {
       if (s.computed == undefined) {
         s.init_computed();
       }
-      if (s.computed != undefined) { // always true
+      if (s.computed != undefined) { // always true at this point
         // compute vertices
         s.computed.vertices = vector3.clone_list(s.vertices);
-        if (s.thing) vector3.add_to_list(s.computed.vertices, vector3.flatten(s.thing.position));
+        for (const v of s.computed.vertices) {
+          const rotated = vector.rotate(vector.create(), v, -s.thing.angle);
+          v.x = rotated.x;
+          v.y = rotated.y;
+        }
+        vector3.add_to_list(s.computed.vertices, vector3.flatten(s.thing.position));
         // compute distance
         s.computed.distance2 = vector.length2(vector.sub(s.computed.centroid, cam));
         // compute location on screen
@@ -84,7 +89,7 @@ export class Shape {
   };
   
   id: number = ++Shape.cumulative_id;
-  thing?: Thing;
+  public thing: Thing;
   z: number = 0;
 
   vertices: vector3[] = [];
@@ -95,7 +100,7 @@ export class Shape {
 
   style: shape_style = {};
 
-  constructor(thing?: Thing) {
+  constructor(thing: Thing) {
     this.thing = thing;
     Shape.shapes.push(this);
   }
@@ -127,6 +132,7 @@ export class Shape {
     if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0) return;
     const style = this.style;
     ctx.save("draw_shape");
+    // if (this.thing) ctx.rotate(this.thing?.angle);
     ctx.begin();
     this.draw_path();
     ctx.lineCap = "square";
@@ -164,8 +170,8 @@ export class Shape {
 export class Polygon extends Shape {
   static type: string = "polygon";
 
-  static make(radius: number, sides: number, angle: number, z: number = 0, x_offset: number = 0, y_offset: number = 0): Polygon {
-    const s = new Polygon();
+  static make(thing: Thing, radius: number, sides: number, angle: number, z: number = 0, x_offset: number = 0, y_offset: number = 0): Polygon {
+    const s = new Polygon(thing);
     s.radius = radius;
     s.sides = sides;
     s.angle = angle;

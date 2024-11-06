@@ -17,7 +17,7 @@ export class Thing {
 
   static tick_things = () => {
     for (const thing of Thing.things) {
-      // thing.tick();
+      thing.tick();
     }
   }
   
@@ -29,50 +29,17 @@ export class Thing {
   target: {
     position: vector3,
     angle: number,
+    facing: vector,
     velocity: vector,
   } = {
     position: vector3.create(),
     angle: 0,
+    facing: vector.create(),
     velocity: vector.create(),
   }
 
   constructor() {
     Thing.things.push(this);
-  }
-
-  make_map(o: map_shape_type) {
-    if (o.computed == undefined) {
-      throw "map shape not computed yet!";
-    }
-    const s = Shape.from_map(o);
-    s.thing = this;
-    this.shapes.push(s);
-    this.position = o.computed.centroid;
-    this.create_all();
-  }
-
-  create_all() {
-    this.create_body();
-  }
-
-  create_body(shape_index: number = 0) {
-    if (this.shapes.length <= shape_index) {
-      throw "shape index " + shape_index + " >= length " + this.shapes.length;
-    }
-    const s = this.shapes[shape_index];
-    const options: IBodyDefinition = {};
-    let body: Body;
-    if (s instanceof Polygon && s.sides === 0) {
-      body = Bodies.circle(s.x_offset, s.y_offset, s.radius, options);
-    }
-    else { // just use vertices
-      body = Bodies.fromVertices(0, 0, [s.vertices], options);
-    }
-    Body.setPosition(body, this.target.position);
-    Body.setAngle(body, this.target.angle);
-    this.body = body;
-    if (s.z === 0) Composite.add(world, this.body);
-    Body.setVelocity(body, this.target.velocity);
   }
   
   get position(): vector3 {
@@ -107,6 +74,44 @@ export class Thing {
   set velocity(velocity: vector) {
     this.target.velocity.x = velocity.x;
     this.target.velocity.y = velocity.y;
+  }
+
+  make_map(o: map_shape_type) {
+    if (o.computed == undefined) {
+      throw "map shape not computed yet!";
+    }
+    const s = Shape.from_map(this, o);
+    s.thing = this;
+    this.shapes.push(s);
+    this.position = o.computed.centroid;
+    this.create_all();
+  }
+
+  create_all() {
+    this.create_body();
+  }
+
+  create_body(options: IBodyDefinition = {}, shape_index: number = 0) {
+    if (this.shapes.length <= shape_index) {
+      throw "shape index " + shape_index + " >= length " + this.shapes.length;
+    }
+    const s = this.shapes[shape_index];
+    let body: Body;
+    if (s instanceof Polygon && s.sides === 0) {
+      body = Bodies.circle(s.x_offset, s.y_offset, s.radius, options);
+    }
+    else { // just use vertices
+      body = Bodies.fromVertices(0, 0, [s.vertices], options);
+    }
+    Body.setPosition(body, this.target.position);
+    Body.setAngle(body, this.target.angle);
+    this.body = body;
+    if (s.z === 0) Composite.add(world, this.body);
+    Body.setVelocity(body, this.target.velocity);
+  }
+
+  tick() {
+
   }
 
 }

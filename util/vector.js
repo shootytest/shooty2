@@ -74,6 +74,13 @@ export const vector = {
     rad_to_vector: (radians) => {
         return vector.create(Math.cos(radians), Math.sin(radians));
     },
+    rotate: (center, v, angle) => {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const nx = (cos * (v.x - center.x)) + (sin * (v.y - center.y)) + center.x;
+        const ny = (cos * (v.y - center.y)) - (sin * (v.x - center.x)) + center.y;
+        return vector.create(nx, ny);
+    },
     in_rect: (p, x, y, w, h) => {
         return (p.x >= x && p.y >= y && p.x <= x + w && p.y <= y + h);
     },
