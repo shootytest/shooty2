@@ -92,8 +92,8 @@ export const vector = {
   rotate: (center: vector, v: vector, angle: number): vector => {
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
-    const nx = (cos * (v.x - center.x)) + (sin * (v.y - center.y)) + center.x;
-    const ny = (cos * (v.y - center.y)) - (sin * (v.x - center.x)) + center.y;
+    const nx = (cos * (v.x - center.x)) - (sin * (v.y - center.y)) + center.x;
+    const ny = (cos * (v.y - center.y)) + (sin * (v.x - center.x)) + center.y;
     return vector.create(nx, ny);
   },
   in_rect: (p: vector, x: number, y: number, w: number, h: number) => {

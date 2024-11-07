@@ -37,9 +37,9 @@ const tick_all = () => {
   mouse.tick();
   Thing.tick_things();
   // clear screen
-  ctx.clear();
+  // ctx.clear();
   ctx.begin();
-  ctx.clear(color.black);
+  ctx.clear(color.blackground);
   ctx.fill();
   // draw all shapes
   Shape.draw();
@@ -49,8 +49,13 @@ Events.on(runner, "tick", tick_all);
 
 const player = new Player();
 
+
 map_serialiser.compute(TEST_MAP);
-for (const shape of TEST_MAP.shapes ?? []) {
+/*for (const shape of TEST_MAP.shapes ?? []) {
   const t = new Thing();
   t.make_map(shape);
-}
+}*/
+
+const t = new Thing();
+t.make_map(TEST_MAP!!.shapes!![0]);
+t.make_map(TEST_MAP!!.shapes!![1]);

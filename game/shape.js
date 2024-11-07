@@ -59,21 +59,26 @@ export class Shape {
             if (s.computed != undefined) { // always true at this point
                 // compute vertices
                 s.computed.vertices = vector3.clone_list(s.vertices);
-                for (const v of s.computed.vertices) {
-                    const rotated = vector.rotate(vector.create(), v, -s.thing.angle);
-                    v.x = rotated.x;
-                    v.y = rotated.y;
+                // rotate by thing angle
+                if (s.thing.angle) {
+                    for (const v of s.computed.vertices) {
+                        const rotated = vector.rotate(vector.create(), v, s.thing.angle);
+                        v.x = rotated.x;
+                        v.y = rotated.y;
+                    }
                 }
+                // translate by thing position
                 vector3.add_to_list(s.computed.vertices, vector3.flatten(s.thing.position));
-                // compute distance
+                // compute distance (whatever for? i forgot)
                 s.computed.distance2 = vector.length2(vector.sub(s.computed.centroid, cam));
-                // compute location on screen
+                // compute location on screen using camera transformation
                 s.compute_screen();
             }
         }
     }
     ;
     static draw() {
+        // hope this doesn't take too long per tick
         Shape.compute();
         for (const s of Shape.draw_shapes) {
             s.draw();

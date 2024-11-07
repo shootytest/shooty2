@@ -66,7 +66,8 @@ export class Thing {
         s.thing = this;
         this.shapes.push(s);
         this.position = o.computed.centroid;
-        this.create_all();
+        if (!this.body)
+            this.create_body();
     }
     create_all() {
         this.create_body();

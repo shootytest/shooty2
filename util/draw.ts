@@ -352,6 +352,14 @@ export class Context {
   rotate(angle: number) {
     this.ctx.rotate(angle);
   }
+  
+  scale(scale_x: number, scale_y: number = scale_x) {
+    this.ctx.scale(scale_x, scale_y);
+  }
+
+  scale_v(scale_v: vector) {
+    this.ctx.scale(scale_v.x, scale_v.y);
+  }
 
   point_in_path(px: number, py: number, fillRule?: CanvasFillRule) {
     return this.ctx.isPointInPath(px * window.devicePixelRatio, py * window.devicePixelRatio, fillRule);

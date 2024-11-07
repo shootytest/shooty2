@@ -272,6 +272,12 @@ export class Context {
     rotate(angle) {
         this.ctx.rotate(angle);
     }
+    scale(scale_x, scale_y = scale_x) {
+        this.ctx.scale(scale_x, scale_y);
+    }
+    scale_v(scale_v) {
+        this.ctx.scale(scale_v.x, scale_v.y);
+    }
     point_in_path(px, py, fillRule) {
         return this.ctx.isPointInPath(px * window.devicePixelRatio, py * window.devicePixelRatio, fillRule);
     }
