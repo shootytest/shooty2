@@ -11,15 +11,21 @@ export class Player extends Thing {
 
   constructor() {
     super();
+    
     const s = Shape.circle(this, 30);
     s.thing = this;
     s.style.fill = color.red;
     this.shapes.push(s);
+
+    this.is_player = true;
+    this.position = vector3.create();
+  }
+
+  create_player() {
     this.create_body({
       frictionAir: 0.2,
       restitution: 1, // boing
     });
-    this.position = vector3.create();
   }
 
   tick() {
@@ -45,3 +51,5 @@ export class Player extends Thing {
   }
 
 };
+
+export const player: Player = new Player();

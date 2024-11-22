@@ -2,6 +2,7 @@ import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
 import { map_shape_compute_type, map_shape_type, shape_style } from "../util/map_type.js";
 import { AABB3, vector, vector3 } from "../util/vector.js";
+import { player } from "./player.js";
 import { Thing } from "./thing.js";
 
 /**
@@ -21,6 +22,7 @@ export class Shape {
     
     s.z = o.z;
     s.vertices = vector3.create_many(o.vertices, o.z);
+    s.closed_loop = !(o.options?.open_loop);
     if (o.computed == undefined) {
       throw "map shape not computed yet!";
     }
@@ -92,12 +94,28 @@ export class Shape {
       s.draw();
     }
   };
+
+  // gets screen vertices for everything on screen
+  // for
+  static get_vertices() {
+    const verticess: vector3[][] = [];
+    for (const s of Shape.draw_shapes) {
+      const vs = s.computed?.vertices;
+      if (!vs) continue;
+      if (s.thing.is_player) continue;
+      if (s.z !== player.z) continue;
+      if (s.closed_loop) vs.push(vs[0]);
+      verticess.push(vs);
+    }
+    return verticess;
+  };
   
   id: number = ++Shape.cumulative_id;
   public thing: Thing;
   z: number = 0;
 
   vertices: vector3[] = [];
+  closed_loop: boolean = true;
 
   // computed
   computed?: map_shape_compute_type;
@@ -157,7 +175,7 @@ export class Shape {
 
   draw_path() {
     if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0) return;
-    ctx.lines_v(this.computed.screen_vertices);
+    ctx.lines_v(this.computed.screen_vertices, this.closed_loop);
   }
 
   compute_screen() {
@@ -201,8 +219,7 @@ export class Polygon extends Shape {
     const x = this.x_offset;
     const y = this.y_offset;
     let a = this.angle;
-    // this.vertices.push(vector3.create(x + r * Math.cos(a), y + r * Math.sin(a), this.z));
-    for (let i = 0; i < sides; ++i) {
+    for (let i = 0; i < sides + 1; ++i) {
       a += Math.PI * 2 / sides;
       this.vertices.push(vector3.create(x + r * Math.cos(a), y + r * Math.sin(a), this.z));
     }

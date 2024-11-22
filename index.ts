@@ -1,4 +1,4 @@
-import { Player } from "./game/player.js";
+import { player } from "./game/player.js";
 import { Shape } from "./game/shape.js";
 import { Thing } from "./game/thing.js";
 import { Engine, Events, Runner } from "./matter.js";
@@ -7,6 +7,7 @@ import { ctx, init_canvas } from "./util/canvas.js";
 import { color } from "./util/color.js";
 import { key, mouse } from "./util/key.js";
 import { map_serialiser, TEST_MAP } from "./util/map_type.js";
+import { clip_visibility_polygon } from "./util/see.js";
 import { vector } from "./util/vector.js";
 
 export const engine = Engine.create();
@@ -42,13 +43,13 @@ const tick_all = () => {
   ctx.clear(color.blackground);
   ctx.fill();
   // draw all shapes
+  clip_visibility_polygon();
   Shape.draw();
 
 };
 Events.on(runner, "tick", tick_all);
 
-const player = new Player();
-
+player.create_player();
 
 map_serialiser.compute(TEST_MAP);
 /*for (const shape of TEST_MAP.shapes ?? []) {

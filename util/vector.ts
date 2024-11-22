@@ -13,6 +13,21 @@ export interface AABB3 extends AABB {
   min_z: number,
   max_z: number,
 };
+export interface circle extends vector {
+  r: number,
+};
+export interface segment {
+  p1: segment_point,
+  p2: segment_point,
+  d: number,
+};
+export interface segment_point {
+  x: number,
+  y: number,
+  angle: number,
+  begin: boolean,
+  segment?: segment,
+};
 
 export const vector = {
   create: (x = 0, y = 0): vector => {
@@ -114,6 +129,16 @@ export const vector = {
       mean = vector.add(mean, v);
     }
     return vector.div(mean, vertices.length);
+  },
+  dot: (v1: vector, v2: vector): number => {
+    return v1.x * v2.x + v1.y * v2.y;
+  },
+  hypot2: (v1: vector, v2: vector): number => {
+    return vector.dot(vector.sub(v1, v2), vector.sub(v1, v2));
+  },
+  proj: (v1: vector, v2: vector) => {
+    const k = vector.dot(v1, v2) / vector.dot(v2, v2);
+    return vector.create(k * v2.x, k * v2.y);
   },
   make_aabb: (vertices: vector[]): AABB => {
     let aabb: AABB = {

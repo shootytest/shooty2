@@ -24,6 +24,7 @@ export class Thing {
         facing: vector.create(),
         velocity: vector.create(),
     };
+    is_player = false;
     constructor() {
         Thing.things.push(this);
     }

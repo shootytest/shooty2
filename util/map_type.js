@@ -29,7 +29,7 @@ export const map_serialiser = {
             icons: [],
         };
         for (const s of map.shapes ?? []) {
-            m.shapes.push({ id: s.id, z: s.z, vertices: s.vertices, style: s.style });
+            m.shapes.push({ id: s.id, z: s.z, vertices: s.vertices, options: s.options, style: s.style });
         }
         for (const i of map.icons ?? []) {
             m.icons.push({ icon: i.icon, color: i.color });

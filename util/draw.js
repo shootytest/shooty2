@@ -75,6 +75,7 @@ export class Context {
     // go
     save(slot) {
         const ctx = this.ctx;
+        ctx.save();
         this.saves[slot] = {
             strokeStyle: ctx.strokeStyle,
             fillStyle: ctx.fillStyle,
@@ -147,6 +148,18 @@ export class Context {
         else {
             this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
         }
+    }
+    moveTo(x, y) {
+        this.ctx.moveTo(x, y);
+    }
+    moveTo_v(v) {
+        this.ctx.moveTo(v.x, v.y);
+    }
+    lineTo(x, y) {
+        this.ctx.lineTo(x, y);
+    }
+    lineTo_v(v) {
+        this.ctx.lineTo(v.x, v.y);
     }
     rect(x, y, w, h, a = 0) {
         if (a !== 0) {
@@ -299,6 +312,24 @@ export class Context {
     }
     point_in_this_stroke(path, px, py) {
         return this.ctx.isPointInStroke(path, px, py);
+    }
+    createConicGradient(startAngle, x, y) {
+        return this.ctx.createConicGradient(startAngle, x, y);
+    }
+    createConicGradient_v(startAngle, v) {
+        return this.ctx.createConicGradient(startAngle, v.x, v.y);
+    }
+    createLinearGradient(x0, y0, x1, y1) {
+        return this.ctx.createLinearGradient(x0, y0, x1, y1);
+    }
+    createLinearGradient_v(v0, v1) {
+        return this.ctx.createLinearGradient(v0.x, v0.y, v1.x, v1.y);
+    }
+    createRadialGradient(x0, y0, r0, x1, y1, r1) {
+        return this.ctx.createRadialGradient(x0, y0, r0, x1, y1, r1);
+    }
+    createRadialGradient_v(c0, c1) {
+        return this.ctx.createRadialGradient(c0.x, c0.y, c0.r, c1.x, c1.y, c1.r);
     }
 }
 ;

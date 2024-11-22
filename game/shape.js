@@ -1,6 +1,7 @@
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
 import { vector, vector3 } from "../util/vector.js";
+import { player } from "./player.js";
 /**
  * the Shape class holds shape data only
  * this class covers all shape types (e.g. part of a thing's body, decoration to be drawn on screen, icon)
@@ -14,6 +15,7 @@ export class Shape {
         const s = new Shape(thing);
         s.z = o.z;
         s.vertices = vector3.create_many(o.vertices, o.z);
+        s.closed_loop = !(o.options?.open_loop);
         if (o.computed == undefined) {
             throw "map shape not computed yet!";
         }
@@ -85,10 +87,30 @@ export class Shape {
         }
     }
     ;
+    // gets screen vertices for everything on screen
+    // for
+    static get_vertices() {
+        const verticess = [];
+        for (const s of Shape.draw_shapes) {
+            const vs = s.computed?.vertices;
+            if (!vs)
+                continue;
+            if (s.thing.is_player)
+                continue;
+            if (s.z !== player.z)
+                continue;
+            if (s.closed_loop)
+                vs.push(vs[0]);
+            verticess.push(vs);
+        }
+        return verticess;
+    }
+    ;
     id = ++Shape.cumulative_id;
     thing;
     z = 0;
     vertices = [];
+    closed_loop = true;
     // computed
     computed;
     computed_aabb; // for use in Shape.filter()
@@ -141,7 +163,7 @@ export class Shape {
     draw_path() {
         if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0)
             return;
-        ctx.lines_v(this.computed.screen_vertices);
+        ctx.lines_v(this.computed.screen_vertices, this.closed_loop);
     }
     compute_screen() {
         if (this.computed?.vertices == undefined)
@@ -180,8 +202,7 @@ export class Polygon extends Shape {
         const x = this.x_offset;
         const y = this.y_offset;
         let a = this.angle;
-        // this.vertices.push(vector3.create(x + r * Math.cos(a), y + r * Math.sin(a), this.z));
-        for (let i = 0; i < sides; ++i) {
+        for (let i = 0; i < sides + 1; ++i) {
             a += Math.PI * 2 / sides;
             this.vertices.push(vector3.create(x + r * Math.cos(a), y + r * Math.sin(a), this.z));
         }

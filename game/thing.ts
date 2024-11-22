@@ -38,6 +38,8 @@ export class Thing {
     velocity: vector.create(),
   }
 
+  is_player: boolean = false;
+
   constructor() {
     Thing.things.push(this);
   }

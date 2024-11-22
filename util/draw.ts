@@ -1,6 +1,6 @@
 import { svg_paths } from "./svg.js";
 import { math } from "./math.js";
-import { vector } from "./vector.js";
+import { circle, vector } from "./vector.js";
 
 type color = string | CanvasGradient | CanvasPattern;
 type ctx_save = {
@@ -130,6 +130,7 @@ export class Context {
 
   save(slot: string) {
     const ctx = this.ctx;
+    ctx.save();
     this.saves[slot] = {
       strokeStyle: ctx.strokeStyle,
       fillStyle: ctx.fillStyle,
@@ -209,6 +210,22 @@ export class Context {
     } else {
       this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
     }
+  }
+
+  moveTo(x: number, y: number) {
+    this.ctx.moveTo(x, y);
+  }
+
+  moveTo_v(v: vector) {
+    this.ctx.moveTo(v.x, v.y);
+  }
+
+  lineTo(x: number, y: number) {
+    this.ctx.lineTo(x, y);
+  }
+
+  lineTo_v(v: vector) {
+    this.ctx.lineTo(v.x, v.y);
   }
 
   rect(x: number, y: number, w: number, h: number, a = 0) {
@@ -388,6 +405,30 @@ export class Context {
 
   point_in_this_stroke(path: Path2D, px: number, py: number) {
     return this.ctx.isPointInStroke(path, px, py);
+  }
+
+  createConicGradient(startAngle: number, x: number, y: number) {
+    return this.ctx.createConicGradient(startAngle, x, y);
+  }
+
+  createConicGradient_v(startAngle: number, v: vector) {
+    return this.ctx.createConicGradient(startAngle, v.x, v.y);
+  }
+
+  createLinearGradient(x0: number, y0: number, x1: number, y1: number) {
+    return this.ctx.createLinearGradient(x0, y0, x1, y1);
+  }
+
+  createLinearGradient_v(v0: vector, v1: vector) {
+    return this.ctx.createLinearGradient(v0.x, v0.y, v1.x, v1.y);
+  }
+
+  createRadialGradient(x0: number, y0: number, r0: number, x1: number, y1: number, r1: number) {
+    return this.ctx.createRadialGradient(x0, y0, r0, x1, y1, r1);
+  }
+
+  createRadialGradient_v(c0: circle, c1: circle) {
+    return this.ctx.createRadialGradient(c0.x, c0.y, c0.r, c1.x, c1.y, c1.r);
   }
 
 };

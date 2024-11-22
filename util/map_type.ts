@@ -18,6 +18,7 @@ export type map_shape_type = {
   style: shape_style,
   // optional attributes
   // animation/movement??? then there will be a need for a manually constructed AABB
+  options?: map_shape_options_type,
   // computed attributes
   computed?: map_shape_compute_type
 };
@@ -30,6 +31,10 @@ export type map_shape_compute_type = {
   screen_vertices?: vector3[],
   on_screen?: boolean,
   distance2?: number,
+};
+
+export type map_shape_options_type = {
+  open_loop?: boolean, // is the shape loop not closed? (e.g. this is true if the vertices are actually a list of walls instead)
 };
 
 export type map_icon_type = {
@@ -80,7 +85,7 @@ export const map_serialiser = {
       icons: [],
     };
     for (const s of map.shapes ?? []) {
-      m.shapes!!.push({ id: s.id, z: s.z, vertices: s.vertices, style: s.style });
+      m.shapes!!.push({ id: s.id, z: s.z, vertices: s.vertices, options: s.options, style: s.style });
     }
     for (const i of map.icons ?? []) {
       m.icons!!.push({ icon: i.icon, color: i.color });
