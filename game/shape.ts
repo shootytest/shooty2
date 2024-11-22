@@ -86,7 +86,7 @@ export class Shape {
   };
 
   static draw() {
-    // hope this doesn't take too long per tick
+    // hope this doesn't take too long per tick...
     Shape.compute();
     for (const s of Shape.draw_shapes) {
       s.draw();

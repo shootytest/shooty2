@@ -100,6 +100,7 @@ export class Context {
     restore(slot) {
         const save = this.saves[slot];
         const ctx = this.ctx;
+        ctx.restore(); // restore first, in case of ctx.clip calls
         ctx.strokeStyle = save.strokeStyle;
         ctx.fillStyle = save.fillStyle;
         ctx.globalAlpha = save.globalAlpha;
@@ -278,6 +279,9 @@ export class Context {
     scale_v(scale_v) {
         this.ctx.scale(scale_v.x, scale_v.y);
     }
+    clip(fillRule) {
+        this.ctx.clip(fillRule);
+    }
     point_in_path(px, py, fillRule) {
         return this.ctx.isPointInPath(px * window.devicePixelRatio, py * window.devicePixelRatio, fillRule);
     }
@@ -297,3 +301,4 @@ export class Context {
         return this.ctx.isPointInStroke(path, px, py);
     }
 }
+;

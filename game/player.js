@@ -13,7 +13,10 @@ export class Player extends Thing {
         s.thing = this;
         s.style.fill = color.red;
         this.shapes.push(s);
-        this.create_all();
+        this.create_body({
+            frictionAir: 0.2,
+            restitution: 1, // boing
+        });
         this.position = vector3.create();
     }
     tick() {
