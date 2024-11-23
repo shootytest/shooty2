@@ -72,6 +72,7 @@ export const clip_visibility_polygon = () => {
     // ctx.fill();
     // actually clip
     ctx.clip();
+    // clip the big circle too
     ctx.beginPath();
     ctx.moveTo(s.x, s.y);
     ctx.arc(s.x, s.y, display_radius, 0, 2 * Math.PI);

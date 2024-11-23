@@ -14,7 +14,8 @@ export class Player extends Thing {
     
     const s = Shape.circle(this, 30);
     s.thing = this;
-    s.style.fill = color.red;
+    s.style.fill = color.neon_blue + "99";
+    s.style.stroke = color.white;
     this.shapes.push(s);
 
     this.create_id("generic player #0"); // hmmm
@@ -26,7 +27,7 @@ export class Player extends Thing {
   create_player() {
     this.create_body({
       frictionAir: 0.2,
-      restitution: 1, // boing
+      restitution: 0, // no more boing
     });
   }
 

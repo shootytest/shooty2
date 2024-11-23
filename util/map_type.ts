@@ -136,8 +136,10 @@ export const map_serialiser = {
 export const TEST_MAP: map_type = {
   shapes: [
     /*
+    // todo imagine rendering these 2 "arch" shapes with shadows accurately... imagine
     {
       id: "1",
+      z: 0,
       vertices: [
         { x: 100, y: 100, z: 0, }, { x: 100, y: 0, z: 1, },
         { x: 700, y: 0, z: 1, }, { x: 700, y: 100, z: 0, }, { x: 500, y: 100, z: 0, },
@@ -149,6 +151,7 @@ export const TEST_MAP: map_type = {
     },
     {
       id: "2",
+      z: 0,
       vertices: [
         { x: 100, y: -100, z: 0, }, { x: 100, y: 0, z: 1, },
         { x: 700, y: 0, z: 1, }, { x: 700, y: -100, z: 0, }, { x: 500, y: -100, z: 0, },

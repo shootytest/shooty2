@@ -66,4 +66,5 @@ for (const map_shape of TEST_MAP.shapes ?? []) {
   }
 }
 
-console.log(Thing.things);
+// todo remove debug :()()
+// console.log(Thing.things);

@@ -98,7 +98,7 @@ export class Shape {
             if (s.thing.is_player)
                 continue;
             if (s.z !== player.z) {
-                // todo when the time comes
+                // todo when the time comes...
                 continue;
             }
             if (s.closed_loop)
@@ -149,12 +149,12 @@ export class Shape {
         ctx.begin();
         this.draw_path();
         ctx.lineCap = "square";
+        ctx.globalAlpha = style.opacity ?? 1;
         if (style.stroke) {
             ctx.strokeStyle = style.stroke;
             ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
+            ctx.stroke();
         }
-        ctx.globalAlpha = style.opacity ?? 1;
-        ctx.stroke();
         if (style.fill) {
             ctx.fillStyle = style.fill;
             ctx.globalAlpha = style.fill_opacity ?? 1;

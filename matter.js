@@ -2,6 +2,9 @@
 // Matter.use('matter-attractors');
 // Matter.use('matter-wrap');\
 
+import polyDecomp from 'https://cdn.jsdelivr.net/npm/poly-decomp@0.3.0/+esm';
+Matter.Common.setDecomp(polyDecomp);
+
 export default Matter;
 
 export const Axes = Matter.Axes;

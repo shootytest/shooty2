@@ -268,13 +268,13 @@ export class Context {
     text_v(s, v, maxWidth) {
         this.fillText(s, v.x, v.y, maxWidth);
     }
-    set_font_mono(size) {
-        this.ctx.font = `${Math.floor(size)}px roboto mono`;
+    set_font_mono(size, prefix = "") {
+        this.ctx.font = `${prefix} ${Math.floor(size)}px roboto mono`.trim();
         this.textAlign = "center";
         this.textBaseline = "middle";
     }
-    set_font_condensed(size) {
-        this.ctx.font = `${Math.floor(size)}px roboto condensed`;
+    set_font_condensed(size, prefix = "") {
+        this.ctx.font = `${prefix} ${Math.floor(size)}px roboto condensed`.trim();
         this.textAlign = "center";
         this.textBaseline = "middle";
     }
