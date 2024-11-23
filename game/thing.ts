@@ -12,6 +12,7 @@ import { Polygon, Shape } from "./shape.js";
 export class Thing {
 
   static things: Thing[] = [];
+  static things_lookup: { [key: string]: Thing } = {};
   
   static cumulative_id = 0;
 
@@ -21,7 +22,8 @@ export class Thing {
     }
   }
   
-  id: number = ++Thing.cumulative_id;
+  uid: number = ++Thing.cumulative_id;
+  id: string = "generic thing #" + this.uid;
 
   body?: Body = undefined; // physics body
   shapes: Shape[] = [];
@@ -86,11 +88,14 @@ export class Thing {
     s.thing = this;
     this.shapes.push(s);
     this.position = o.computed.centroid;
+    if (this.id.startsWith("generic thing #")) this.create_id(o.id);
     if (!this.body) this.create_body();
   }
 
-  create_all() {
-    this.create_body();
+  create_id(id: string) {
+    this.id = id;
+    Thing.things_lookup[id] = this;
+    return;
   }
 
   create_body(options: IBodyDefinition = {}, shape_index: number = 0) {

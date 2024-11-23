@@ -13,6 +13,7 @@ export class Player extends Thing {
         s.thing = this;
         s.style.fill = color.red;
         this.shapes.push(s);
+        this.create_id("generic player #0"); // hmmm
         this.is_player = true;
         this.position = vector3.create();
     }

@@ -66,33 +66,18 @@ export const clip_visibility_polygon = () => {
         ctx.lineTo(e2.x, e2.y);
         // ctx.lineTo(s.x, s.y); // removing this fixes the thin line missing bug! yay! (if there are any weird errors add this line back in and see)
     }
-    // todo remove debug
-    ctx.fillStyle = "#ff000055";
-    ctx.strokeStyle = "#00000000";
-    ctx.stroke();
-    ctx.fill();
+    // ctx.fillStyle = "#ff000055";
+    // ctx.strokeStyle = "#00000000";
+    // ctx.stroke();
+    // ctx.fill();
     // actually clip
     ctx.clip();
-    // clip again, display radius
-    /*
     ctx.beginPath();
     ctx.moveTo(s.x, s.y);
     ctx.arc(s.x, s.y, display_radius, 0, 2 * Math.PI);
     ctx.clip();
-    */
     // todo draw???
     draw_lighting(s, display_radius);
-    // camera.draw_things(start, radius);
-    // camera.draw_walls(walls);
-    /*
-    for (const t of data.things) {
-      const s = camera.object_position({ x: t.x, y: t.y });
-      if (t.team !== data.id) continue;
-      circles_path.moveTo(s.x, s.y);
-      circles_path.arc(s.x, s.y, t.size * 10, 0, 2 * Math.PI);
-    }
-    ctx.clip(circles_path);
-    */
     ctx.restore("see");
 };
 // call this function after clipping

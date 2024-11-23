@@ -9,13 +9,15 @@ import { Polygon, Shape } from "./shape.js";
  */
 export class Thing {
     static things = [];
+    static things_lookup = {};
     static cumulative_id = 0;
     static tick_things = () => {
         for (const thing of Thing.things) {
             thing.tick();
         }
     };
-    id = ++Thing.cumulative_id;
+    uid = ++Thing.cumulative_id;
+    id = "generic thing #" + this.uid;
     body = undefined; // physics body
     shapes = [];
     target = {
@@ -67,11 +69,15 @@ export class Thing {
         s.thing = this;
         this.shapes.push(s);
         this.position = o.computed.centroid;
+        if (this.id.startsWith("generic thing #"))
+            this.create_id(o.id);
         if (!this.body)
             this.create_body();
     }
-    create_all() {
-        this.create_body();
+    create_id(id) {
+        this.id = id;
+        Thing.things_lookup[id] = this;
+        return;
     }
     create_body(options = {}, shape_index = 0) {
         if (this.shapes.length <= shape_index) {

@@ -35,6 +35,7 @@ export type map_shape_compute_type = {
 
 export type map_shape_options_type = {
   open_loop?: boolean, // is the shape loop not closed? (e.g. this is true if the vertices are actually a list of walls instead)
+  part_of?: string,
 };
 
 export type map_icon_type = {
@@ -159,7 +160,7 @@ export const TEST_MAP: map_type = {
     },
     */
     {
-      id: "0",
+      id: "a random square",
       z: 0,
       vertices: [
         { x: 0, y: 0 },
@@ -170,7 +171,7 @@ export const TEST_MAP: map_type = {
       style: { stroke: "white", fill: "#abcdef", fill_opacity: 0.8, }
     },
     {
-      id: "0.5",
+      id: "hovering above a random square is another random square", // i don't intend for IDs to be this long usually but now i can't resist the temptation for close to 200-character long lines...
       z: 0.5,
       vertices: [
         { x: 0, y: 0, },
@@ -178,6 +179,7 @@ export const TEST_MAP: map_type = {
         { x: 200, y: 200, },
         { x: 200, y: 0, },
       ],
+      options: { part_of: "a random square" },
       style: { stroke: "white", fill: "#123456", fill_opacity: 0.3, }
     },
   ],

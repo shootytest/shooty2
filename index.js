@@ -44,6 +44,13 @@ map_serialiser.compute(TEST_MAP);
   const t = new Thing();
   t.make_map(shape);
 }*/
-const t = new Thing();
-t.make_map(TEST_MAP.shapes[0]);
-t.make_map(TEST_MAP.shapes[1]);
+for (const map_shape of TEST_MAP.shapes ?? []) {
+    if (map_shape.options?.part_of) {
+        Thing.things_lookup[map_shape.options?.part_of].make_map(map_shape);
+    }
+    else {
+        const t = new Thing();
+        t.make_map(map_shape);
+    }
+}
+console.log(Thing.things);
