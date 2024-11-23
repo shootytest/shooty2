@@ -252,9 +252,15 @@ export class Context {
         let { actualBoundingBoxAscent, actualBoundingBoxDescent } = this.measureText(s);
         this.ctx.fillText(s, math.fastround(x), math.fastround(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
     }
+    fillText_v(s, v, maxWidth) {
+        this.fillText(s, v.x, v.y, maxWidth);
+    }
     strokeText(s, x, y, maxWidth) {
         let { actualBoundingBoxAscent, actualBoundingBoxDescent } = this.measureText(s);
         this.ctx.strokeText(s, math.fastround(x), math.fastround(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
+    }
+    strokeText_v(s, v, maxWidth) {
+        this.strokeText(s, v.x, v.y, maxWidth);
     }
     text(s, x, y, maxWidth) {
         this.fillText(s, x, y, maxWidth);

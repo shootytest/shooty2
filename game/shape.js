@@ -88,7 +88,7 @@ export class Shape {
     }
     ;
     // gets screen vertices for everything on screen
-    // for
+    // for visibility purposes
     static get_vertices() {
         const verticess = [];
         for (const s of Shape.draw_shapes) {
@@ -97,8 +97,10 @@ export class Shape {
                 continue;
             if (s.thing.is_player)
                 continue;
-            if (s.z !== player.z)
+            if (s.z !== player.z) {
+                // todo when the time comes
                 continue;
+            }
             if (s.closed_loop)
                 vs.push(vs[0]);
             verticess.push(vs);

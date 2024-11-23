@@ -328,9 +328,17 @@ export class Context {
     this.ctx.fillText(s, math.fastround(x), math.fastround(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
   }
 
+  fillText_v(s: string, v: vector, maxWidth?: number) {
+    this.fillText(s, v.x, v.y, maxWidth);
+  }
+
   strokeText(s: string, x: number, y: number, maxWidth?: number) {
     let { actualBoundingBoxAscent, actualBoundingBoxDescent } = this.measureText(s);
     this.ctx.strokeText(s, math.fastround(x), math.fastround(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
+  }
+
+  strokeText_v(s: string, v: vector, maxWidth?: number) {
+    this.strokeText(s, v.x, v.y, maxWidth);
   }
 
   text(s: string, x: number, y: number, maxWidth?: number) {

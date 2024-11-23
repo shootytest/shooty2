@@ -54,15 +54,22 @@ export const clip_visibility_polygon = () => {
     const s = camera.world2screen(start);
     ctx.beginPath();
     ctx.moveTo(s.x, s.y);
-    for (const triangle of result) {
+    for (let i = 0; i < result.length; i++) {
+        const triangle = result[i];
         const e1 = camera.world2screen(triangle[0]);
         const e2 = camera.world2screen(triangle[1]);
-        //const e1 = triangle[0];
-        //const e2 = triangle[1];
+        // const e1 = triangle[0];
+        // const e2 = triangle[1];
         ctx.lineTo(e1.x, e1.y);
+        if (result[i + 1] && vector.equal(result[i + 1][0], triangle[1])) {
+            ctx.fillStyle = "#ff0000";
+            ctx.fillText_v("hi", e2);
+            continue;
+        }
         ctx.lineTo(e2.x, e2.y);
-        ctx.lineTo(s.x, s.y);
+        // ctx.lineTo(s.x, s.y); // removing this fixes the thin line missing bug! yay! (if there are any weird errors add this line back in and see)
     }
+    console.log(result);
     // todo remove debug
     ctx.fillStyle = "#ff000055";
     ctx.strokeStyle = "#00000000";
@@ -357,7 +364,8 @@ export const collide = {
                 if (open_segment !== open_segments[0]) {
                     if (pass === 1) {
                         const triangle_points = collide.triangle_points(origin, begin_angle, endpoint.angle, open_segment);
-                        output.push(triangle_points);
+                        if (!vector.equal(triangle_points[0], triangle_points[1]))
+                            output.push(triangle_points);
                     }
                     begin_angle = endpoint.angle;
                 }

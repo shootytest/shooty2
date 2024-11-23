@@ -44,6 +44,9 @@ export const vector = {
             y: v1.y - v2.y,
         };
     },
+    equal: (v1, v2) => {
+        return Math.abs(v1.x - v2.x) < math.epsilon && Math.abs(v1.y - v2.y) < math.epsilon;
+    },
     length2: (v) => {
         return v.x * v.x + v.y * v.y;
     },

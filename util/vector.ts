@@ -21,9 +21,7 @@ export interface segment {
   p2: segment_point,
   d: number,
 };
-export interface segment_point {
-  x: number,
-  y: number,
+export interface segment_point extends vector {
   angle: number,
   begin: boolean,
   segment?: segment,
@@ -65,6 +63,9 @@ export const vector = {
       x: v1.x - v2.x,
       y: v1.y - v2.y,
     };
+  },
+  equal: (v1: vector, v2: vector): boolean => {
+    return Math.abs(v1.x - v2.x) < math.epsilon && Math.abs(v1.y - v2.y) < math.epsilon;
   },
   length2: (v: vector) => {
     return v.x * v.x + v.y * v.y;
