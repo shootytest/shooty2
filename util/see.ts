@@ -2,7 +2,6 @@
 
 import { player } from "../game/player.js";
 import { Shape } from "../game/shape.js";
-import { ui } from "../map/ui.js";
 import { camera } from "./camera.js";
 import { ctx } from "./canvas.js";
 import { math } from "./math.js";
@@ -45,7 +44,7 @@ export const clip_visibility_polygon = () => {
 
   start.x = player.x;
   start.y = player.y;
-  start.r = 1000;
+  start.r = Math.max(w, h);
   const display_radius = start.r * camera.scale;
 
   add_wall({ x: -BIG_NUMBER, y: -BIG_NUMBER, }, { x: -BIG_NUMBER, y: BIG_NUMBER }, true);
@@ -75,15 +74,11 @@ export const clip_visibility_polygon = () => {
     // const e2 = triangle[1];
     ctx.lineTo(e1.x, e1.y);
     if (result[i + 1] && vector.equal(result[i + 1][0], triangle[1])) {
-      ctx.fillStyle = "#ff0000";
-      ctx.fillText_v("hi", e2);
       continue;
     }
     ctx.lineTo(e2.x, e2.y);
     // ctx.lineTo(s.x, s.y); // removing this fixes the thin line missing bug! yay! (if there are any weird errors add this line back in and see)
   }
-
-  console.log(result);
 
   // todo remove debug
   ctx.fillStyle = "#ff000055";
@@ -103,7 +98,7 @@ export const clip_visibility_polygon = () => {
   */
 
   // todo draw???
-  // draw_lighting(s, display_radius, is_player, thing.deco === 211212);
+  draw_lighting(s, display_radius);
   // camera.draw_things(start, radius);
   // camera.draw_walls(walls);
 
@@ -122,7 +117,7 @@ export const clip_visibility_polygon = () => {
 };
 
 // call this function after clipping
-export const draw_lighting = (centre: vector, display_radius: number, is_player: boolean, is_ball: boolean) => {
+export const draw_lighting = (centre: vector, display_radius: number) => {
  
   const x = centre.x;
   const y = centre.y;
@@ -132,17 +127,14 @@ export const draw_lighting = (centre: vector, display_radius: number, is_player:
   const min_radius = display_radius / 10;
   const max_radius = display_radius;
   
-  if (is_player) {
-    const gradient = ctx.createRadialGradient(x, y, min_radius, x, y, max_radius);
-    gradient.addColorStop(0, "#555511");
-    gradient.addColorStop(0.3 - math.bounce(ui.time, 30) * 0.02, "#333311");
-    gradient.addColorStop(0.7, "#222211");
-    gradient.addColorStop(1, "#222211");
-    ctx.fillStyle = gradient;
-  } else {
-    ctx.fillStyle = is_ball ? "#191911" : "#222211";
-  }
+  const gradient = ctx.createRadialGradient(x, y, min_radius, x, y, max_radius);
+  gradient.addColorStop(0, "#444411");
+  gradient.addColorStop(0.3 - math.bounce(camera.time, 30) * 0.1, "#333311");
+  gradient.addColorStop(0.7, "#222211");
+  gradient.addColorStop(1, "#111111");
+  ctx.fillStyle = gradient;
 
+  ctx.beginPath();
   ctx.circle(x, y, max_radius);
   ctx.fill();
   

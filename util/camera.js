@@ -7,6 +7,7 @@ export const camera = {
     position_target: vector.create(0, 0),
     z: 1,
     look_z: 0,
+    time: 0,
     scale: 1,
     scale_target: 1,
     scaling_point: vector.create(0, 0),
@@ -67,6 +68,7 @@ export const camera = {
         this.location = vector.create();
     },
     tick: function () {
+        this.time++;
         // lerp
         this.position = vector.lerp(this.position, this.position_target, 0.1);
         this.scale_tick(this.scaling_point, math.lerp(this.scale, this.scale_target, 0.1));
