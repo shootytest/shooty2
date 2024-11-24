@@ -33,9 +33,17 @@ export type map_shape_compute_type = {
   distance2?: number,
 };
 
-export type map_shape_options_type = {
+export type map_shape_options_type = {  
+  // actual shape options
   open_loop?: boolean, // is the shape loop not closed? (e.g. this is true if the vertices are actually a list of walls instead)
+
+  // group options
   part_of?: string,
+
+  // physics options
+  movable?: boolean, // default should be static, there should be more walls than movable objects right?
+
+  // game options
 };
 
 export type map_icon_type = {
@@ -136,7 +144,7 @@ export const map_serialiser = {
 export const TEST_MAP: map_type = {
   shapes: [
     /*
-    // todo imagine rendering these 2 "arch" shapes with shadows accurately... imagine
+    // todo imagine rendering these 2 "arch" shapes with shadows accurately...
     {
       id: "1",
       z: 0,
@@ -176,6 +184,30 @@ export const TEST_MAP: map_type = {
     {
       id: "hovering above a random square is another random square", // i don't intend for IDs to be this long usually but now i can't resist the temptation for close to 200-character long lines...
       z: 0.5,
+      vertices: [
+        { x: 0, y: 0, },
+        { x: 0, y: 200, },
+        { x: 200, y: 200, },
+        { x: 200, y: 0, },
+      ],
+      options: { part_of: "a random square" },
+      style: { stroke: "white", fill: "#123456", fill_opacity: 0.3, }
+    },
+    {
+      id: "hovering 2",
+      z: 0.25,
+      vertices: [
+        { x: 0, y: 0, },
+        { x: 0, y: 200, },
+        { x: 200, y: 200, },
+        { x: 200, y: 0, },
+      ],
+      options: { part_of: "a random square" },
+      style: { stroke: "white", fill: "#123456", fill_opacity: 0.3, }
+    },
+    {
+      id: "hovering 2",
+      z: 0.75,
       vertices: [
         { x: 0, y: 0, },
         { x: 0, y: 200, },

@@ -36,6 +36,9 @@ export const camera = {
     set location(loc) {
         this.position = vector.sub(loc, this.halfworld);
     },
+    set location_target(loc) {
+        this.position_target = vector.sub(loc, this.halfworld);
+    },
     screen2world: function (screen_vector, scale) {
         if (scale == undefined)
             scale = this.scale;
@@ -70,7 +73,7 @@ export const camera = {
     tick: function () {
         this.time++;
         // lerp
-        this.position = vector.lerp(this.position, this.position_target, 0.1);
+        this.position = vector.lerp(this.position, this.position_target, 0.2);
         this.scale_tick(this.scaling_point, math.lerp(this.scale, this.scale_target, 0.1));
     },
     position_jump: function () {

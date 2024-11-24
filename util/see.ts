@@ -113,24 +113,15 @@ export const draw_lighting = (centre: vector, display_radius: number) => {
   const max_radius = display_radius;
   
   const gradient = ctx.createRadialGradient(x, y, min_radius, x, y, max_radius);
-  gradient.addColorStop(0, "#444411");
-  gradient.addColorStop(0.3 - math.bounce(camera.time, 30) * 0.1, "#333311");
-  gradient.addColorStop(0.7, "#222211");
-  gradient.addColorStop(1, "#111111");
+  gradient.addColorStop(0, "#ffff1133");
+  gradient.addColorStop(0.3 - math.bounce(camera.time, 30) * 0.1, "#eeee1022");
+  gradient.addColorStop(0.7, "#dddd0911");
+  gradient.addColorStop(1, "#00000000");
   ctx.fillStyle = gradient;
 
   ctx.beginPath();
   ctx.circle(x, y, max_radius);
   ctx.fill();
-  
-  /*
-  ctx.fillStyle = "#ffff0002";
-  for (let i = 30; i < max_radius; i += 50) {
-    let r = i;
-    draw.circle(ctx, centre.x, centre.y, r);
-    ctx.fill();
-  }
-  */
 
 }
 

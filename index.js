@@ -26,6 +26,7 @@ const tick_all = () => {
     // ui.tick();
     // ui.draw();
     camera.tick();
+    camera.location_target = player.position;
     mouse.tick();
     Thing.tick_things();
     // clear screen

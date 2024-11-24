@@ -73,7 +73,7 @@ export const map_serialiser = {
 export const TEST_MAP = {
     shapes: [
         /*
-        // todo imagine rendering these 2 "arch" shapes with shadows accurately... imagine
+        // todo imagine rendering these 2 "arch" shapes with shadows accurately...
         {
           id: "1",
           z: 0,
@@ -113,6 +113,30 @@ export const TEST_MAP = {
         {
             id: "hovering above a random square is another random square",
             z: 0.5,
+            vertices: [
+                { x: 0, y: 0, },
+                { x: 0, y: 200, },
+                { x: 200, y: 200, },
+                { x: 200, y: 0, },
+            ],
+            options: { part_of: "a random square" },
+            style: { stroke: "white", fill: "#123456", fill_opacity: 0.3, }
+        },
+        {
+            id: "hovering 2",
+            z: 0.25,
+            vertices: [
+                { x: 0, y: 0, },
+                { x: 0, y: 200, },
+                { x: 200, y: 200, },
+                { x: 200, y: 0, },
+            ],
+            options: { part_of: "a random square" },
+            style: { stroke: "white", fill: "#123456", fill_opacity: 0.3, }
+        },
+        {
+            id: "hovering 2",
+            z: 0.75,
             vertices: [
                 { x: 0, y: 0, },
                 { x: 0, y: 200, },

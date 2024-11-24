@@ -89,7 +89,9 @@ export class Thing {
     this.shapes.push(s);
     this.position = o.computed.centroid;
     if (this.id.startsWith("generic thing #")) this.create_id(o.id);
-    if (!this.body) this.create_body();
+    if (!this.body) this.create_body({
+      isStatic: !o.options?.movable,
+    });
   }
 
   create_id(id: string) {

@@ -93,6 +93,7 @@ export class Shape {
     for (const s of Shape.draw_shapes) {
       s.draw();
     }
+    ctx.globalAlpha = 1;
   };
 
   // gets screen vertices for everything on screen
@@ -157,7 +158,7 @@ export class Shape {
   draw() {
     if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0) return;
     const style = this.style;
-    ctx.save("draw_shape");
+    // ctx.save("draw_shape");
     // if (this.thing) ctx.rotate(this.thing?.angle);
     ctx.begin();
     this.draw_path();
@@ -173,7 +174,7 @@ export class Shape {
       ctx.globalAlpha = style.fill_opacity ?? 1;
       ctx.fill();
     }
-    ctx.restore("draw_shape");
+    // ctx.restore("draw_shape");
   }
 
   draw_path() {

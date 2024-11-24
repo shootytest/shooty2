@@ -72,7 +72,9 @@ export class Thing {
         if (this.id.startsWith("generic thing #"))
             this.create_id(o.id);
         if (!this.body)
-            this.create_body();
+            this.create_body({
+                isStatic: !o.options?.movable,
+            });
     }
     create_id(id) {
         this.id = id;
