@@ -86,8 +86,8 @@ export class Thing {
     }
     const s = Shape.from_map(this, o);
     s.thing = this;
+    if (this.shapes.length <= 0) this.position = o.computed.centroid;
     this.shapes.push(s);
-    this.position = o.computed.centroid;
     if (this.id.startsWith("generic thing #")) this.create_id(o.id);
     if (!this.body) this.create_body({
       isStatic: !o.options?.movable,
@@ -107,10 +107,10 @@ export class Thing {
     const s = this.shapes[shape_index];
     let body: Body;
     if (s instanceof Polygon && s.sides === 0) {
-      body = Bodies.circle(s.x_offset, s.y_offset, s.radius, options);
+      body = Bodies.circle(s.offset.x, s.offset.y, s.radius, options);
     }
     else { // just use vertices
-      body = Bodies.fromVertices(0, 0, [s.vertices], options);
+      body = Bodies.fromVertices(s.offset.x, s.offset.y, [s.vertices], options);
     }
     Body.setPosition(body, this.target.position);
     Body.setAngle(body, this.target.angle);

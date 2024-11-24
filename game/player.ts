@@ -15,7 +15,6 @@ export class Player extends Thing {
     const s = Shape.circle(this, 30);
     s.thing = this;
     s.style.fill = color.neon_blue + "99";
-    s.style.stroke = color.white;
     this.shapes.push(s);
 
     this.create_id("generic player #0"); // hmmm

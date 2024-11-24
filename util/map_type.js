@@ -108,7 +108,7 @@ export const TEST_MAP = {
                 { x: 200, y: 200 },
                 { x: 200, y: 0 },
             ],
-            style: { stroke: "white", fill: "#abcdef", fill_opacity: 0.8, }
+            style: { stroke: "transparent", fill: "#abcdef", fill_opacity: 0.8, }
         },
         {
             id: "hovering above a random square is another random square",
@@ -120,10 +120,10 @@ export const TEST_MAP = {
                 { x: 200, y: 0, },
             ],
             options: { part_of: "a random square" },
-            style: { stroke: "white", fill: "#123456", fill_opacity: 0.3, }
+            style: { stroke: "transparent", fill: "#123456", fill_opacity: 0.6, }
         },
         {
-            id: "hovering 2",
+            id: "hovering 1",
             z: 0.25,
             vertices: [
                 { x: 0, y: 0, },
@@ -132,10 +132,10 @@ export const TEST_MAP = {
                 { x: 200, y: 0, },
             ],
             options: { part_of: "a random square" },
-            style: { stroke: "white", fill: "#123456", fill_opacity: 0.3, }
+            style: { stroke: "transparent", fill: "#123456", fill_opacity: 0.7, }
         },
         {
-            id: "hovering 2",
+            id: "hovering 3",
             z: 0.75,
             vertices: [
                 { x: 0, y: 0, },
@@ -144,7 +144,19 @@ export const TEST_MAP = {
                 { x: 200, y: 0, },
             ],
             options: { part_of: "a random square" },
-            style: { stroke: "white", fill: "#123456", fill_opacity: 0.3, }
+            style: { stroke: "transparent", fill: "#123456", fill_opacity: 0.5, }
+        },
+        {
+            id: "hovering wall 1",
+            z: 0,
+            vertices: [
+                { x: 0, y: 0, z: 0, },
+                { x: 0, y: 200, z: 0 },
+                { x: 0, y: 200, z: 1 },
+                { x: 0, y: 0, z: 1 },
+            ],
+            options: { part_of: "a random square" },
+            style: { stroke: "transparent", fill: "#123456", fill_opacity: 0.5, }
         },
     ],
     icons: [],

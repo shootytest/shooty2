@@ -20,19 +20,26 @@ export class Shape {
   static from_map(thing: Thing, o: map_shape_type): Shape {
     const s = new Shape(thing);
     
+    // s.map_shape_type_object = o;
     s.z = o.z;
     s.vertices = vector3.create_many(o.vertices, o.z);
     s.closed_loop = !(o.options?.open_loop);
     if (o.computed == undefined) {
       throw "map shape not computed yet!";
     }
+    const dv = (thing.shapes.length >= 1) ? thing.position : o.computed.centroid;
     for (const v of s.vertices) {
-      v.x -= o.computed.centroid.x;
-      v.y -= o.computed.centroid.y;
+      v.x -= dv.x;
+      v.y -= dv.y;
     }
 
     s.style = o.style;
     s.init_computed();
+
+    if (thing.shapes.length >= 1) {
+      s.offset.x = thing.position.x - o.computed.centroid.x;
+      s.offset.y = thing.position.y - o.computed.centroid.y;
+    }
 
     return s;
   };
@@ -119,12 +126,14 @@ export class Shape {
   z: number = 0;
 
   vertices: vector3[] = [];
+  offset: vector3 = vector3.create();
   closed_loop: boolean = true;
 
   // computed
   computed?: map_shape_compute_type;
   computed_aabb?: AABB3; // for use in Shape.filter()
 
+  // map_shape_type_object?: map_shape_type;
   style: shape_style = {};
 
   constructor(thing: Thing) {
@@ -203,8 +212,8 @@ export class Polygon extends Shape {
     s.sides = sides;
     s.angle = angle;
     s.z = z;
-    s.x_offset = x_offset;
-    s.y_offset = y_offset;
+    s.offset.x = x_offset;
+    s.offset.y = y_offset;
     s.calculate();
     s.init_computed();
     return s;
@@ -213,15 +222,13 @@ export class Polygon extends Shape {
   radius: number = 0;
   sides: number = 3;
   angle: number = 0;
-  x_offset: number = 0;
-  y_offset: number = 0;
 
   calculate() {
     this.vertices = [];
     const sides = (this.sides === 0) ? 16 : this.sides;
     const r = this.radius;
-    const x = this.x_offset;
-    const y = this.y_offset;
+    const x = this.offset.x;
+    const y = this.offset.y;
     let a = this.angle;
     for (let i = 0; i < sides + 1; ++i) {
       a += Math.PI * 2 / sides;

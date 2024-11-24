@@ -13,18 +13,24 @@ export class Shape {
     static type = "shape";
     static from_map(thing, o) {
         const s = new Shape(thing);
+        // s.map_shape_type_object = o;
         s.z = o.z;
         s.vertices = vector3.create_many(o.vertices, o.z);
         s.closed_loop = !(o.options?.open_loop);
         if (o.computed == undefined) {
             throw "map shape not computed yet!";
         }
+        const dv = (thing.shapes.length >= 1) ? thing.position : o.computed.centroid;
         for (const v of s.vertices) {
-            v.x -= o.computed.centroid.x;
-            v.y -= o.computed.centroid.y;
+            v.x -= dv.x;
+            v.y -= dv.y;
         }
         s.style = o.style;
         s.init_computed();
+        if (thing.shapes.length >= 1) {
+            s.offset.x = thing.position.x - o.computed.centroid.x;
+            s.offset.y = thing.position.y - o.computed.centroid.y;
+        }
         return s;
     }
     ;
@@ -113,10 +119,12 @@ export class Shape {
     thing;
     z = 0;
     vertices = [];
+    offset = vector3.create();
     closed_loop = true;
     // computed
     computed;
     computed_aabb; // for use in Shape.filter()
+    // map_shape_type_object?: map_shape_type;
     style = {};
     constructor(thing) {
         this.thing = thing;
@@ -187,8 +195,8 @@ export class Polygon extends Shape {
         s.sides = sides;
         s.angle = angle;
         s.z = z;
-        s.x_offset = x_offset;
-        s.y_offset = y_offset;
+        s.offset.x = x_offset;
+        s.offset.y = y_offset;
         s.calculate();
         s.init_computed();
         return s;
@@ -196,14 +204,12 @@ export class Polygon extends Shape {
     radius = 0;
     sides = 3;
     angle = 0;
-    x_offset = 0;
-    y_offset = 0;
     calculate() {
         this.vertices = [];
         const sides = (this.sides === 0) ? 16 : this.sides;
         const r = this.radius;
-        const x = this.x_offset;
-        const y = this.y_offset;
+        const x = this.offset.x;
+        const y = this.offset.y;
         let a = this.angle;
         for (let i = 0; i < sides + 1; ++i) {
             a += Math.PI * 2 / sides;
