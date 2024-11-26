@@ -5,6 +5,9 @@
 import polyDecomp from 'https://cdn.jsdelivr.net/npm/poly-decomp@0.3.0/+esm';
 Matter.Common.setDecomp(polyDecomp);
 
+import polygonOffset from 'https://cdn.jsdelivr.net/npm/polygon-offset@0.3.2/+esm';
+Matter.Common.polygonOffset = polygonOffset;
+
 export default Matter;
 
 export const Axes = Matter.Axes;

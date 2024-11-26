@@ -164,7 +164,7 @@ export class Shape {
             ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
             ctx.stroke();
         }
-        if (style.fill) {
+        if (style.fill && this.closed_loop) {
             ctx.fillStyle = style.fill;
             ctx.globalAlpha = style.fill_opacity ?? 1;
             ctx.fill();

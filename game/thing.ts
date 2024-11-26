@@ -1,6 +1,7 @@
 import { world } from "../index.js";
 import { Bodies, Body, Composite, IBodyDefinition } from "../matter.js";
 import { map_shape_type } from "../util/map_type.js";
+import { math } from "../util/math.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { Polygon, Shape } from "./shape.js";
 
@@ -108,12 +109,29 @@ export class Thing {
     let body: Body;
     if (s instanceof Polygon && s.sides === 0) {
       body = Bodies.circle(s.offset.x, s.offset.y, s.radius, options);
+      Body.setPosition(body, this.target.position);
+      Body.setAngle(body, this.target.angle);
     }
     else { // just use vertices
-      body = Bodies.fromVertices(s.offset.x, s.offset.y, [s.vertices], options);
+      if (s.closed_loop && s.vertices.length > 2) {
+        body = Bodies.fromVertices(s.offset.x, s.offset.y, [s.vertices], options);
+        Body.setPosition(body, this.target.position);
+        Body.setAngle(body, this.target.angle);
+      } else {
+        console.log(s.vertices);
+        console.log(math.expand_lines(s.vertices, 1));
+        const composite = Composite.create();
+        for (const vs of math.expand_lines(s.vertices, 1)) {
+          const vm = vector.mean(vs);
+          const b = Bodies.fromVertices(s.offset.x + vm.x, s.offset.y + vm.y, [vs], options);
+          Composite.add(composite, b);
+          Composite.add(world, b);
+          Body.setPosition(b, vector.add(this.target.position, vector.mean(vs)));
+          Body.setAngle(b, 0);
+        }
+        body = composite.bodies[0];
+      }
     }
-    Body.setPosition(body, this.target.position);
-    Body.setAngle(body, this.target.angle);
     this.body = body;
     if (s.z === 0) Composite.add(world, this.body);
     Body.setVelocity(body, this.target.velocity);

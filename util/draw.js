@@ -164,7 +164,7 @@ export class Context {
     rect(x, y, w, h, a = 0) {
         if (a !== 0) {
             // this method is like an artificial rotation matrix thingy
-            // because i don't want to use ctx.rotate (in case it interferes with something)
+            // because i don't want to use ctx.rotate (in case it interferes with something?)
             const vs = [w / 2 * Math.cos(a), h / 2 * Math.sin(a), w / 2 * Math.sin(a), h / 2 * Math.cos(a)];
             this.ctx.moveTo(x + vs[0] - vs[1], y + vs[2] + vs[3]);
             this.ctx.lineTo(x - vs[0] - vs[1], y - vs[2] + vs[3]);

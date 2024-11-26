@@ -3542,7 +3542,15 @@ declare namespace Matter {
          * @returns {} The [poly-decomp](https://github.com/schteppe/poly-decomp.js) library module if provided.
          */
         static getDecomp(): any;
+
+        static polygonOffset = Offset;
     }
+
+    export class Offset {
+        data(points: number[][]): {
+            offsetLine(width: number): number[][][];
+        };
+    };
 
     export interface IEvent<T> {
         /**

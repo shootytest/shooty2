@@ -1,3 +1,5 @@
+import { Common } from "../matter.js";
+import { vector } from "./vector.js";
 export const math = {
     // why???
     sin: Math.sin,
@@ -33,6 +35,9 @@ export const math = {
     },
     dist_v: (p1, p2) => {
         return Math.sqrt(math.dist2_v(p1, p2));
+    },
+    atan2_v: (v) => {
+        return Math.atan2(v.y, v.x);
     },
     lerp: (a, b, t) => {
         return a * (1 - t) + b * t;
@@ -116,4 +121,87 @@ export const math = {
     point_in_circle: (px, py, cx, cy, r) => {
         return math.dist2(px - cx, py - cy) < r * r;
     },
+    expand_line: (v1, v2, width) => {
+        const v0 = vector.mean([v1, v2]);
+        const v3 = vector.sub(v1, v2);
+        const h = vector.length(v3) + width;
+        const w = width;
+        const { x, y } = v0;
+        const a = math.atan2(-v3.x, v3.y);
+        const vs = [w / 2 * Math.cos(a), h / 2 * Math.sin(a), w / 2 * Math.sin(a), h / 2 * Math.cos(a)];
+        const result = [];
+        result.push(vector.create(x + vs[0] - vs[1], y + vs[2] + vs[3]));
+        result.push(vector.create(x - vs[0] - vs[1], y - vs[2] + vs[3]));
+        result.push(vector.create(x - vs[0] + vs[1], y - vs[2] - vs[3]));
+        result.push(vector.create(x + vs[0] + vs[1], y + vs[2] - vs[3]));
+        return result;
+    },
+    expand_lines: (vertices, width) => {
+        if (vertices.length < 2) {
+            return [[]];
+        }
+        else if (vertices.length === 2) {
+            return [math.expand_line(vertices[0], vertices[1], width)];
+        }
+        else {
+            let result = [];
+            for (let i = 0; i < vertices.length - 1; i++) {
+                const vs = math.expand_line(vertices[i], vertices[i + 1], width);
+                result.push(vs);
+            }
+            return result;
+        }
+    },
+    expand_lines_working_i_guess_but_too_many_vertices: (vertices, width) => {
+        if (vertices.length < 2) {
+            return [];
+        }
+        else if (vertices.length === 2) {
+            return math.expand_line(vertices[0], vertices[1], width);
+        }
+        else {
+            const points = [];
+            for (const v of vertices) {
+                points.push([v.x, v.y]);
+            }
+            const result = [];
+            const offset = new Common.polygonOffset();
+            console.log(offset.data(points).offsetLine(width / 2));
+            for (const vs of offset.data(points).offsetLine(width / 2)) {
+                for (const v of vs) {
+                    result.push(vector.create(v[0], v[1]));
+                }
+            }
+            return result;
+        }
+    },
+    expand_lines_failed_skill_issue: (vertices, width) => {
+        if (vertices.length < 2) {
+            return [];
+        }
+        else if (vertices.length === 2) {
+            return math.expand_line(vertices[0], vertices[1], width);
+        }
+        let v1, v2;
+        const result_left = [];
+        const result_right = [];
+        for (let i = 0; i < vertices.length - 1; i++) {
+            const vs = math.expand_line(vertices[i], vertices[i + 1], width);
+            if (v1 === undefined || v2 === undefined) {
+                result_left.push(vs[1]);
+                result_right.push(vs[0]);
+            }
+            else {
+                result_left.push(vector.mean([vs[0], v1]));
+                result_right.push(vector.mean([vs[1], v2]));
+            }
+            v1 = vs[3];
+            v2 = vs[2];
+        }
+        if (v2)
+            result_left.push(v2);
+        if (v1)
+            result_right.push(v1);
+        return result_left.concat(result_right.reverse());
+    }
 };

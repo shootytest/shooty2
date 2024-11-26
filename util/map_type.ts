@@ -182,6 +182,19 @@ export const TEST_MAP: map_type = {
       style: { stroke: "transparent", fill: "#abcdef", fill_opacity: 0.8, }
     },
     {
+      id: "wall 1",
+      z: 0,
+      vertices: [
+        { x: -200, y: 165 },
+        { x: -365, y: 165 },
+        { x: -365, y: 0 },
+        { x: -200, y: 0 },
+      ],
+      options: { open_loop: true, },
+      style: { stroke: "#abcdef", fill: "transparent", fill_opacity: 0.8, }
+    },
+    /*
+    {
       id: "hovering above a random square is another random square", // i don't intend for IDs to be this long usually but now i can't resist the temptation for close to 200-character long lines...
       z: 0.5,
       vertices: [
@@ -217,18 +230,57 @@ export const TEST_MAP: map_type = {
       options: { part_of: "a random square" },
       style: { stroke: "transparent", fill: "#123456", fill_opacity: 0.5, }
     },
+    */
+    /*
     {
       id: "hovering wall 1",
       z: 0,
       vertices: [
-        { x: 0, y: 0, z: 0, },
-        { x: 0, y: 200, z: 0 },
+        { x: -200, y: 0, z: 0.5, },
+        { x: -200, y: 200, z: 0.5 },
         { x: 0, y: 200, z: 1 },
         { x: 0, y: 0, z: 1 },
       ],
       options: { part_of: "a random square" },
       style: { stroke: "transparent", fill: "#123456", fill_opacity: 0.5, }
     },
+    {
+      id: "hovering wall 2",
+      z: 0,
+      vertices: [
+        { x: 0, y: 200, z: 0, },
+        { x: 200, y: 200, z: 0 },
+        { x: 200, y: 200, z: 1 },
+        { x: 0, y: 200, z: 1 },
+      ],
+      options: { part_of: "a random square" },
+      style: { stroke: "transparent", fill: "#123456", fill_opacity: 0.5, }
+    },
+    {
+      id: "hovering wall 3",
+      z: 0,
+      vertices: [
+        { x: 200, y: 200, z: 0, },
+        { x: 200, y: 0, z: 0 },
+        { x: 200, y: 0, z: 1 },
+        { x: 200, y: 200, z: 1 },
+      ],
+      options: { part_of: "a random square" },
+      style: { stroke: "transparent", fill: "#123456", fill_opacity: 0.5, }
+    },
+    {
+      id: "hovering wall 4",
+      z: 0,
+      vertices: [
+        { x: 200, y: 0, z: 0, },
+        { x: 0, y: 0, z: 0 },
+        { x: 0, y: 0, z: 1 },
+        { x: 200, y: 0, z: 1 },
+      ],
+      options: { part_of: "a random square" },
+      style: { stroke: "transparent", fill: "#123456", fill_opacity: 0.5, }
+    },
+    */
   ],
   icons: [],
 };
