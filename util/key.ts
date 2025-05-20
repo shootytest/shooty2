@@ -69,6 +69,7 @@ export const key = {
       }
     });
     
+    /*
     window.addEventListener("keypress", function(event) {
       key_changed = true;
       if (["Tab"].includes(event.code)) {
@@ -77,6 +78,7 @@ export const key = {
       const key = event.code;
       keys[key] = true;
     });
+    */
     
     window.addEventListener("keyup", function(event) {
       key_changed = true;
@@ -228,6 +230,14 @@ export const key = {
 
   remove_keydown_listeners: () => {
     keydown_listeners.length = 0;
+  },
+
+  add_keyup_listener: (f: (event: KeyboardEvent) => void) => {
+    keyup_listeners.push(f);
+  },
+
+  remove_keyup_listeners: () => {
+    keyup_listeners.length = 0;
   },
   
   check_keys: function(key_array: string[]) {

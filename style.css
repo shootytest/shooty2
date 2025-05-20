@@ -1,6 +1,10 @@
 @import url('https://fonts.googleapis.com/css?family=Roboto+Mono&display=swap');
 @import url('https://fonts.googleapis.com/css?family=Roboto+Condensed&display=swap');
 
+:root {
+  interpolate-size: allow-keywords;
+}
+
 html {
   scroll-behavior: smooth;
   padding: 0;
@@ -33,4 +37,47 @@ aside {
   z-index: 2;
   background-color: #eeeeeebe;
   border-left: 2px solid #eeeeee;
+  text-align: left;
+  color: #111111;
+  padding: 0.5em;
+}
+
+/* folder style */
+.folder {
+  width: fit-content;
+}
+.folder summary {
+  list-style: none;
+  background: url(/map/folder_close.svg) 0 0.1em no-repeat;
+  background-size: 1em 1em;
+  padding: 0 0 0 1.5em;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+.folder:open > summary {
+  background-image: url(/map/folder_open.svg);
+}
+.folder::details-content {
+  transition: height 300ms ease, content-visibility 300ms allow-discrete;
+  height: 0;
+  overflow: clip;
+}
+.folder:open::details-content {
+  height: auto;
+}
+.folder ul {
+  list-style: none;
+  margin: 0 0 0 0.5em;
+  padding: 0.2em 0 0 0.5em;
+  border-left: 1px solid black;
+}
+.folder ul li {
+  padding: 0.2em 0;
+}
+.folder .file {
+  padding: 0 0 0 1.5em;
+  background: 0 0.1em no-repeat;
+  background-size: 1em 1em;
 }

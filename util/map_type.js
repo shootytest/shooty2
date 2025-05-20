@@ -107,8 +107,10 @@ export const TEST_MAP = {
                 { x: 0, y: 200 },
                 { x: 200, y: 200 },
                 { x: 200, y: 0 },
+                { x: 300, y: -100 },
             ],
-            style: { stroke: "transparent", fill: "#abcdef", fill_opacity: 0.8, }
+            options: { open_loop: true, },
+            style: { stroke: "#abcdef", fill: "#abcdef", fill_opacity: 0.8, }
         },
         {
             id: "wall 1",
@@ -120,7 +122,7 @@ export const TEST_MAP = {
                 { x: -200, y: 0 },
             ],
             options: { open_loop: true, },
-            style: { stroke: "#abcdef", fill: "transparent", fill_opacity: 0.8, }
+            style: { stroke: "#abcdef", fill: "#abcdef", fill_opacity: 0.8, }
         },
         /*
         {
@@ -211,10 +213,10 @@ export const TEST_MAP = {
         },
         */
     ],
+    groups: [],
     icons: [],
 };
 for (const s of TEST_MAP.shapes || []) {
-    // s.z += 0.5;
     for (const v of s.vertices) {
         v.x += 50;
         v.y += 50;

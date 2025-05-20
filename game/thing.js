@@ -101,17 +101,26 @@ export class Thing {
                 Body.setAngle(body, this.target.angle);
             }
             else {
-                console.log(s.vertices);
-                console.log(math.expand_lines(s.vertices, 1));
+                // console.log(s.vertices);
+                // console.log(math.expand_lines(s.vertices, 1));
                 const composite = Composite.create();
+                const sm = vector.mean(s.vertices);
+                const b = Bodies.fromVertices(sm.x, sm.y, math.expand_lines(s.vertices, 1), options);
+                b.density = 0;
+                b.collisionFilter = { category: 0 };
+                Composite.add(composite, b);
+                Composite.add(world, b);
+                Body.setPosition(b, vector.add(this.target.position, sm));
+                Body.setAngle(b, 0);
                 for (const vs of math.expand_lines(s.vertices, 1)) {
                     const vm = vector.mean(vs);
                     const b = Bodies.fromVertices(s.offset.x + vm.x, s.offset.y + vm.y, [vs], options);
                     Composite.add(composite, b);
                     Composite.add(world, b);
-                    Body.setPosition(b, vector.add(this.target.position, vector.mean(vs)));
+                    Body.setPosition(b, vector.add(this.target.position, vm));
                     Body.setAngle(b, 0);
                 }
+                // Composite.add(world, composite);
                 body = composite.bodies[0];
             }
         }
@@ -121,5 +130,12 @@ export class Thing {
         Body.setVelocity(body, this.target.velocity);
     }
     tick() {
+    }
+    draw() {
+        if (!this.body)
+            return;
+        for (const b of this.body.parts) {
+            b.vertices;
+        }
     }
 }

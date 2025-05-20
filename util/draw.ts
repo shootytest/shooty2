@@ -31,6 +31,8 @@ class Drawer {
 
 }
 
+const images: { [key: string]: HTMLImageElement } = {};
+
 export class Context {
 
   ctx: CanvasRenderingContext2D;
@@ -323,6 +325,10 @@ export class Context {
     return this.ctx.measureText(s);
   }
 
+  text_width(s: string) {
+    return this.ctx.measureText(s).width;
+  }
+
   fillText(s: string, x: number, y: number, maxWidth?: number) {
     let { actualBoundingBoxAscent, actualBoundingBoxDescent } = this.measureText(s);
     this.ctx.fillText(s, math.fastround(x), math.fastround(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
@@ -359,6 +365,15 @@ export class Context {
     this.ctx.font = `${prefix} ${Math.floor(size)}px roboto condensed`.trim();
     this.textAlign = "center";
     this.textBaseline = "middle";
+  }
+
+  draw_image(path: string, x: number, y: number, w: number, h: number) {
+    if (!images[path]) {
+      const image = document.createElement("img");
+      image.src = path;
+      images[path] = image;
+    }
+    this.ctx.drawImage(images[path], x, y, w, h);
   }
 
   resetTransform() {

@@ -64,14 +64,16 @@ export const key = {
                 f(event);
             }
         });
-        window.addEventListener("keypress", function (event) {
-            key_changed = true;
-            if (["Tab"].includes(event.code)) {
-                event.preventDefault();
-            }
-            const key = event.code;
-            keys[key] = true;
+        /*
+        window.addEventListener("keypress", function(event) {
+          key_changed = true;
+          if (["Tab"].includes(event.code)) {
+            event.preventDefault();
+          }
+          const key = event.code;
+          keys[key] = true;
         });
+        */
         window.addEventListener("keyup", function (event) {
             key_changed = true;
             const key = event.code;
@@ -207,6 +209,12 @@ export const key = {
     },
     remove_keydown_listeners: () => {
         keydown_listeners.length = 0;
+    },
+    add_keyup_listener: (f) => {
+        keyup_listeners.push(f);
+    },
+    remove_keyup_listeners: () => {
+        keyup_listeners.length = 0;
     },
     check_keys: function (key_array) {
         if (!Array.isArray(key_array)) {

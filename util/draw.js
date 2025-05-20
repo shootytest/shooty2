@@ -2,6 +2,7 @@ import { svg_paths } from "./svg.js";
 import { math } from "./math.js";
 class Drawer {
 }
+const images = {};
 export class Context {
     ctx;
     saves;
@@ -248,6 +249,9 @@ export class Context {
     measureText(s) {
         return this.ctx.measureText(s);
     }
+    text_width(s) {
+        return this.ctx.measureText(s).width;
+    }
     fillText(s, x, y, maxWidth) {
         let { actualBoundingBoxAscent, actualBoundingBoxDescent } = this.measureText(s);
         this.ctx.fillText(s, math.fastround(x), math.fastround(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
@@ -277,6 +281,14 @@ export class Context {
         this.ctx.font = `${prefix} ${Math.floor(size)}px roboto condensed`.trim();
         this.textAlign = "center";
         this.textBaseline = "middle";
+    }
+    draw_image(path, x, y, w, h) {
+        if (!images[path]) {
+            const image = document.createElement("img");
+            image.src = path;
+            images[path] = image;
+        }
+        this.ctx.drawImage(images[path], x, y, w, h);
     }
     resetTransform() {
         this.ctx.resetTransform();
