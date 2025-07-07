@@ -5,7 +5,7 @@ import { ctx, view } from "../util/canvas.js";
 import { color } from "../util/color.js";
 import { key, keys, mouse } from "../util/key.js";
 import { map_draw } from "../util/map_draw.js";
-import { TEST_MAP, map_serialiser, map_type } from "../util/map_type.js";
+import { TEST_MAP, map_serialiser, map_shape_type, map_type, map_vertex_type } from "../util/map_type.js";
 import { settings_default } from "./settings.js";
 
 // globals, why not?
@@ -96,6 +96,7 @@ export const ui = {
     ui.draw_clear();
     ui.draw_grid();
     ui.draw_map();
+    ui.draw_overlay();
     ui.draw_top();
     ui.draw_left();
     ui.draw_mouse();
@@ -171,6 +172,14 @@ export const ui = {
       action: (): void => { ui.editor.settings = false; }
     },
   ],
+
+  circle_menu: {
+    active: false,
+    target: {} as map_vertex_type,
+    options: [
+      
+    ],
+  },
 
   draw_top: () => {
     const top = ui.editor.settings ? ui.top_settings : ui.top;
@@ -284,6 +293,25 @@ export const ui = {
   
   draw_a_map: (map: map_type) => {
     map_draw.draw(ctx, map);
+  },
+
+  draw_overlay: () => {
+    // draw right click circle menu
+    if (ui.circle_menu.active) {
+      const target = ui.circle_menu.target;
+      const v = target.vertex;
+      ctx.fillStyle = color.orange;
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        ctx.donut_arc(v.x, v.y, 50, 100, 0, Math.PI);
+        
+      }
+      ctx.fill();
+      if (ui.mouse.new_click && !vector.in_circle(mouse, v, 100)) {
+        ui.mouse.new_click = false;
+        ui.circle_menu.active = false;
+      }
+    }
   },
 
   draw_selection: (map: map_type) => {

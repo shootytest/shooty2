@@ -1,5 +1,6 @@
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
+import { config } from "../util/config.js";
 import { map_shape_compute_type, map_shape_type, shape_style } from "../util/map_type.js";
 import { AABB3, vector, vector3 } from "../util/vector.js";
 import { player } from "./player.js";
@@ -175,7 +176,7 @@ export class Shape {
     ctx.globalAlpha = style.opacity ?? 1;
     if (style.stroke) {
       ctx.strokeStyle = style.stroke;
-      ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
+      ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * config.graphics.linewidth_mult;
       ctx.stroke();
     }
     if (style.fill && this.closed_loop) {
@@ -239,7 +240,7 @@ export class Polygon extends Shape {
   draw_path() {
     if (this.sides === 0) {
       if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0) return;
-      const [c, r] = this.computed.screen_vertices
+      const [c, r] = this.computed.screen_vertices;
       ctx.circle(c.x, c.y, r.x);
     } else {
       super.draw_path();

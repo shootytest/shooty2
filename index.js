@@ -7,7 +7,7 @@ import { ctx, init_canvas } from "./util/canvas.js";
 import { color } from "./util/color.js";
 import { key, mouse } from "./util/key.js";
 import { map_serialiser, TEST_MAP } from "./util/map_type.js";
-import { clip_visibility_polygon } from "./util/see.js";
+import { do_visibility, undo_visibility } from "./util/see.js";
 import { vector } from "./util/vector.js";
 export const engine = Engine.create();
 export const world = engine.world;
@@ -35,8 +35,9 @@ const tick_all = () => {
     ctx.clear(color.blackground);
     ctx.fill();
     // draw all shapes
-    clip_visibility_polygon();
+    do_visibility();
     Shape.draw();
+    undo_visibility();
 };
 Events.on(runner, "tick", tick_all);
 player.create_player();
@@ -54,5 +55,6 @@ for (const map_shape of TEST_MAP.shapes ?? []) {
         t.make_map(map_shape);
     }
 }
-// todo remove debug :()()
+// todo remove debugs :()()
 // console.log(Thing.things);
+// console.log(Shape.shapes);

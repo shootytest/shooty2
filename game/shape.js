@@ -1,5 +1,6 @@
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
+import { config } from "../util/config.js";
 import { vector, vector3 } from "../util/vector.js";
 import { player } from "./player.js";
 /**
@@ -161,7 +162,7 @@ export class Shape {
         ctx.globalAlpha = style.opacity ?? 1;
         if (style.stroke) {
             ctx.strokeStyle = style.stroke;
-            ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
+            ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * config.graphics.linewidth_mult;
             ctx.stroke();
         }
         if (style.fill && this.closed_loop) {

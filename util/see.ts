@@ -34,7 +34,27 @@ const add_wall = (p1: vector, p2: vector, force = false): void => {
   end_points.push(...collide.get_endpoints_from_segments([segment]));
 }
 
-export const clip_visibility_polygon = () => {
+export const do_visibility = () => {
+
+  clip_visibility_polygon(player);
+  /* // not so good
+  ctx.globalAlpha = 0.1;
+  for (let i = 0; i < 3; i++) {
+    ctx.restore("see");
+    clip_visibility_polygon(vector.add(player, vector.createpolar(Math.PI / 3 * i + camera.time / 10, 10)));
+  }
+  ctx.globalAlpha = 1;
+  */
+
+};
+
+export const undo_visibility = () => {
+
+  ctx.restore("see");
+
+};
+
+const clip_visibility_polygon = (v: vector) => {
   
   const w = window.innerWidth;
   const h = window.innerHeight;
@@ -42,8 +62,8 @@ export const clip_visibility_polygon = () => {
 
   reset_lists();
 
-  start.x = player.x;
-  start.y = player.y;
+  start.x = v.x;
+  start.y = v.y;
   start.r = Math.max(w, h);
   const display_radius = start.r * camera.scale;
 
@@ -96,8 +116,6 @@ export const clip_visibility_polygon = () => {
 
   // todo draw???
   draw_lighting(s, display_radius);
-
-  ctx.restore("see");
 
 };
 

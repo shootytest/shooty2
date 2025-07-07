@@ -149,15 +149,15 @@ export const key = {
             mouse.buttons[b] = false;
             mouse.up_position[b] = vector.create(mouse.x, mouse.y);
             mouse.drag_vector[b] = false;
-            mouse.drag_vector_old[b] = false;
+            // mouse.drag_vector_old[b] = false;
         };
-        canvas.addEventListener("mouseup", function (event) {
+        window.addEventListener("mouseup", function (event) {
             key_changed = true;
             mouseup(event);
             event.preventDefault();
             update_mouse(event.buttons);
         });
-        canvas.addEventListener("touchend", function (event) {
+        window.addEventListener("touchend", function (event) {
             key_changed = true;
             mouseup(event);
             event.preventDefault();

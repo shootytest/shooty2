@@ -4,7 +4,7 @@ export const color /*: { [key: string]: `#${string}` }*/ = {
     pureblack: "#000000",
     white: "#eeeeee",
     black: "#111111",
-    blackground: "#111111",
+    blackground: "#122334",
     offblack: "#404040",
     lightgrey: "#CCCCCC",
     grey: "#999999",

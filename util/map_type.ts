@@ -66,6 +66,15 @@ export type map_type = {
 
 };
 
+export type map_vertex_type = {
+  // for map maker ui
+  shape: map_shape_type,
+  vertex: vector3,
+  id: string,
+  index: number,
+  new: boolean,
+};
+
 /*
 export type map_type = {
   

@@ -62,17 +62,20 @@ export const map_draw = {
         if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0)
             return;
         const style = shape.style;
+        const open_loop = !!shape.options?.open_loop;
         ctx.save("draw_shape");
         ctx.begin();
-        ctx.lines_v(shape.computed.screen_vertices);
+        ctx.lines_v(shape.computed.screen_vertices, !open_loop);
         ctx.lineCap = "square";
+        if (open_loop && !style.stroke)
+            style.stroke = style.fill; // hmmm
         if (style.stroke) {
             ctx.strokeStyle = style.stroke;
             ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
         }
         ctx.globalAlpha = style.opacity ?? 1;
         ctx.stroke();
-        if (style.fill) {
+        if (style.fill && !open_loop) {
             ctx.fillStyle = style.fill;
             ctx.globalAlpha = style.fill_opacity ?? 1;
             ctx.fill();
@@ -97,24 +100,58 @@ export const map_draw = {
                 // mouse hover
                 ctx.begin();
                 ctx.circle(v.x, v.y, 10);
-                ctx.strokeStyle = style.stroke ?? style.fill ?? color.purewhite;
+                ctx.fillStyle = style.fill ?? style.stroke ?? color.purewhite;
                 ctx.lineWidth = camera.sqrtscale * 2;
-                ctx.stroke();
+                ctx.globalAlpha = 0.4;
+                ctx.fill();
+                ctx.globalAlpha = 1;
                 // also set target
-                const target = { shape: shape, vertex: v, id: id_, index: i, };
+                const target = {
+                    shape: shape,
+                    vertex: v,
+                    id: id_,
+                    index: i,
+                    new: true,
+                };
                 ui.mouse.hover_target = target;
+                if (ui.mouse.new_click) {
+                    ui.mouse.new_click = false;
+                    ui.mouse.drag_target[2] = target;
+                }
                 if (ui.mouse.new_rclick) {
                     ui.mouse.new_rclick = false;
                     ui.mouse.drag_target[2] = target;
                 }
             }
             if (ui.mouse.drag_target[2].id === id_) {
+                ctx.begin();
+                ctx.circle(v.x, v.y, 10);
+                ctx.strokeStyle = style.stroke ?? style.fill ?? color.purewhite;
+                ctx.lineWidth = camera.sqrtscale * 2;
+                ctx.stroke();
                 const o = ui.mouse.drag_target[2];
                 const ov = o.shape.vertices[o.index];
-                const change = vector.div(mouse.drag_change[2], camera.scale * camera.zscale(o.vertex.z));
-                ov.x += change.x;
-                ov.y += change.y;
+                if (mouse.drag_vector_old[2] !== false) { // if the user is actually dragging the mouse
+                    if (o.new) {
+                        if (mouse.buttons[2]) {
+                            const newpos = camera.screen2world(mouse);
+                            ov.x = newpos.x;
+                            ov.y = newpos.y;
+                        }
+                    }
+                    else {
+                        const change = vector.div(mouse.drag_change[2], camera.scale * camera.zscale(o.vertex.z));
+                        ov.x += change.x;
+                        ov.y += change.y;
+                    }
+                }
                 if (ui.mouse.release_rclick && !key.shift()) {
+                    if (vector.in_circle(mouse, v, 10) && (mouse.drag_vector_old[2] === false || vector.length2(mouse.drag_vector_old[2]) < 30)) {
+                        // todo open node's right click menu
+                        ui.circle_menu.active = true;
+                        ui.circle_menu.target = o;
+                    }
+                    o.new = false;
                     o.shape.vertices[o.index] = vector.round_to(ov, 10);
                 }
             }

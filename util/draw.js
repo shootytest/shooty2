@@ -18,14 +18,17 @@ export class Context {
     get canvas() {
         return this.ctx.canvas;
     }
-    get globalAlpha() {
-        return this.ctx.globalAlpha;
-    }
     get strokeStyle() {
         return this.ctx.strokeStyle;
     }
     get fillStyle() {
         return this.ctx.fillStyle;
+    }
+    get globalAlpha() {
+        return this.ctx.globalAlpha;
+    }
+    get globalCompositeOperation() {
+        return this.ctx.globalCompositeOperation;
     }
     get textAlign() {
         return this.ctx.textAlign;
@@ -46,14 +49,17 @@ export class Context {
         return this.ctx.filter;
     }
     // set
-    set globalAlpha(alpha) {
-        this.ctx.globalAlpha = alpha;
-    }
     set strokeStyle(stroke) {
         this.ctx.strokeStyle = stroke;
     }
     set fillStyle(fill) {
         this.ctx.fillStyle = fill;
+    }
+    set globalAlpha(alpha) {
+        this.ctx.globalAlpha = alpha;
+    }
+    set globalCompositeOperation(co) {
+        this.ctx.globalCompositeOperation = co;
     }
     set textAlign(align) {
         this.ctx.textAlign = align;
@@ -81,6 +87,7 @@ export class Context {
             strokeStyle: ctx.strokeStyle,
             fillStyle: ctx.fillStyle,
             globalAlpha: ctx.globalAlpha,
+            globalCompositeOperation: ctx.globalCompositeOperation,
             lineWidth: ctx.lineWidth,
             lineCap: ctx.lineCap,
             lineJoin: ctx.lineJoin,
@@ -90,7 +97,6 @@ export class Context {
             shadowOffsetY: ctx.shadowOffsetY,
             shadowBlur: ctx.shadowBlur,
             shadowColor: ctx.shadowColor,
-            globalCompositeOperation: ctx.globalCompositeOperation,
             font: ctx.font,
             textAlign: ctx.textAlign,
             textBaseline: ctx.textBaseline,
@@ -100,12 +106,17 @@ export class Context {
         };
     }
     restore(slot) {
+        if (this.saves[slot] == undefined) {
+            console.error("[draw.restore] save slot not recognised: " + slot);
+            return;
+        }
         const save = this.saves[slot];
         const ctx = this.ctx;
         ctx.restore(); // restore first, in case of ctx.clip calls
         ctx.strokeStyle = save.strokeStyle;
         ctx.fillStyle = save.fillStyle;
         ctx.globalAlpha = save.globalAlpha;
+        ctx.globalCompositeOperation = save.globalCompositeOperation;
         ctx.lineWidth = save.lineWidth;
         ctx.lineCap = save.lineCap;
         ctx.lineJoin = save.lineJoin;
@@ -115,7 +126,6 @@ export class Context {
         ctx.shadowOffsetY = save.shadowOffsetY;
         ctx.shadowBlur = save.shadowBlur;
         ctx.shadowColor = save.shadowColor;
-        ctx.globalCompositeOperation = save.globalCompositeOperation;
         ctx.font = save.font;
         ctx.textAlign = save.textAlign;
         ctx.textBaseline = save.textBaseline;
@@ -144,11 +154,13 @@ export class Context {
     clear(color) {
         if (color != undefined) {
             this.fillStyle = color;
+            this.globalCompositeOperation = "source-over";
             this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
         }
         else {
             this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
         }
+        // this.globalCompositeOperation = "destination-over"; // TODO
     }
     moveTo(x, y) {
         this.ctx.moveTo(x, y);
@@ -179,11 +191,19 @@ export class Context {
     rectangle(x, y, w, h, a) {
         this.rect(x - w / 2, y - h / 2, w, h, a);
     }
+    arc(x, y, r, start, end, clockwise = false) {
+        this.ctx.arc(x, y, r, start, end, !clockwise);
+    }
     circle(x, y, r, clockwise = false) {
         this.arc(x, y, r, 0, 2 * Math.PI, clockwise);
     }
-    arc(x, y, r, start, end, clockwise = false) {
-        this.ctx.arc(x, y, r, start, end, !clockwise);
+    donut(x, y, r1, r2) {
+        this.arc(x, y, Math.max(r1, r2), 0, 2 * Math.PI, false);
+        this.arc(x, y, Math.min(r1, r2), 0, 2 * Math.PI, true);
+    }
+    donut_arc(x, y, r1, r2, start, end) {
+        this.arc(x, y, Math.max(r1, r2), end, start, false);
+        this.arc(x, y, Math.min(r1, r2), start, end, true);
     }
     line(x1, y1, x2, y2) {
         this.ctx.beginPath();
@@ -199,10 +219,11 @@ export class Context {
     }
     lines(xs, ys, close_loop = true) {
         if (xs.length <= 1 || ys.length <= 1) {
+            console.warn("[draw.lines] list length < 0");
             return;
         }
         if (xs.length !== ys.length) {
-            console.error("draw.lines: x and y lists' lengths don't match");
+            console.warn("[draw.lines] x_list and y_list lengths don't match:");
             console.log(xs, ys);
             return;
         }
@@ -227,7 +248,7 @@ export class Context {
     polygon(sides, r, x, y, angle = 0) {
         let a = angle;
         this.ctx.moveTo(x + r * Math.cos(a), y + r * Math.sin(a));
-        // draw one more side because lineCap is weird if it is square 
+        // draw one more side because lineCap is weird if it is square
         for (let i = 0; i < sides + 1; ++i) {
             a += Math.PI * 2 / sides;
             this.ctx.lineTo(x + r * Math.cos(a), y + r * Math.sin(a));
@@ -236,7 +257,7 @@ export class Context {
     svg(type, x, y, r) {
         const path2d = svg_paths[type];
         if (path2d == undefined) {
-            console.warn("unknown SVG type: " + type);
+            console.warn("[draw.svg] unknown SVG type: " + type);
             return;
         }
         const a = r / 24;
