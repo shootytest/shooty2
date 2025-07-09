@@ -31,9 +31,8 @@ const tick_all = () => {
     Thing.tick_things();
     // clear screen
     // ctx.clear();
-    ctx.begin();
-    ctx.clear(color.blackground);
-    ctx.fill();
+    ctx.clear();
+    ctx.fill_screen(color.blackground);
     // draw all shapes
     do_visibility();
     Shape.draw();

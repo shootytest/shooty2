@@ -38,6 +38,19 @@ export const ui = {
         hover_target: {},
         drag_target: [{}, {}, {}],
     },
+    click: {
+        new_fns: [() => { }, () => { }, () => { }],
+        new: function (fn, button = 0) {
+            if ((button === 0 && ui.mouse.new_click) || (button === 1 && ui.mouse.new_mclick) || (button === 2 && ui.mouse.new_rclick)) {
+                ui.click.new_fns[button] = fn;
+            }
+        },
+        tick: function () {
+            for (let button = 0; button < 3; button++) {
+                ui.click.new_fns[button]();
+            }
+        },
+    },
     init: function () {
         key.add_keydown_listener((event) => {
             let dz = 0;
@@ -69,6 +82,7 @@ export const ui = {
             ui.mouse.drag_target[b] = {};
           }
         }*/
+        ui.click.new_fns = [() => { }, () => { }, () => { }];
         const MOVE_SPEED = 10;
         let dx = 0;
         let dy = 0;
@@ -98,6 +112,7 @@ export const ui = {
         ui.draw_left();
         ui.draw_mouse();
         ui.update_camera();
+        ui.click.tick();
     },
     draw_clear: () => {
         // draw all
@@ -156,7 +171,7 @@ export const ui = {
             icon: "load",
             action: () => {
                 ui.map = map_serialiser.load(ui.settings.slot);
-                map_draw.compute(ui.map);
+                map_draw.compute_map(ui.map);
             },
         },
         {
@@ -167,6 +182,7 @@ export const ui = {
     ],
     circle_menu: {
         active: false,
+        active_time: -1,
         target: {},
         options: [],
     },
@@ -189,7 +205,6 @@ export const ui = {
             ctx.beginPath();
             ctx.rectangle(x, y, w, size);
             hovering = ctx.point_in_path_v(mouse);
-            clicking = hovering && ui.mouse.new_click;
             ctx.fillStyle = hovering ? color.red_dark : color.black;
             ctx.svg(button.icon, x, y, size * 0.8);
             if (button.name === ui.editor.mode) {
@@ -201,8 +216,8 @@ export const ui = {
                 ctx.line(x - w / 2, size, x + w / 2, size);
             }
             x += w;
-            if (clicking)
-                button.action();
+            if (hovering)
+                ui.click.new(button.action);
         }
     },
     draw_left: () => {
@@ -234,10 +249,8 @@ export const ui = {
         ctx.set_font_condensed(10);
         ctx.text(math.round_dp(camera.z / camera.scale, 1) + "", x, y);
         hovering = ctx.point_in_path_v(mouse);
-        clicking = hovering && ui.mouse.new_rclick;
-        if (clicking) {
-            ui.mouse.new_rclick = false;
-            ui.mouse.drag_target[2] = { id: "_leftbar_z", change: 0, };
+        if (hovering) {
+            ui.click.new(() => ui.mouse.drag_target[2] = { id: "_leftbar_z", change: 0, }, 2);
         }
         if (ui.mouse.drag_target[2].id === "_leftbar_z") {
             o = ui.mouse.drag_target[2];
@@ -256,10 +269,8 @@ export const ui = {
         ctx.fillStyle = color.black;
         ctx.text(math.round_dp(camera.look_z, 1) + "", x, y);
         hovering = ctx.point_in_path_v(mouse);
-        clicking = hovering && ui.mouse.new_rclick;
-        if (clicking) {
-            ui.mouse.new_rclick = false;
-            ui.mouse.drag_target[2] = { id: "_leftbar_zlook", change: 0, };
+        if (hovering) {
+            ui.click.new(() => ui.mouse.drag_target[2] = { id: "_leftbar_zlook", change: 0, }, 2);
         }
         if (ui.mouse.drag_target[2].id === "_leftbar_zlook") {
             o = ui.mouse.drag_target[2];
@@ -285,16 +296,22 @@ export const ui = {
         // draw right click circle menu
         if (ui.circle_menu.active) {
             const target = ui.circle_menu.target;
-            const v = target.vertex;
+            const v = target.shape.computed?.screen_vertices ? target.shape.computed?.screen_vertices[target.index] : target.vertex;
+            const ratio = Math.min(1, (ui.time - ui.circle_menu.active_time) ** 0.7 / 5);
             ctx.fillStyle = color.orange;
-            ctx.beginPath();
+            const a = Math.PI / 2.5;
             for (let i = 0; i < 5; i++) {
-                ctx.donut_arc(v.x, v.y, 50, 100, 0, Math.PI);
+                ctx.globalAlpha = ratio * (0.3 + i * 0.15);
+                ctx.beginPath(); //     vv  vv  :skull: marching
+                ctx.donut_arc(v.x, v.y, 90 * ratio, 45 * ratio, a * (i + 0.05), a * (i + 0.95), a * (i + 0.1), a * (i + 0.9));
+                ctx.fill();
             }
-            ctx.fill();
-            if (ui.mouse.new_click && !vector.in_circle(mouse, v, 100)) {
-                ui.mouse.new_click = false;
-                ui.circle_menu.active = false;
+            ctx.globalAlpha = 1;
+            if (!vector.in_circle(mouse, v, 100)) {
+                ui.click.new(() => {
+                    ui.circle_menu.active = false;
+                    ui.mouse.drag_target[0] = {};
+                });
             }
         }
     },
@@ -307,6 +324,10 @@ export const ui = {
         }
         ui.draw_a_grid(grid_size * 5, color.darkgrey, camera.sqrtscale * 1.0);
         ui.draw_a_grid(1000000, color.darkgrey, camera.sqrtscale * 2);
+        // behaviour when clicked outside of anything important
+        if (ui.mouse.drag_target[0]?.id && !ui.circle_menu.active) {
+            ui.click.new(() => ui.mouse.drag_target[0] = {});
+        }
     },
     draw_a_grid: (grid_size, color, line_width) => {
         let xx = (-camera.position.x * camera.scale);
@@ -338,11 +359,11 @@ export const ui = {
         ctx.svg(ui.editor.mode, v.x, v.y, size * 2);
     },
     update_camera: () => {
-        if (ui.mouse.click) {
+        if (ui.mouse.click && ui.mouse.drag_target[0]?.id == undefined) {
             camera.move_by_mouse();
         }
         if (ui.mouse.rclick) {
-            // do something
+            // camera.move_by_mouse();
         }
         if (mouse.scroll != 0 && !keys.Shift) {
             if (mouse.scroll < 0) {

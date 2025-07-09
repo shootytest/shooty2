@@ -5,18 +5,23 @@ import { key, mouse } from "./key.js";
 import { vector, vector3 } from "./vector.js";
 export const map_draw = {
     shapes_on_screen: [],
-    compute: (map) => {
+    compute_map: (map) => {
         if (map.shapes != undefined) {
             for (const shape of map.shapes) {
-                const world_vertices = vector3.create_many(shape.vertices, shape.z);
-                shape.computed = {
-                    aabb: vector.make_aabb(world_vertices),
-                    aabb3: vector3.make_aabb(world_vertices),
-                    centroid: vector3.mean(world_vertices),
-                    vertices: world_vertices,
-                };
+                map_draw.compute_shape(shape);
             }
         }
+    },
+    compute_shape: (shape) => {
+        const world_vertices = vector3.create_many(shape.vertices, shape.z);
+        const screen_vertices = shape.computed?.screen_vertices ?? [];
+        shape.computed = {
+            aabb: vector.make_aabb(world_vertices),
+            aabb3: vector3.make_aabb(world_vertices),
+            centroid: vector3.mean(world_vertices),
+            vertices: world_vertices,
+            screen_vertices: screen_vertices,
+        };
     },
     draw: (ctx, map) => {
         if (map.shapes != undefined) {
@@ -29,7 +34,7 @@ export const map_draw = {
             // loop: compute shape stuff
             for (const shape of map.shapes) {
                 if (shape.computed == undefined) {
-                    map_draw.compute(map);
+                    map_draw.compute_map(map);
                 }
                 if (shape.computed != undefined) {
                     // compute vertices
@@ -48,7 +53,11 @@ export const map_draw = {
                     shape.computed.screen_vertices = vs;
                 }
             }
-            // console.log(map_draw.shapes_on_screen.length);
+            // TODO optimisation:
+            //   filter by world AABB instead of screen AABB
+            //   so that static objects (which should be the majority?) don't always recompute world AABB
+            //   and only calculate screen position for all objects on screen
+            //   hopefully this is fast enough? although i'll probably make a chunk-like system too?
             map_draw.shapes_on_screen = map.shapes.filter((s) => s.computed?.on_screen).sort((a, b) => b.computed?.distance2 - a.computed?.distance2);
             let i = 0;
             for (const shape of map_draw.shapes_on_screen) {
@@ -114,45 +123,46 @@ export const map_draw = {
                     new: true,
                 };
                 ui.mouse.hover_target = target;
-                if (ui.mouse.new_click) {
-                    ui.mouse.new_click = false;
-                    ui.mouse.drag_target[2] = target;
-                }
-                if (ui.mouse.new_rclick) {
-                    ui.mouse.new_rclick = false;
-                    ui.mouse.drag_target[2] = target;
-                }
+                ui.click.new(() => ui.mouse.drag_target[0] = target);
+                ui.click.new(() => {
+                    ui.mouse.drag_target[0] = target;
+                    ui.circle_menu.active = true;
+                    ui.circle_menu.active_time = ui.time;
+                    ui.circle_menu.target = target;
+                }, 2);
             }
-            if (ui.mouse.drag_target[2].id === id_) {
+            if (ui.mouse.drag_target[0].id === id_) {
                 ctx.begin();
                 ctx.circle(v.x, v.y, 10);
                 ctx.strokeStyle = style.stroke ?? style.fill ?? color.purewhite;
                 ctx.lineWidth = camera.sqrtscale * 2;
                 ctx.stroke();
-                const o = ui.mouse.drag_target[2];
+                const o = ui.mouse.drag_target[0];
                 const ov = o.shape.vertices[o.index];
-                if (mouse.drag_vector_old[2] !== false) { // if the user is actually dragging the mouse
+                if (mouse.drag_vector_old[0] !== false && !key.shift() && !ui.circle_menu.active) { // if the user is actually dragging the mouse
                     if (o.new) {
-                        if (mouse.buttons[2]) {
+                        if (mouse.buttons[0]) {
                             const newpos = camera.screen2world(mouse);
                             ov.x = newpos.x;
                             ov.y = newpos.y;
                         }
                     }
                     else {
-                        const change = vector.div(mouse.drag_change[2], camera.scale * camera.zscale(o.vertex.z));
+                        const change = vector.div(mouse.drag_change[0], camera.scale * camera.zscale(o.vertex.z));
                         ov.x += change.x;
                         ov.y += change.y;
                     }
                 }
-                if (ui.mouse.release_rclick && !key.shift()) {
-                    if (vector.in_circle(mouse, v, 10) && (mouse.drag_vector_old[2] === false || vector.length2(mouse.drag_vector_old[2]) < 30)) {
-                        // todo open node's right click menu
-                        ui.circle_menu.active = true;
-                        ui.circle_menu.target = o;
-                    }
+                if (ui.mouse.release_click && !key.shift()) {
+                    /*if (vector.in_circle(mouse, v, 10) && (mouse.drag_vector_old[0] === false || vector.length2(mouse.drag_vector_old[0]) < 30)) {
+                      // todo make this use ui.click.new
+                      ui.circle_menu.active = true;
+                      ui.circle_menu.active_time = ui.time;
+                      ui.circle_menu.target = o;
+                    }*/
                     o.new = false;
                     o.shape.vertices[o.index] = vector.round_to(ov, 10);
+                    map_draw.compute_shape(o.shape);
                 }
             }
         }

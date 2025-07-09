@@ -225,7 +225,6 @@ export class Context {
     } else {
       this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
     }
-    // this.globalCompositeOperation = "destination-over"; // TODO
   }
 
   moveTo(x: number, y: number) {
@@ -269,15 +268,17 @@ export class Context {
   circle(x: number, y: number, r: number, clockwise = false) {
     this.arc(x, y, r, 0, 2 * Math.PI, clockwise);
   }
-
+  
+  // r1 > r2
   donut(x: number, y: number, r1: number, r2: number) {
-    this.arc(x, y, Math.max(r1, r2), 0, 2 * Math.PI, false);
-    this.arc(x, y, Math.min(r1, r2), 0, 2 * Math.PI, true);
+    this.arc(x, y, r1, 0, 2 * Math.PI, false); // Math.max(r1, r2)
+    this.arc(x, y, r2, 0, 2 * Math.PI, true); // Math.min(r1, r2)
   }
 
-  donut_arc(x: number, y: number, r1: number, r2: number, start: number, end: number) {
-    this.arc(x, y, Math.max(r1, r2), end, start, false);
-    this.arc(x, y, Math.min(r1, r2), start, end, true);
+  // r1 > r2
+  donut_arc(x: number, y: number, r1: number, r2: number, start: number, end: number, start2: number = start, end2: number = end) {
+    this.arc(x, y, r1, end, start, false);
+    this.arc(x, y, r2, start2, end2, true);
   }
 
   line(x1: number, y1: number, x2: number, y2: number) {
@@ -352,6 +353,11 @@ export class Context {
 
   text_width(s: string) {
     return this.ctx.measureText(s).width;
+  }
+
+  fill_screen(color: string) {
+    this.fillStyle = color;
+    this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
   }
 
   fillText(s: string, x: number, y: number, maxWidth?: number) {
