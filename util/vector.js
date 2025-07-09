@@ -20,6 +20,13 @@ export const vector = {
     clone: (v) => {
         return vector.create(v.x, v.y);
     },
+    clone_list: (vs) => {
+        const vt = [];
+        for (const v of vs) {
+            vt.push(vector.clone(v));
+        }
+        return vt;
+    },
     mult: (v, scale) => {
         return {
             x: v.x * scale,
@@ -138,6 +145,14 @@ export const vector = {
     aabb_intersect: (a, b) => {
         return (a.min_x <= b.max_x && a.max_x >= b.min_x) &&
             (a.min_y <= b.max_y && a.max_y >= b.min_y);
+    },
+    aabb_combine: (a, b) => {
+        return {
+            min_x: Math.min(a.min_x, b.min_x),
+            max_x: Math.max(a.max_x + b.max_x),
+            min_y: Math.min(a.min_y, b.min_y),
+            max_y: Math.max(a.max_y, b.max_y),
+        };
     },
 };
 export const vector3 = {
@@ -300,6 +315,16 @@ export const vector3 = {
         return (a.min_x <= b.max_x && a.max_x >= b.min_x) &&
             (a.min_y <= b.max_y && a.max_y >= b.min_y) &&
             (a.min_z <= b.max_z && a.max_z >= b.min_z);
+    },
+    aabb_combine: (a, b) => {
+        return {
+            min_x: Math.min(a.min_x, b.min_x),
+            max_x: Math.max(a.max_x + b.max_x),
+            min_y: Math.min(a.min_y, b.min_y),
+            max_y: Math.max(a.max_y, b.max_y),
+            min_z: Math.min(a.min_z, b.min_z),
+            max_z: Math.max(a.max_z + b.max_z),
+        };
     },
     aabb_add: (a, v) => {
         return {

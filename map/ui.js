@@ -40,15 +40,20 @@ export const ui = {
     },
     click: {
         new_fns: [() => { }, () => { }, () => { }],
-        new: function (fn, button = 0) {
+        new_fns_exist: [false, false, false],
+        new: function (fn, button = 0, overwrite = true) {
             if ((button === 0 && ui.mouse.new_click) || (button === 1 && ui.mouse.new_mclick) || (button === 2 && ui.mouse.new_rclick)) {
-                ui.click.new_fns[button] = fn;
+                if (overwrite || !ui.click.new_fns_exist[button]) {
+                    ui.click.new_fns[button] = fn;
+                    ui.click.new_fns_exist[button] = true;
+                }
             }
         },
         tick: function () {
             for (let button = 0; button < 3; button++) {
                 ui.click.new_fns[button]();
             }
+            ui.click.new_fns_exist = [false, false, false];
         },
     },
     init: function () {
@@ -59,6 +64,25 @@ export const ui = {
             if (event.code === "KeyE" && event.shiftKey)
                 dz += 0.1;
             camera.look_z += dz;
+        });
+        // key.add_keyup_listener((event) => {
+        //   if (event.key === "Shift") {
+        //     // released shift when dragging revert
+        //     if (ui.mouse.drag_target[0]) {
+        //       const target = ui.mouse.drag_target[0] as map_vertex_type;
+        //       for (let i = 0; i < o.shape.vertices.length; i++) {
+        //         if (i === target.index) continue;
+        //         o.shape.vertices[i] = o.vertex_old[i];
+        //       }
+        //     }
+        //   }
+        // });
+        key.add_key_listener("Escape", () => {
+            if (ui.mouse.drag_target[0]) {
+                const target = ui.mouse.drag_target[0];
+                ui.mouse.drag_target[0] = false;
+                target.shape.vertices = target.vertex_old;
+            }
         });
     },
     tick: function () {
@@ -184,7 +208,49 @@ export const ui = {
         active: false,
         active_time: -1,
         target: {},
-        options: [],
+        options: [
+            {
+                i: 0,
+                name: "insert vertex",
+                color: "#03fc77",
+                fn: () => {
+                    const target = ui.circle_menu.target;
+                    target.shape.vertices.splice(target.index + (key.shift() ? 1 : 0), 0, vector.add(target.shape.vertices[target.index], vector.create(10, 10)));
+                },
+            },
+            {
+                i: 1,
+                name: "delete vertex",
+                color: "#fc6203",
+                fn: () => {
+                    const target = ui.circle_menu.target;
+                },
+            },
+            {
+                i: 2,
+                name: "duplicate shape",
+                color: "#8c03fc",
+                fn: () => {
+                    const target = ui.circle_menu.target;
+                },
+            },
+            {
+                i: 3,
+                name: "delete shape",
+                color: "#fc0352",
+                fn: () => {
+                    const target = ui.circle_menu.target;
+                },
+            },
+            {
+                i: 4,
+                name: "print debug",
+                color: "#777777",
+                fn: () => {
+                    const target = ui.circle_menu.target;
+                },
+            },
+        ],
     },
     draw_top: () => {
         const top = ui.editor.settings ? ui.top_settings : ui.top;
@@ -294,24 +360,33 @@ export const ui = {
     },
     draw_overlay: () => {
         // draw right click circle menu
-        if (ui.circle_menu.active) {
+        if (ui.circle_menu.active || (ui.circle_menu.target?.id && (ui.time - ui.circle_menu.active_time <= 20))) {
             const target = ui.circle_menu.target;
             const v = target.shape.computed?.screen_vertices ? target.shape.computed?.screen_vertices[target.index] : target.vertex;
-            const ratio = Math.min(1, (ui.time - ui.circle_menu.active_time) ** 0.7 / 5);
-            ctx.fillStyle = color.orange;
+            let ratio = Math.min(1, (ui.time - ui.circle_menu.active_time) ** 0.7 / 5);
+            if (!ui.circle_menu.active)
+                ratio = 1 - ratio;
             const a = Math.PI / 2.5;
-            for (let i = 0; i < 5; i++) {
-                ctx.globalAlpha = ratio * (0.3 + i * 0.15);
-                ctx.beginPath(); //     vv  vv  :skull: marching
+            for (const option of ui.circle_menu.options) {
+                const i = option.i;
+                ctx.fillStyle = option.color;
+                ctx.beginPath(); //     vv          vv          :skull: marching
                 ctx.donut_arc(v.x, v.y, 90 * ratio, 45 * ratio, a * (i + 0.05), a * (i + 0.95), a * (i + 0.1), a * (i + 0.9));
+                hovering = ctx.point_in_path_v(mouse);
+                ctx.globalAlpha = 0.5 * ratio ** 2 + (hovering ? 0.3 : 0);
                 ctx.fill();
+                if (hovering)
+                    ui.click.new(option.fn);
             }
             ctx.globalAlpha = 1;
             if (!vector.in_circle(mouse, v, 100)) {
-                ui.click.new(() => {
+                const close_fn = () => {
                     ui.circle_menu.active = false;
+                    ui.circle_menu.active_time = ui.time;
                     ui.mouse.drag_target[0] = {};
-                });
+                };
+                ui.click.new(close_fn);
+                ui.click.new(close_fn, 2, false); // don't overwrite
             }
         }
     },

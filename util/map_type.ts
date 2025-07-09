@@ -70,6 +70,7 @@ export type map_vertex_type = {
   // for map maker ui
   shape: map_shape_type,
   vertex: vector3,
+  vertex_old: vector[],
   id: string,
   index: number,
   new: boolean,

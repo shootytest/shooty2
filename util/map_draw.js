@@ -118,6 +118,7 @@ export const map_draw = {
                 const target = {
                     shape: shape,
                     vertex: v,
+                    vertex_old: vector.clone_list(shape.vertices),
                     id: id_,
                     index: i,
                     new: true,
@@ -139,21 +140,36 @@ export const map_draw = {
                 ctx.stroke();
                 const o = ui.mouse.drag_target[0];
                 const ov = o.shape.vertices[o.index];
-                if (mouse.drag_vector_old[0] !== false && !key.shift() && !ui.circle_menu.active) { // if the user is actually dragging the mouse
+                if (mouse.drag_vector_old[0] !== false && !ui.circle_menu.active) { // if the user is actually dragging the mouse
                     if (o.new) {
                         if (mouse.buttons[0]) {
                             const newpos = camera.screen2world(mouse);
-                            ov.x = newpos.x;
-                            ov.y = newpos.y;
+                            if (key.shift()) {
+                                const difference = vector.sub(newpos, o.vertex_old[o.index]);
+                                for (let i = 0; i < o.shape.vertices.length; i++) {
+                                    o.shape.vertices[i] = vector.add(o.vertex_old[i], difference);
+                                }
+                            }
+                            else {
+                                ov.x = newpos.x;
+                                ov.y = newpos.y;
+                                // todo probably shouldn't be running this loop every time
+                                for (let i = 0; i < o.shape.vertices.length; i++) {
+                                    if (i === o.index)
+                                        continue;
+                                    o.shape.vertices[i] = o.vertex_old[i];
+                                }
+                            }
                         }
                     }
                     else {
+                        // this case probably doesn't occur now
                         const change = vector.div(mouse.drag_change[0], camera.scale * camera.zscale(o.vertex.z));
                         ov.x += change.x;
                         ov.y += change.y;
                     }
                 }
-                if (ui.mouse.release_click && !key.shift()) {
+                if (ui.mouse.release_click) {
                     /*if (vector.in_circle(mouse, v, 10) && (mouse.drag_vector_old[0] === false || vector.length2(mouse.drag_vector_old[0]) < 30)) {
                       // todo make this use ui.click.new
                       ui.circle_menu.active = true;
@@ -161,10 +177,19 @@ export const map_draw = {
                       ui.circle_menu.target = o;
                     }*/
                     o.new = false;
-                    o.shape.vertices[o.index] = vector.round_to(ov, 10);
+                    if (key.shift()) {
+                        for (let i = 0; i < o.shape.vertices.length; i++) {
+                            o.shape.vertices[i] = vector.round_to(o.shape.vertices[i], 10);
+                        }
+                    }
+                    else {
+                        o.shape.vertices[o.index] = vector.round_to(ov, 10);
+                    }
                     map_draw.compute_shape(o.shape);
                 }
             }
         }
+    },
+    update_folder_view: () => {
     },
 };
