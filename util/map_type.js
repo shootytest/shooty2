@@ -23,6 +23,22 @@ export const map_serialiser = {
             }
         }
     },
+    clone_shape: (shape) => {
+        return {
+            id: shape.id,
+            z: shape.z,
+            vertices: vector3.clone_list_(shape.vertices),
+            options: map_serialiser.clone_object(shape.options),
+            style: map_serialiser.clone_object(shape.style),
+        };
+    },
+    clone_object: (o) => {
+        const result = {};
+        for (const k in o) {
+            result[k] = o[k];
+        }
+        return result;
+    },
     stringify: (map) => {
         const m = {
             shapes: [],
@@ -75,7 +91,7 @@ export const TEST_MAP = {
         /*
         // todo imagine rendering these 2 "arch" shapes with shadows accurately...
         {
-          id: "1",
+          id: "arch_1",
           z: 0,
           vertices: [
             { x: 100, y: 100, z: 0, }, { x: 100, y: 0, z: 1, },
@@ -87,7 +103,7 @@ export const TEST_MAP = {
           style: { stroke: "white", fill: "#563412", fill_opacity: 0.5, }
         },
         {
-          id: "2",
+          id: "arch_2",
           z: 0,
           vertices: [
             { x: 100, y: -100, z: 0, }, { x: 100, y: 0, z: 1, },

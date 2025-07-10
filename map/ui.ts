@@ -221,6 +221,11 @@ export const ui = {
     active: false,
     active_time: -1,
     target: {} as map_vertex_type,
+    activate: (active = true) => {
+      ui.circle_menu.active = active;
+      ui.circle_menu.active_time = ui.time;
+    },
+    deactivate: () => ui.circle_menu.activate(false),
     options: [
       {
         i: 0,
@@ -241,6 +246,11 @@ export const ui = {
         color: "#fc6203",
         fn: () => {
           const target = ui.circle_menu.target;
+          target.shape.vertices.splice(target.index, 1);
+          ui.circle_menu.deactivate();
+          if (target.shape.vertices.length < 1) {
+            ui.circle_menu.options[3].fn(); // run delete shape function
+          }
         },
       },
       {
@@ -249,6 +259,12 @@ export const ui = {
         color: "#8c03fc",
         fn: () => {
           const target = ui.circle_menu.target;
+          if (ui.map.shapes) {
+            const insert_index = ui.map.shapes.indexOf(target.shape);
+            if (insert_index >= 0) ui.map.shapes.splice(insert_index, 0, map_draw.duplicate_shape(target.shape));
+          } else {
+            console.error("[ui/duplicate_shape] map.shapes doesn't even exist?!");
+          }
         },
       },
       {
@@ -257,6 +273,13 @@ export const ui = {
         color: "#fc0352",
         fn: () => {
           const target = ui.circle_menu.target;
+          if (ui.map.shapes) {
+            const remove_index = ui.map.shapes.indexOf(target.shape);
+            if (remove_index >= 0) ui.map.shapes.splice(remove_index, 1);
+            ui.circle_menu.deactivate();
+          } else {
+            console.error("[ui/delete_shape] map.shapes doesn't even exist?!");
+          }
         },
       },
       {
@@ -265,6 +288,7 @@ export const ui = {
         color: "#777777",
         fn: () => {
           const target = ui.circle_menu.target;
+          console.log(target);
         },
       },
     ],
@@ -400,8 +424,7 @@ export const ui = {
       ctx.globalAlpha = 1;
       if (!vector.in_circle(mouse, v, 100)) {
         const close_fn = () => {
-          ui.circle_menu.active = false;
-          ui.circle_menu.active_time = ui.time;
+          ui.circle_menu.deactivate();
           ui.mouse.drag_target[0] = {};
         };
         ui.click.new(close_fn);

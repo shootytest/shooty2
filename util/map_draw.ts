@@ -3,7 +3,7 @@ import { camera } from "./camera.js";
 import { color } from "./color.js";
 import { Context } from "./draw.js";
 import { key, mouse } from "./key.js";
-import { map_shape_type, map_type, map_vertex_type } from "./map_type.js";
+import { map_serialiser, map_shape_type, map_type, map_vertex_type } from "./map_type.js";
 import { AABB3, vector, vector3 } from "./vector.js";
 
 export const map_draw = {
@@ -32,6 +32,23 @@ export const map_draw = {
       vertices: world_vertices,
       screen_vertices: screen_vertices,
     };
+  },
+
+  duplicate_shape: (shape: map_shape_type) => {
+    const new_shape = map_serialiser.clone_shape(shape);
+    const move_vector = shape.computed ? vector.aabb2v(shape.computed?.aabb) : vector.create(10, 10);
+    for (const v of new_shape.vertices) {
+      v.x += move_vector.x;
+      v.y += move_vector.y;
+    }
+    const shape_id_number = +(new_shape.id.split("_").pop() as string);
+    if (isNaN(shape_id_number)) new_shape.id += "_0";
+    else if (shape_id_number >= 0) {
+      const s = new_shape.id.split("_");
+      s[s.length - 1] = (shape_id_number + 1).toString();
+      new_shape.id = s.join("_");
+    } // todo this is untested
+    return new_shape;
   },
 
   draw: (ctx: Context, map: map_type) => {
@@ -139,17 +156,21 @@ export const map_draw = {
         const target: map_vertex_type = {
           shape: shape,
           vertex: v,
-          vertex_old: vector.clone_list(shape.vertices),
+          vertex_old: vector3.clone_list_(shape.vertices),
           id: id_,
           index: i,
           new: true,
         };
         ui.mouse.hover_target = target;
-        ui.click.new(() => ui.mouse.drag_target[0] = target);
-        ui.click.new(() => {
+        ui.click.new(() => { // left click
           ui.mouse.drag_target[0] = target;
-          ui.circle_menu.active = true;
-          ui.circle_menu.active_time = ui.time;
+          if (ui.circle_menu.active) {
+            ui.circle_menu.target = target;
+          }
+        });
+        ui.click.new(() => { // right click
+          ui.mouse.drag_target[0] = target;
+          ui.circle_menu.activate();
           ui.circle_menu.target = target;
         }, 2);
       }

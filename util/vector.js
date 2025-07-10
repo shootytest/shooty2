@@ -21,11 +21,11 @@ export const vector = {
         return vector.create(v.x, v.y);
     },
     clone_list: (vs) => {
-        const vt = [];
+        const result = [];
         for (const v of vs) {
-            vt.push(vector.clone(v));
+            result.push(vector.clone(v));
         }
-        return vt;
+        return result;
     },
     mult: (v, scale) => {
         return {
@@ -154,6 +154,20 @@ export const vector = {
             max_y: Math.max(a.max_y, b.max_y),
         };
     },
+    aabb_add: (a, v) => {
+        return {
+            min_x: a.min_x + v.x,
+            max_x: a.max_x + v.x,
+            min_y: a.min_y + v.y,
+            max_y: a.max_y + v.y,
+        };
+    },
+    aabb2v: (a) => {
+        return {
+            x: a.max_x - a.min_x,
+            y: a.max_y - a.min_y,
+        };
+    },
 };
 export const vector3 = {
     create: (x = 0, y = 0, z = 0) => {
@@ -179,6 +193,16 @@ export const vector3 = {
         const result = [];
         for (const v of vs) {
             result.push(vector3.clone(v));
+        }
+        return result;
+    },
+    clone_list_: (vs) => {
+        const result = [];
+        for (const v of vs) {
+            const v_ = { x: v.x, y: v.y };
+            if (v.z)
+                v_.z = v.z;
+            result.push(v_);
         }
         return result;
     },
@@ -334,6 +358,13 @@ export const vector3 = {
             max_y: a.max_y + v.y,
             min_z: a.min_z + v.z,
             max_z: a.max_z + v.z,
+        };
+    },
+    aabb2v: (a) => {
+        return {
+            x: a.max_x - a.min_x,
+            y: a.max_y - a.min_y,
+            z: a.max_z - a.min_z,
         };
     },
 };

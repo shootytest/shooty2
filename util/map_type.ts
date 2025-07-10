@@ -70,7 +70,7 @@ export type map_vertex_type = {
   // for map maker ui
   shape: map_shape_type,
   vertex: vector3,
-  vertex_old: vector[],
+  vertex_old: vector3_[],
   id: string,
   index: number,
   new: boolean,
@@ -102,6 +102,24 @@ export const map_serialiser = {
       }
     }
 
+  },
+
+  clone_shape: (shape: map_shape_type) => {
+    return {
+      id: shape.id,
+      z: shape.z,
+      vertices: vector3.clone_list_(shape.vertices),
+      options: map_serialiser.clone_object(shape.options),
+      style: map_serialiser.clone_object(shape.style),
+    };
+  },
+
+  clone_object: (o: any): any => {
+    const result: any = {};
+    for (const k in o) {
+      (result as any)[k] = (o as any)[k];
+    }
+    return result;
   },
 
   stringify: (map: map_type): string => {
@@ -162,7 +180,7 @@ export const TEST_MAP: map_type = {
     /*
     // todo imagine rendering these 2 "arch" shapes with shadows accurately...
     {
-      id: "1",
+      id: "arch_1",
       z: 0,
       vertices: [
         { x: 100, y: 100, z: 0, }, { x: 100, y: 0, z: 1, },
@@ -174,7 +192,7 @@ export const TEST_MAP: map_type = {
       style: { stroke: "white", fill: "#563412", fill_opacity: 0.5, }
     },
     {
-      id: "2",
+      id: "arch_2",
       z: 0,
       vertices: [
         { x: 100, y: -100, z: 0, }, { x: 100, y: 0, z: 1, },
