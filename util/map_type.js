@@ -132,9 +132,9 @@ export const TEST_MAP = {
             id: "wall 1",
             z: 0,
             vertices: [
-                { x: -200, y: 165 },
-                { x: -365, y: 165 },
-                { x: -365, y: 0 },
+                { x: -200, y: 160 },
+                { x: -360, y: 160 },
+                { x: -360, y: 0 },
                 { x: -200, y: 0 },
             ],
             options: { open_loop: true, },

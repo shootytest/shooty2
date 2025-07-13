@@ -221,15 +221,16 @@ export const ui = {
     active: false,
     active_time: -1,
     target: {} as map_vertex_type,
-    activate: (active = true) => {
+    activate: (active = true, force_animation = false) => {
+      if (ui.circle_menu.active !== active || force_animation) ui.circle_menu.active_time = ui.time;
       ui.circle_menu.active = active;
-      ui.circle_menu.active_time = ui.time;
     },
     deactivate: () => ui.circle_menu.activate(false),
     options: [
       {
         i: 0,
         name: "insert vertex",
+        svg: "add",
         color: "#03fc77",
         fn: () => {
           const target = ui.circle_menu.target;
@@ -243,6 +244,7 @@ export const ui = {
       {
         i: 1,
         name: "delete vertex",
+        svg: "minus",
         color: "#fc6203",
         fn: () => {
           const target = ui.circle_menu.target;
@@ -256,6 +258,7 @@ export const ui = {
       {
         i: 2,
         name: "duplicate shape",
+        svg: "copy",
         color: "#8c03fc",
         fn: () => {
           const target = ui.circle_menu.target;
@@ -270,9 +273,11 @@ export const ui = {
       {
         i: 3,
         name: "delete shape",
+        svg: "delete",
         color: "#fc0352",
         fn: () => {
           const target = ui.circle_menu.target;
+          if (!confirm("ARE YOU SURE YOU WANT TO DELETE [" + target.shape.id + "]")) return;
           if (ui.map.shapes) {
             const remove_index = ui.map.shapes.indexOf(target.shape);
             if (remove_index >= 0) ui.map.shapes.splice(remove_index, 1);
@@ -285,6 +290,7 @@ export const ui = {
       {
         i: 4,
         name: "print debug",
+        svg: "info",
         color: "#777777",
         fn: () => {
           const target = ui.circle_menu.target;
@@ -411,15 +417,23 @@ export const ui = {
       let ratio = Math.min(1, (ui.time - ui.circle_menu.active_time) ** 0.7 / 5);
       if (!ui.circle_menu.active) ratio = 1 - ratio;
       const a = Math.PI / 2.5;
+      const a_ = (ui.time / 100) % (Math.PI * 2);
+      size = 50 * ratio;
       for (const option of ui.circle_menu.options) {
+
         const i = option.i;
-        ctx.fillStyle = option.color;
-        ctx.beginPath(); //     vv          vv          :skull: marching
-        ctx.donut_arc(v.x, v.y, 90 * ratio, 45 * ratio, a * (i + 0.05), a * (i + 0.95), a * (i + 0.1), a * (i + 0.9));
+        ctx.beginPath();
+        ctx.donut_arc(v.x, v.y, 90 * ratio, 10 * ratio, a_ + a * i, a_ + a * (i + 1));
         hovering = ctx.point_in_path_v(mouse);
-        ctx.globalAlpha = 0.5 * ratio ** 2 + (hovering ? 0.3 : 0);
+
+        ctx.fillStyle = option.color;
+        ctx.beginPath();
+        ctx.donut_arc(v.x, v.y, 90 * ratio, 80 * ratio, a_ + a * (i + 0.05), a_ + a * (i + 0.95), a_ + a * (i + 0.05625), a_ + a * (i + 0.94375));
+        ctx.globalAlpha = 0.6 * ratio + (hovering ? 0.4 : 0);
         ctx.fill();
+        ctx.svg(option.svg, v.x + size * Math.cos(a_ + a * (i + 0.5)), v.y + size * Math.sin(a_ + a * (i + 0.5)), size);
         if (hovering) ui.click.new(option.fn);
+        
       }
       ctx.globalAlpha = 1;
       if (!vector.in_circle(mouse, v, 100)) {

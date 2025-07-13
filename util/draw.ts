@@ -166,7 +166,7 @@ export class Context {
 
   restore(slot: string) {
     if (this.saves[slot] == undefined) {
-      console.error("[draw.restore] save slot not recognised: " + slot);
+      console.error("[draw/restore] save slot not recognised: " + slot);
       return;
     }
     const save: ctx_save = this.saves[slot];
@@ -297,11 +297,11 @@ export class Context {
   
   lines(xs: number[], ys: number[], close_loop = true) {
     if (xs.length <= 1 || ys.length <= 1) {
-      console.warn("[draw.lines] list length < 0");
+      console.warn("[draw/lines] list length < 0");
       return;
     }
     if (xs.length !== ys.length) {
-      console.warn("[draw.lines] x_list and y_list lengths don't match:");
+      console.warn("[draw/lines] x_list and y_list lengths don't match:");
       console.log(xs, ys);
       return;
     }
@@ -336,7 +336,7 @@ export class Context {
   svg(type: string, x: number, y: number, r: number) {
     const path2d = svg_paths[type];
     if (path2d == undefined) {
-      console.warn("[draw.svg] unknown SVG type: " + type);
+      console.warn("[draw/svg] unknown SVG type: " + type);
       return;
     }
     const a = r / 24;

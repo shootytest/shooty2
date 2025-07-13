@@ -118,15 +118,16 @@ export const map_draw = {
             const id_ = id_prefix + i;
             if (Math.abs(v.z) <= 0.005) {
                 ctx.begin();
-                ctx.circle(v.x, v.y, 4);
+                ctx.circle(v.x, v.y, camera.sqrtscale * 5);
                 ctx.fillStyle = style.stroke ?? style.fill ?? color.purewhite;
                 ctx.lineWidth = camera.sqrtscale * 2;
                 ctx.fill();
             }
-            if (vector.in_circle(mouse, v, 10)) {
+            const hove_r = Math.max(6, camera.sqrtscale * 10);
+            if (vector.in_circle(mouse, v, hove_r)) {
                 // mouse hover
                 ctx.begin();
-                ctx.circle(v.x, v.y, 10);
+                ctx.circle(v.x, v.y, hove_r);
                 ctx.fillStyle = style.fill ?? style.stroke ?? color.purewhite;
                 ctx.lineWidth = camera.sqrtscale * 2;
                 ctx.globalAlpha = 0.4;
@@ -150,13 +151,13 @@ export const map_draw = {
                 });
                 ui.click.new(() => {
                     ui.mouse.drag_target[0] = target;
-                    ui.circle_menu.activate();
+                    ui.circle_menu.activate(true, ui.circle_menu.target.id !== target.id);
                     ui.circle_menu.target = target;
                 }, 2);
             }
             if (ui.mouse.drag_target[0].id === id_) {
                 ctx.begin();
-                ctx.circle(v.x, v.y, 10);
+                ctx.circle(v.x, v.y, hove_r);
                 ctx.strokeStyle = style.stroke ?? style.fill ?? color.purewhite;
                 ctx.lineWidth = camera.sqrtscale * 2;
                 ctx.stroke();
