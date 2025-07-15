@@ -7,6 +7,7 @@ import { vector, vector3 } from "./vector.js";
 export const map_draw = {
     shapes_on_screen: [],
     compute_map: (map) => {
+        map_serialiser.compute(map);
         if (map.shapes != undefined) {
             for (const shape of map.shapes) {
                 map_draw.compute_shape(shape);
@@ -16,13 +17,16 @@ export const map_draw = {
     compute_shape: (shape) => {
         const world_vertices = vector3.create_many(shape.vertices, shape.z);
         const screen_vertices = shape.computed?.screen_vertices ?? [];
+        const depth = shape.computed?.depth ?? 0;
         shape.computed = {
             aabb: vector.make_aabb(world_vertices),
             aabb3: vector3.make_aabb(world_vertices),
             centroid: vector3.mean(world_vertices),
             vertices: world_vertices,
             screen_vertices: screen_vertices,
+            depth: depth,
         };
+        ui.all_aabb = vector.aabb_combine(ui.all_aabb, shape.computed.aabb);
     },
     duplicate_shape: (shape) => {
         const new_shape = map_serialiser.clone_shape(shape);

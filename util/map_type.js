@@ -11,8 +11,12 @@ export type map_type = {
 */
 export const map_serialiser = {
     compute: (map) => {
+        map.computed = {
+            shape_map: {},
+        };
         if (map.shapes != undefined) {
             for (const shape of map.shapes) {
+                map.computed.shape_map[shape.id] = shape;
                 const world_vertices = vector3.create_many(shape.vertices, shape.z);
                 shape.computed = {
                     aabb: vector.make_aabb(world_vertices),
@@ -21,7 +25,25 @@ export const map_serialiser = {
                     vertices: world_vertices,
                 };
             }
+            for (const shape of map.shapes) {
+                if (shape.computed == undefined || shape.computed.depth)
+                    continue;
+                if ((shape.options?.parent?.length ?? 0) > 0) {
+                    let s = shape;
+                    let depth = 1;
+                    while ((s.computed?.depth ?? 0) === 0 && (s.options?.parent?.length ?? 0) > 0 && depth < 100) {
+                        const parent_id = s.options?.parent;
+                        s = map.computed.shape_map[parent_id];
+                        depth++;
+                    }
+                    shape.computed.depth = depth + (s.computed?.depth ?? 0);
+                }
+                else {
+                    shape.computed.depth = 1;
+                }
+            }
         }
+        console.log(map);
     },
     clone_shape: (shape) => {
         return {
@@ -125,7 +147,7 @@ export const TEST_MAP = {
                 { x: 200, y: 0 },
                 { x: 300, y: -100 },
             ],
-            options: { open_loop: true, },
+            options: { open_loop: true, parent: "wall 1", },
             style: { stroke: "#abcdef", fill: "#abcdef", fill_opacity: 0.8, }
         },
         {
@@ -137,7 +159,7 @@ export const TEST_MAP = {
                 { x: -360, y: 0 },
                 { x: -200, y: 0 },
             ],
-            options: { open_loop: true, },
+            options: { open_loop: true, contains: ["a random square"], },
             style: { stroke: "#abcdef", fill: "#abcdef", fill_opacity: 0.8, }
         },
         /*
@@ -229,7 +251,6 @@ export const TEST_MAP = {
         },
         */
     ],
-    groups: [],
     icons: [],
 };
 for (const s of TEST_MAP.shapes || []) {

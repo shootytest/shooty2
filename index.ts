@@ -59,8 +59,8 @@ map_serialiser.compute(TEST_MAP);
 }*/
 
 for (const map_shape of TEST_MAP.shapes ?? []) {
-  if (map_shape.options?.part_of) {
-    Thing.things_lookup[map_shape.options?.part_of].make_map(map_shape);
+  if (map_shape.options?.parent) {
+    Thing.things_lookup[map_shape.options?.parent].make_map(map_shape);
   } else {
     const t = new Thing();
     t.make_map(map_shape);

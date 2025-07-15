@@ -33,7 +33,7 @@ aside {
   right: 0;
   top: calc(6.5% + 1px);
   height: 100%;
-  width: max(18em, 18%);
+  width: min(300px, 23%);
   z-index: 2;
   background-color: #eeeeeebe;
   border-left: 2px solid #eeeeee;
@@ -44,7 +44,8 @@ aside {
 
 /* folder style */
 .folder {
-  width: fit-content;
+  width: 100%;
+  background-color: #eeeeee33;
 }
 .folder summary {
   list-style: none;

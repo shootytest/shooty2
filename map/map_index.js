@@ -7,7 +7,7 @@ const init_all = () => {
     ui.init();
     key.init();
 };
-const tick_all = () => {
+const tick_all = (timestamp_unused) => {
     ui.tick();
     ui.draw();
     camera.tick();

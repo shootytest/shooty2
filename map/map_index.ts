@@ -9,7 +9,7 @@ const init_all = () => {
   key.init();
 };
 
-const tick_all = () => {
+const tick_all = (timestamp_unused: number) => {
 
   ui.tick();
   ui.draw();

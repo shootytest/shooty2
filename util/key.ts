@@ -45,6 +45,20 @@ export const mouse = {
     mouse.scroll = 0;
     mouse.double_click = false;
   },
+  click_element: (element: HTMLElement) => {
+    element.click();
+  },
+  rclick_element: (element: HTMLElement) => {
+    if (window.CustomEvent) {
+      element.dispatchEvent(new CustomEvent('contextmenu'));
+    } else if (document.createEvent) {
+      var ev = document.createEvent('HTMLEvents');
+      ev.initEvent('contextmenu', true, false);
+      element.dispatchEvent(ev);
+    } else {
+      console.error("[key/mouse/rclick_element] why are you using ie");
+    }
+  },
 };
 
 export const key = {

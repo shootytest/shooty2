@@ -13,6 +13,7 @@ export const camera = {
   scale: 1,
   scale_target: 1,
   scaling_point: vector.create(0, 0),
+  lerp_factor: 0.1,
   get x(): number {
     return this.position.x;
   },
@@ -71,8 +72,11 @@ export const camera = {
   tick: function() {
     this.time++;
     // lerp
-    this.position = vector.lerp(this.position, this.position_target, 0.2);
-    this.scale_tick(this.scaling_point, math.lerp(this.scale, this.scale_target, 0.1));
+    this.position = vector.lerp(this.position, this.position_target, this.lerp_factor);
+    if (Math.abs(this.scale - this.scale_target) > math.epsilon) {
+      this.scale = 1 / math.lerp(1 / this.scale, 1 / this.scale_target, this.lerp_factor);
+    }
+    if (this.lerp_factor !== 0.1) this.lerp_factor = 0.1;
   },
   position_jump: function() {
     this.position = this.position_target;
@@ -82,26 +86,39 @@ export const camera = {
   },
   move_by_mouse: function(mouse_button = 0) {
     this.move_by(vector.mult(mouse.drag_change[mouse_button], -1 / this.scale_target));
+    this.lerp_factor = 1;
   },
   move_by: function(move_by_vector: vector) {
     this.position_target = vector.add(this.position_target, move_by_vector);
-    this.position_jump();
-  },
-  scale_tick: function(screen_position: vector, newscale: number) {
-    // copied from myself 1.5 years ago, which is copied from myself 2 years ago
-    const world_point = vector.add(vector.mult(screen_position, 1 / this.scale), this.position);
-    this.scale = newscale;
-    this.position_target = vector.sub(world_point, vector.mult(screen_position, 1 / this.scale));
-    this.position_jump();
   },
   scale_by: function(screen_position: vector, scale: number) {
     this.scaling_point = screen_position;
     this.scale_target *= scale;
     this.scale_target = math.bound(this.scale_target, 0.1, 10);
+    this.scale_adjust(screen_position);
   },
   scale_to: function(screen_position: vector, scale: number) {
     this.scaling_point = screen_position;
     this.scale_target = scale;
     this.scale_target = math.bound(this.scale_target, 0.1, 10);
+    this.scale_adjust(screen_position);
   },
+  scale_adjust: function(screen_position: vector) {
+    this.position_target = vector.sub(vector.add(this.position, vector.mult(screen_position, 1 / this.scale)), vector.mult(screen_position, 1 / this.scale_target));
+  },
+  jump_to: function(world_position: vector, scale: number, screen_position = vector.create(window.innerWidth / 2, window.innerHeight / 2)) {
+    this.scale_target = scale;
+    this.scale_target = math.bound(this.scale_target, 0.1, 10);
+    this.position_target = vector.sub(world_position, vector.mult(screen_position, 1 / this.scale_target));
+  },
+  /*
+  scale_tick: function(screen_position: vector, newscale: number) {
+    // copied from myself 1.5 years ago, which is copied from myself 2 years ago
+    // 2 years later update: i don't need this! see scale_adjust above!
+    const world_point = vector.add(vector.mult(screen_position, 1 / this.scale), this.position);
+    this.scale = newscale;
+    this.position_target = vector.sub(world_point, vector.mult(screen_position, 1 / this.scale));
+    this.position_jump();
+  },
+  */
 };

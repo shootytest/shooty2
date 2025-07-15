@@ -1,5 +1,5 @@
 import { math } from "../util/math.js";
-import { vector } from "../util/vector.js";
+import { AABB, vector } from "../util/vector.js";
 import { camera } from "../util/camera.js";
 import { ctx, view } from "../util/canvas.js";
 import { color } from "../util/color.js";
@@ -94,6 +94,10 @@ export const ui = {
       }
     });
 
+    map_draw.compute_map(ui.map);
+    ui.update_directory();
+    mouse.rclick_element(ui.directory_folders.all.querySelector("summary")!!);
+
   },
 
   tick: function() {
@@ -127,7 +131,7 @@ export const ui = {
     if (keys.KeyS) dy += 1;
     if (keys.KeyA) dx -= 1;
     if (keys.KeyD) dx += 1;
-    camera.move_by(vector.mult(vector.normalise(vector.create(dx, dy)), MOVE_SPEED / camera.scale));
+    if (dx !== 0 || dy !== 0) camera.move_by(vector.mult(vector.normalise(vector.create(dx, dy)), MOVE_SPEED / camera.scale));
     let dz = 1;
     if (keys.KeyQ && !(keys.ShiftLeft || keys.ShiftRight)) dz *= 1.08;
     if (keys.KeyE && !(keys.ShiftLeft || keys.ShiftRight)) dz /= 1.08;
@@ -336,7 +340,7 @@ export const ui = {
   draw_left: () => {
     ctx.save("draw_left");
     ctx.lineCap = "round";
-    size = math.min(width * 0.065, 75);
+    size = 60; // math.bound(Math.min(width, height * 2) * 0.065, 50, 70);
     ctx.fillStyle = color.white + "be";
     ctx.begin();
     ctx.rect(0, height * 0.065, size, height * 0.935);
@@ -413,7 +417,7 @@ export const ui = {
     // draw right click circle menu
     if (ui.circle_menu.active || (ui.circle_menu.target?.id && (ui.time - ui.circle_menu.active_time <= 20))) {
       const target = ui.circle_menu.target;
-      const v = target.shape.computed?.screen_vertices ? target.shape.computed?.screen_vertices[target.index] : target.vertex;
+      const v = target.shape.computed?.screen_vertices ? (target.shape.computed?.screen_vertices[target.index] ?? target.vertex) : target.vertex;
       let ratio = Math.min(1, (ui.time - ui.circle_menu.active_time) ** 0.7 / 5);
       if (!ui.circle_menu.active) ratio = 1 - ratio;
       const a = Math.PI / 2.5;
@@ -422,16 +426,18 @@ export const ui = {
       for (const option of ui.circle_menu.options) {
 
         const i = option.i;
-        ctx.beginPath();
-        ctx.donut_arc(v.x, v.y, 90 * ratio, 10 * ratio, a_ + a * i, a_ + a * (i + 1));
-        hovering = ctx.point_in_path_v(mouse);
-
         ctx.fillStyle = option.color;
         ctx.beginPath();
-        ctx.donut_arc(v.x, v.y, 90 * ratio, 80 * ratio, a_ + a * (i + 0.05), a_ + a * (i + 0.95), a_ + a * (i + 0.05625), a_ + a * (i + 0.94375));
-        ctx.globalAlpha = 0.6 * ratio + (hovering ? 0.4 : 0);
+        ctx.donut_arc(v.x, v.y, 90 * ratio, 10 * ratio, a_ + a * (i + 0.05), a_ + a * (i + 0.95), a_ + a * (i + 0.4), a_ + a * (i + 0.6));
+        hovering = ctx.point_in_path_v(mouse);
+        ctx.globalAlpha = 0.2 * ratio + (hovering ? 0.3 : 0);
         ctx.fill();
-        ctx.svg(option.svg, v.x + size * Math.cos(a_ + a * (i + 0.5)), v.y + size * Math.sin(a_ + a * (i + 0.5)), size);
+
+        ctx.beginPath();
+        ctx.donut_arc(v.x, v.y, 90 * ratio, 80 * ratio, a_ + a * (i + 0.05), a_ + a * (i + 0.95), a_ + a * (i + 0.05625), a_ + a * (i + 0.94375));
+        ctx.globalAlpha = 0.7 * ratio + (hovering ? 0.2 : 0);
+        ctx.fill();
+        ctx.svg(option.svg, v.x + size * Math.cos(a_ + a * (i + 0.5)), v.y + size * Math.sin(a_ + a * (i + 0.5)), size * 0.9);
         if (hovering) ui.click.new(option.fn);
         
       }
@@ -500,13 +506,114 @@ export const ui = {
     if (ui.mouse.rclick) {
       // camera.move_by_mouse();
     }
-    if (mouse.scroll != 0 && !keys.Shift) {
+    if (mouse.scroll !== 0 && !keys.Shift) {
       if (mouse.scroll < 0) {
         camera.scale_by(vector.clone(mouse), 1.3);
       } else {
         camera.scale_by(vector.clone(mouse), 1 / 1.3);
       }
     }
+  },
+
+  directory_folders: {} as { [ key: string ]: HTMLDetailsElement },
+  all_aabb: vector.make_aabb(),
+
+  update_directory: () => {
+
+    const aside = document.querySelector("aside");
+    if (aside == undefined) {
+      console.error("[ui/update_directory] sidebar element <aside> not found!");
+      return;
+    }
+    // clear stuff
+    aside.innerHTML = "";
+    ui.directory_folders = {};
+    // this shape contains everything!
+    const all_shape: map_shape_type = {
+      id: "all",
+      z: 0,
+      vertices: [],
+      style: {},
+      options: { contains: [], },
+    };
+
+    const sorted_shapes = ui.map.shapes?.sort((s1, s2) => s1.computed?.depth!! - s2.computed?.depth!!);
+
+    for (const shape of [all_shape].concat(sorted_shapes ?? [])) {
+      const id = shape.id;
+      if (id !== "all") {
+        all_shape.options?.contains?.push(id);
+        if (shape.computed) ui.all_aabb = vector.aabb_combine(ui.all_aabb, shape.computed.aabb);
+        else console.error("[ui/update_directory] shape not computed: " + id);
+      }
+      if (shape.options == undefined) shape.options = {};
+      if (shape.options.parent == undefined) shape.options.parent = "all";
+      const li = document.createElement("li");
+      let clickable: HTMLElement = li;
+      if (id === "all" || (shape.options.contains?.length ?? 0) > 0) {
+        // is a folder
+        const details = document.createElement("details");
+        details.classList.add("folder");
+        details.setAttribute("open", "");
+        const summary = document.createElement("summary");
+        summary.textContent = id;
+        details.appendChild(summary);
+        const ul = document.createElement("ul");
+        details.appendChild(ul);
+        
+        if (id === "all") {
+          aside.appendChild(details);
+        } else {
+          li.appendChild(details);
+          if (!ui.directory_folders[shape.options.parent]) console.error("[ui/update_directory] parent folder (" + shape.options.parent + ") not found for folder (" + id + ")");
+          else ui.directory_folders[shape.options.parent].querySelector("ul")!!.appendChild(li);
+        }
+        ui.directory_folders[id] = details;
+        clickable = summary;
+      } else {
+        // is a leaf
+        const span = document.createElement("span");
+        span.classList.add("file");
+        span.style.backgroundImage = `url("/shape.svg")`;
+        span.textContent = id;
+        li.appendChild(span);
+        if (!ui.directory_folders[shape.options.parent]) console.error("[ui/update_directory] parent folder (" + shape.options.parent + ") not found for leaf (" + id + ")");
+        else ui.directory_folders[shape.options.parent].querySelector("ul")!!.appendChild(li);
+        clickable = li;
+      }
+      clickable.addEventListener("contextmenu", function(event) {
+        event.preventDefault();
+        let aabb = vector.make_aabb();
+        if (id === "all") {
+          aabb = ui.all_aabb;
+        } else {
+          if (!shape.computed) return;
+          aabb = shape.computed.aabb;
+        }
+        const view_v = vector.aabb2v(ui.viewport);
+        const size_v = vector.aabb2v(aabb);
+        size = Math.min(view_v.x / size_v.x, view_v.y / size_v.y) / 1.5;
+        camera.jump_to(vector.aabb_centre(aabb), size, vector.aabb_centre(ui.viewport));
+      });
+    }
+
+  },
+
+  get viewport(): AABB {
+    return {
+      min_x: 60,
+      max_x: width - Math.min(300, width * 0.23),
+      min_y: height * 0.065,
+      max_y: height,
+    } as AABB;
+  },
+
+  get world_viewport(): AABB {
+    const [v1, v2] = vector.aabb2vs(ui.viewport);
+    return vector.make_aabb([
+      camera.screen2world(v1),
+      camera.screen2world(v2),
+    ]);
   },
 
 };

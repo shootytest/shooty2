@@ -148,12 +148,12 @@ export const vector = {
     const k = vector.dot(v1, v2) / vector.dot(v2, v2);
     return vector.create(k * v2.x, k * v2.y);
   },
-  make_aabb: (vertices: vector[]): AABB => {
+  make_aabb: (vertices: vector[] = []): AABB => {
     let aabb: AABB = {
-      min_x: vertices[0].x,
-      max_x: vertices[0].x,
-      min_y: vertices[0].y,
-      max_y: vertices[0].y,
+      min_x: Number.POSITIVE_INFINITY,
+      max_x: Number.NEGATIVE_INFINITY,
+      min_y: Number.POSITIVE_INFINITY,
+      max_y: Number.NEGATIVE_INFINITY,
     };
     for (const v of vertices) {
       if (v.x < aabb.min_x) aabb.min_x = v.x;
@@ -170,7 +170,7 @@ export const vector = {
   aabb_combine: (a: AABB, b: AABB): AABB => {
     return {
       min_x: Math.min(a.min_x, b.min_x),
-      max_x: Math.max(a.max_x + b.max_x),
+      max_x: Math.max(a.max_x, b.max_x),
       min_y: Math.min(a.min_y, b.min_y),
       max_y: Math.max(a.max_y, b.max_y),
     };
@@ -187,6 +187,18 @@ export const vector = {
     return {
       x: a.max_x - a.min_x,
       y: a.max_y - a.min_y,
+    };
+  },
+  aabb2vs: (a: AABB): vector[] => {
+    return [
+      { x: a.min_x, y: a.min_y },
+      { x: a.max_x, y: a.max_y },
+    ];
+  },
+  aabb_centre: (a: AABB): vector => {
+    return {
+      x: (a.max_x + a.min_x) / 2,
+      y: (a.max_y + a.min_y) / 2,
     };
   },
 };
@@ -345,12 +357,12 @@ export const vector3 = {
   },
   make_aabb: (vertices: vector3[]): AABB3 => {
     let aabb: AABB3 = {
-      min_x: vertices[0].x,
-      max_x: vertices[0].x,
-      min_y: vertices[0].y,
-      max_y: vertices[0].y,
-      min_z: vertices[0].z,
-      max_z: vertices[0].z,
+      min_x: Number.POSITIVE_INFINITY,
+      max_x: Number.NEGATIVE_INFINITY,
+      min_y: Number.POSITIVE_INFINITY,
+      max_y: Number.NEGATIVE_INFINITY,
+      min_z: Number.POSITIVE_INFINITY,
+      max_z: Number.NEGATIVE_INFINITY,
     };
     for (const v of vertices) {
       if (v.x < aabb.min_x) aabb.min_x = v.x;
@@ -392,6 +404,19 @@ export const vector3 = {
       x: a.max_x - a.min_x,
       y: a.max_y - a.min_y,
       z: a.max_z - a.min_z,
+    };
+  },
+  aabb2vs: (a: AABB3): vector3[] => {
+    return [
+      { x: a.min_x, y: a.min_y, z: a.min_z },
+      { x: a.max_x, y: a.max_y, z: a.max_z },
+    ];
+  },
+  aabb_centre: (a: AABB3): vector3 => {
+    return {
+      x: (a.max_x + a.min_x) / 2,
+      y: (a.max_y + a.min_y) / 2,
+      z: (a.max_z + a.min_z) / 2,
     };
   },
 
