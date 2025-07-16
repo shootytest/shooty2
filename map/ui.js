@@ -56,6 +56,21 @@ export const ui = {
             ui.click.new_fns_exist = [false, false, false];
         },
     },
+    get viewport() {
+        return {
+            min_x: 60,
+            max_x: width - Math.min(300, width * 0.23),
+            min_y: height * 0.065,
+            max_y: height,
+        };
+    },
+    get world_viewport() {
+        const [v1, v2] = vector.aabb2vs(ui.viewport);
+        return vector.make_aabb([
+            camera.screen2world(v1),
+            camera.screen2world(v2),
+        ]);
+    },
     init: function () {
         key.add_keydown_listener((event) => {
             let dz = 0;
@@ -65,18 +80,20 @@ export const ui = {
                 dz += 0.1;
             camera.look_z += dz;
         });
-        // key.add_keyup_listener((event) => {
-        //   if (event.key === "Shift") {
-        //     // released shift when dragging revert
-        //     if (ui.mouse.drag_target[0]) {
-        //       const target = ui.mouse.drag_target[0] as map_vertex_type;
-        //       for (let i = 0; i < o.shape.vertices.length; i++) {
-        //         if (i === target.index) continue;
-        //         o.shape.vertices[i] = o.vertex_old[i];
-        //       }
-        //     }
-        //   }
-        // });
+        /*
+        key.add_keyup_listener((event) => {
+          if (event.key === "Shift") {
+            // released shift when dragging revert
+            if (ui.mouse.drag_target[0]) {
+              const target = ui.mouse.drag_target[0] as map_vertex_type;
+              for (let i = 0; i < o.shape.vertices.length; i++) {
+                if (i === target.index) continue;
+                o.shape.vertices[i] = o.vertex_old[i];
+              }
+            }
+          }
+        });
+        */
         key.add_key_listener("Escape", () => {
             if (ui.mouse.drag_target[0]) {
                 const target = ui.mouse.drag_target[0];
@@ -86,7 +103,8 @@ export const ui = {
         });
         map_draw.compute_map(ui.map);
         ui.update_directory();
-        mouse.rclick_element(ui.directory_folders.all.querySelector("summary"));
+        // mouse.rclick_element(ui.directory_elements.all.querySelector("summary")!!);
+        ui.directory_jump_fns.all();
     },
     tick: function () {
         ui.time++;
@@ -141,14 +159,6 @@ export const ui = {
         ui.draw_mouse();
         ui.update_camera();
         ui.click.tick();
-    },
-    draw_clear: () => {
-        // draw all
-        ctx.clear();
-        ctx.fillStyle = color.black;
-        ctx.begin();
-        ctx.rect(0, 0, width, height);
-        ctx.fill();
     },
     editor: {
         mode: "none",
@@ -288,9 +298,18 @@ export const ui = {
                 fn: () => {
                     const target = ui.circle_menu.target;
                     console.log(target);
+                    ui.directory_jump_fns[target.shape.id]?.();
                 },
             },
         ],
+    },
+    draw_clear: () => {
+        // draw all
+        ctx.clear();
+        ctx.fillStyle = color.black;
+        ctx.begin();
+        ctx.rect(0, 0, width, height);
+        ctx.fill();
     },
     draw_top: () => {
         const top = ui.editor.settings ? ui.top_settings : ui.top;
@@ -495,7 +514,8 @@ export const ui = {
             }
         }
     },
-    directory_folders: {},
+    directory_elements: {},
+    directory_jump_fns: {},
     all_aabb: vector.make_aabb(),
     update_directory: () => {
         const aside = document.querySelector("aside");
@@ -505,7 +525,8 @@ export const ui = {
         }
         // clear stuff
         aside.innerHTML = "";
-        ui.directory_folders = {};
+        ui.directory_elements = {};
+        ui.directory_jump_fns = {};
         // this shape contains everything!
         const all_shape = {
             id: "all",
@@ -545,12 +566,12 @@ export const ui = {
                 }
                 else {
                     li.appendChild(details);
-                    if (!ui.directory_folders[shape.options.parent])
+                    if (!ui.directory_elements[shape.options.parent])
                         console.error("[ui/update_directory] parent folder (" + shape.options.parent + ") not found for folder (" + id + ")");
                     else
-                        ui.directory_folders[shape.options.parent].querySelector("ul").appendChild(li);
+                        ui.directory_elements[shape.options.parent].querySelector("ul").appendChild(li);
                 }
-                ui.directory_folders[id] = details;
+                ui.directory_elements[id] = details;
                 clickable = summary;
             }
             else {
@@ -560,14 +581,14 @@ export const ui = {
                 span.style.backgroundImage = `url("/shape.svg")`;
                 span.textContent = id;
                 li.appendChild(span);
-                if (!ui.directory_folders[shape.options.parent])
+                if (!ui.directory_elements[shape.options.parent])
                     console.error("[ui/update_directory] parent folder (" + shape.options.parent + ") not found for leaf (" + id + ")");
                 else
-                    ui.directory_folders[shape.options.parent].querySelector("ul").appendChild(li);
+                    ui.directory_elements[shape.options.parent].querySelector("ul").appendChild(li);
+                ui.directory_elements[id] = span;
                 clickable = li;
             }
-            clickable.addEventListener("contextmenu", function (event) {
-                event.preventDefault();
+            ui.directory_jump_fns[id] = function () {
                 let aabb = vector.make_aabb();
                 if (id === "all") {
                     aabb = ui.all_aabb;
@@ -581,23 +602,12 @@ export const ui = {
                 const size_v = vector.aabb2v(aabb);
                 size = Math.min(view_v.x / size_v.x, view_v.y / size_v.y) / 1.5;
                 camera.jump_to(vector.aabb_centre(aabb), size, vector.aabb_centre(ui.viewport));
+            };
+            clickable.addEventListener("contextmenu", function (event) {
+                event.preventDefault();
+                ui.directory_jump_fns[id]();
             });
         }
-    },
-    get viewport() {
-        return {
-            min_x: 60,
-            max_x: width - Math.min(300, width * 0.23),
-            min_y: height * 0.065,
-            max_y: height,
-        };
-    },
-    get world_viewport() {
-        const [v1, v2] = vector.aabb2vs(ui.viewport);
-        return vector.make_aabb([
-            camera.screen2world(v1),
-            camera.screen2world(v2),
-        ]);
     },
 };
 window.addEventListener("resize", (event) => {
