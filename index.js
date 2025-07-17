@@ -45,7 +45,8 @@ map_serialiser.compute(TEST_MAP);
   const t = new Thing();
   t.make_map(shape);
 }*/
-for (const map_shape of TEST_MAP.shapes ?? []) {
+const shapelist = TEST_MAP.shapes?.sort((s1, s2) => (s1.computed?.depth ?? 0) - (s2.computed?.depth ?? 0)) ?? [];
+for (const map_shape of shapelist) {
     if (map_shape.options?.parent) {
         Thing.things_lookup[map_shape.options?.parent].make_map(map_shape);
     }

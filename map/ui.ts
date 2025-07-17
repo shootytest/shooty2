@@ -264,10 +264,11 @@ export const ui = {
         color: "#fc6203",
         fn: () => {
           const target = ui.circle_menu.target;
-          target.shape.vertices.splice(target.index, 1);
-          ui.circle_menu.deactivate();
-          if (target.shape.vertices.length < 1) {
+          if (target.shape.vertices.length === 1) {
             ui.circle_menu.options[3].fn(); // run delete shape function
+          } else {
+            target.shape.vertices.splice(target.index, 1);
+            ui.circle_menu.deactivate();
           }
         },
       },
@@ -293,7 +294,9 @@ export const ui = {
         color: "#fc0352",
         fn: () => {
           const target = ui.circle_menu.target;
-          if (!confirm("ARE YOU SURE YOU WANT TO DELETE [" + target.shape.id + "]")) return;
+          if (!key.shift()) {
+            if (!confirm("ARE YOU SURE YOU WANT TO DELETE [" + target.shape.id + "]")) return;
+          }
           if (ui.map.shapes) {
             const remove_index = ui.map.shapes.indexOf(target.shape);
             if (remove_index >= 0) ui.map.shapes.splice(remove_index, 1);

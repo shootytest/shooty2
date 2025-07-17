@@ -28,7 +28,7 @@ export const map_serialiser = {
             for (const shape of map.shapes) {
                 if (shape.computed == undefined || shape.computed.depth)
                     continue;
-                if ((shape.options?.parent?.length ?? 0) > 0) {
+                if ((shape.options?.parent?.length ?? 0) > 0 && shape.options?.parent !== "all") {
                     let s = shape;
                     let depth = 1;
                     while ((s.computed?.depth ?? 0) === 0 && (s.options?.parent?.length ?? 0) > 0 && depth < 100) {
@@ -43,7 +43,7 @@ export const map_serialiser = {
                 }
             }
         }
-        console.log(map);
+        // console.log(map);
     },
     clone_shape: (shape) => {
         return {
@@ -159,7 +159,7 @@ export const TEST_MAP = {
                 { x: -360, y: 0 },
                 { x: -200, y: 0 },
             ],
-            options: { open_loop: true, contains: ["a random square"], },
+            options: { open_loop: false, contains: ["a random square"], },
             style: { stroke: "#abcdef", fill: "#abcdef", fill_opacity: 0.8, }
         },
         /*
