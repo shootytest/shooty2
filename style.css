@@ -54,6 +54,35 @@ input {
   text-align: center;
 }
 
+aside > div {
+  width: calc(100% - 8px);
+  padding: 4px;
+}
+
+p.checkbox {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+}
+
+p.text {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: center;
+  width: 100%;
+}
+
+input[type=text] {
+  margin: 4px;
+  text-align: left;
+  width: 90%;
+}
+
+label {
+  width: 100%;
+}
+
 aside {
   position: fixed;
   display: block;

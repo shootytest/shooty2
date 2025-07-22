@@ -538,23 +538,17 @@ export const ui = {
     update_right_sidebar: () => {
         const aside_directory = document.getElementById("directory");
         const aside_properties = document.getElementById("properties");
-        if (aside_directory == undefined) {
-            console.error("[ui/update_right_sidebar] right sidebar directory <aside> not found!");
-            return;
-        }
-        if (aside_properties == undefined) {
-            console.error("[ui/update_right_sidebar] right sidebar properties <aside> not found!");
-            return;
-        }
+        if (aside_directory == undefined)
+            return console.error("[ui/update_right_sidebar] right sidebar directory <aside> not found!");
+        if (aside_properties == undefined)
+            return console.error("[ui/update_right_sidebar] right sidebar properties <aside> not found!");
         aside_directory.style.display = ui.right_sidebar_mode === "directory" ? "block" : "none";
         aside_properties.style.display = ui.right_sidebar_mode === "properties" ? "block" : "none";
     },
     update_directory: () => {
         const aside = document.getElementById("directory");
-        if (aside == undefined) {
-            console.error("[ui/update_directory] right sidebar directory <aside> not found!");
-            return;
-        }
+        if (aside == undefined)
+            return console.error("[ui/update_directory] right sidebar directory <aside> not found!");
         // clear stuff
         aside.innerHTML = ``;
         ui.directory_elements = {};
@@ -655,15 +649,22 @@ export const ui = {
     },
     properties_selected: {},
     properties_options: {
-        "open_loop": "open loop",
+        open_loop: {
+            name: "open loop",
+            type: "checkbox",
+        },
+        /*parent: {
+          name: "parent",
+          type: "text",
+        },*/
     },
     update_properties: () => {
         const aside = document.getElementById("properties");
-        if (aside == undefined) {
-            console.error("[ui/update_properties] right sidebar properties <aside> not found!");
-            return;
-        }
+        if (aside == undefined)
+            return console.error("[ui/update_properties] right sidebar properties <aside> not found!");
         const shape = ui.properties_selected;
+        if (shape == undefined || shape.id == undefined)
+            return;
         aside.innerHTML = `
       <button id="close" title="close">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.x}"/></svg>
@@ -673,7 +674,7 @@ export const ui = {
         <svg xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.edit}"/></svg>
       </button>
       </h3>
-      <div style="float: left;"></div>
+      <div style="float: left; user-select: none;"></div>
     `;
         document.getElementById("close")?.addEventListener("click", function (event) {
             ui.properties_selected = ui.all_shape;
@@ -682,28 +683,73 @@ export const ui = {
         });
         if (shape.id === "all")
             document.getElementById("edit_id").style.display = "none";
-        document.getElementById("edit_id")?.addEventListener("click", function (event) {
-            const old_id = shape.id;
-            const new_id = prompt("new id?", shape.id);
-            if (new_id == null || new_id === old_id)
-                return;
-            if (ui.map.computed?.shape_map == undefined)
+        else
+            document.getElementById("edit_id")?.addEventListener("click", function (event) {
+                const old_id = shape.id;
+                const new_id = prompt("new id?", shape.id);
+                if (new_id == null || new_id === old_id)
+                    return;
+                if (ui.map.computed?.shape_map == undefined)
+                    map_serialiser.compute(ui.map);
+                const shape_map = ui.map.computed?.shape_map;
+                for (const s of shape.options.contains ?? []) {
+                    shape_map[s].options.parent = new_id;
+                }
+                if (shape.options.parent && shape.options.parent !== "all") {
+                    const contains = shape_map[shape.options.parent].options.contains;
+                    const index = contains?.indexOf(old_id);
+                    if (contains != undefined && index != undefined && index >= 0)
+                        contains[index] = new_id;
+                }
+                shape.id = new_id;
                 map_serialiser.compute(ui.map);
-            const shape_map = ui.map.computed?.shape_map;
-            for (const s of shape.options.contains ?? []) {
-                shape_map[s].options.parent = new_id;
+                ui.update_directory();
+                ui.update_properties();
+            });
+        const div = document.querySelector("aside > div");
+        if (div == undefined)
+            return console.error("[ui/update_properties] aside > div not found!");
+        if (shape.id === "all") {
+            div.innerHTML = `
+        <p>Total shapes: <b>${shape.options.contains?.length ?? 0}</b></p>
+      `;
+        }
+        else {
+            for (const option_key in ui.properties_options) {
+                const option = ui.properties_options[option_key];
+                const p = document.createElement("p");
+                p.classList.add(option.type);
+                const label = document.createElement("label");
+                label.textContent = option.name;
+                label.setAttribute("for", option_key);
+                const input = document.createElement("input");
+                input.setAttribute("type", option.type);
+                input.setAttribute("autocomplete", "off");
+                input.setAttribute("name", option_key);
+                input.setAttribute("id", option_key);
+                p.appendChild(label);
+                p.appendChild(input);
+                if (option.type === "checkbox") {
+                    input.checked = shape.options[option_key];
+                    input.addEventListener("change", function (event) {
+                        if (input.checked)
+                            shape.options[option_key] = true;
+                        else
+                            delete shape.options[option_key];
+                    });
+                }
+                else if (option.type === "text") {
+                    input.value = shape.options[option_key];
+                    input.addEventListener("change", function (event) {
+                        if (input.value.length)
+                            shape.options[option_key] = input.value;
+                        else
+                            delete shape.options[option_key];
+                    });
+                }
+                div.appendChild(p);
             }
-            if (shape.options.parent && shape.options.parent !== "all") {
-                const contains = shape_map[shape.options.parent].options.contains;
-                const index = contains?.indexOf(old_id);
-                if (contains != undefined && index != undefined && index >= 0)
-                    contains[index] = new_id;
-            }
-            shape.id = new_id;
-            map_serialiser.compute(ui.map);
-            ui.update_directory();
-            ui.update_properties();
-        });
+        }
     },
 };
 window.addEventListener("resize", function (event) {
