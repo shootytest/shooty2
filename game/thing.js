@@ -75,7 +75,7 @@ export class Thing {
             this.create_id(o.id);
         if (!this.body)
             this.create_body({
-                isStatic: !o.options?.movable,
+                isStatic: !o.options.movable,
             });
     }
     create_id(id) {

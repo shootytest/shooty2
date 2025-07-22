@@ -28,8 +28,35 @@ canvas.canvas {
   z-index: 1;
 }
 
+button {
+  border: none;
+  border-radius: 100%;
+  width: 2.3em;
+  height: 2.3em;
+}
+
+button#close {
+  float: right;
+  width: 40px;
+  height: 40px;
+}
+
+button:hover {
+  filter: brightness(90%);
+  border: 2px #111111 solid;
+}
+
+input {
+  background-color: #eeeeee;
+  color: #111111;
+  font-family: "Roboto Mono";
+  font-size: 14px;
+  text-align: center;
+}
+
 aside {
   position: fixed;
+  display: block;
   right: 0;
   top: calc(6.5% + 1px);
   height: 100%;
@@ -48,14 +75,14 @@ aside {
   background-color: #eeeeee33;
 }
 .folder summary {
+  user-select: none;
+  cursor: pointer;
   list-style: none;
   background: url(/map/folder_close.svg) 0 0.1em no-repeat;
   background-size: 1em 1em;
   padding: 0 0 0 1.5em;
   font-weight: bold;
   font-size: 14px;
-  cursor: pointer;
-  user-select: none;
 }
 .folder:open > summary {
   background-image: url(/map/folder_open.svg);
@@ -78,6 +105,8 @@ aside {
   padding: 0.2em 0;
 }
 .folder .file {
+  user-select: none;
+  cursor: pointer;
   padding: 0 0 0 1.5em;
   background: 0 0.1em no-repeat;
   background-size: 1em 1em;

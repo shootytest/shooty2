@@ -7,6 +7,7 @@ import { key, keys, mouse } from "../util/key.js";
 import { map_draw } from "../util/map_draw.js";
 import { TEST_MAP, map_serialiser, map_shape_type, map_type, map_vertex_type } from "../util/map_type.js";
 import { settings_default } from "./settings.js";
+import { SVG, svg_paths } from "../util/svg.js";
 
 // globals, why not?
 let width = window.innerWidth;
@@ -115,8 +116,11 @@ export const ui = {
 
     map_draw.compute_map(ui.map);
     ui.update_directory();
+    ui.update_properties();
     // mouse.rclick_element(ui.directory_elements.all.querySelector("summary")!!);
     ui.directory_jump_fns.all();
+    ui.properties_selected = ui.all_shape;
+    ui.update_right_sidebar();
 
   },
 
@@ -282,6 +286,7 @@ export const ui = {
           if (ui.map.shapes) {
             const insert_index = ui.map.shapes.indexOf(target.shape);
             if (insert_index >= 0) ui.map.shapes.splice(insert_index, 0, map_draw.duplicate_shape(target.shape));
+            ui.update_directory();
           } else {
             console.error("[ui/duplicate_shape] map.shapes doesn't even exist?!");
           }
@@ -301,6 +306,7 @@ export const ui = {
             const remove_index = ui.map.shapes.indexOf(target.shape);
             if (remove_index >= 0) ui.map.shapes.splice(remove_index, 1);
             ui.circle_menu.deactivate();
+            ui.update_directory();
           } else {
             console.error("[ui/delete_shape] map.shapes doesn't even exist?!");
           }
@@ -540,23 +546,46 @@ export const ui = {
     }
   },
 
+  right_sidebar_mode: "directory",
   directory_elements: {} as { [ key: string ]: HTMLElement },
   directory_jump_fns: {} as { [ key: string ]: () => void },
   all_aabb: vector.make_aabb(),
+  all_shape: {
+    id: "all",
+    z: 0,
+    vertices: [],
+    style: {},
+    options: { contains: [], },
+  } as map_shape_type,
+
+  update_right_sidebar: () => {
+    const aside_directory = document.getElementById("directory");
+    const aside_properties = document.getElementById("properties");
+    if (aside_directory == undefined) {
+      console.error("[ui/update_right_sidebar] right sidebar directory <aside> not found!");
+      return;
+    }
+    if (aside_properties == undefined) {
+      console.error("[ui/update_right_sidebar] right sidebar properties <aside> not found!");
+      return;
+    }
+    aside_directory.style.display = ui.right_sidebar_mode === "directory" ? "block" : "none";
+    aside_properties.style.display = ui.right_sidebar_mode === "properties" ? "block" : "none";
+  },
 
   update_directory: () => {
 
-    const aside = document.querySelector("aside");
+    const aside = document.getElementById("directory");
     if (aside == undefined) {
-      console.error("[ui/update_directory] sidebar element <aside> not found!");
+      console.error("[ui/update_directory] right sidebar directory <aside> not found!");
       return;
     }
     // clear stuff
-    aside.innerHTML = "";
+    aside.innerHTML = ``;
     ui.directory_elements = {};
     ui.directory_jump_fns = {};
     // this shape contains everything!
-    const all_shape: map_shape_type = {
+    ui.all_shape = {
       id: "all",
       z: 0,
       vertices: [],
@@ -566,10 +595,10 @@ export const ui = {
 
     const sorted_shapes = ui.map.shapes?.sort((s1, s2) => s1.computed?.depth!! - s2.computed?.depth!!);
 
-    for (const shape of [all_shape].concat(sorted_shapes ?? [])) {
+    for (const shape of [ui.all_shape].concat(sorted_shapes ?? [])) {
       const id = shape.id;
       if (id !== "all") {
-        all_shape.options?.contains?.push(id);
+        ui.all_shape.options.contains?.push(id);
         if (shape.computed) ui.all_aabb = vector.aabb_combine(ui.all_aabb, shape.computed.aabb);
         else console.error("[ui/update_directory] shape not computed: " + id);
       }
@@ -622,6 +651,18 @@ export const ui = {
         size = Math.min(view_v.x / size_v.x, view_v.y / size_v.y) / 1.5;
         camera.jump_to(vector.aabb_centre(aabb), size, vector.aabb_centre(ui.viewport));
       };
+      clickable.addEventListener("click", function(event) {
+        const style = window.getComputedStyle(clickable, null);
+        const pLeft = parseFloat(style.getPropertyValue('padding-left'));
+        if (event.offsetX > pLeft) {
+          // it is not a click on the file
+          event.preventDefault();
+          ui.properties_selected = shape;
+          ui.right_sidebar_mode = "properties";
+          ui.update_right_sidebar();
+          ui.update_properties();
+        }
+      });
       clickable.addEventListener("contextmenu", function(event) {
         event.preventDefault();
         ui.directory_jump_fns[id]();
@@ -630,9 +671,64 @@ export const ui = {
 
   },
 
+  properties_selected: {} as map_shape_type,
+  properties_options: {
+    "open_loop": "open loop",
+  },
+
+  update_properties: () => {
+
+    const aside = document.getElementById("properties");
+    if (aside == undefined) {
+      console.error("[ui/update_properties] right sidebar properties <aside> not found!");
+      return;
+    }
+
+    const shape = ui.properties_selected;
+
+    aside.innerHTML = `
+      <button id="close" title="close">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.x}"/></svg>
+      </button>
+      <h3 style="margin: 0; user-select: none;">properties for ${shape.id}
+      <button id="edit_id" title="edit id">
+        <svg xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.edit}"/></svg>
+      </button>
+      </h3>
+      <div style="float: left;"></div>
+    `;
+
+    document.getElementById("close")?.addEventListener("click", function(event) {
+      ui.properties_selected = ui.all_shape;
+      ui.right_sidebar_mode = "directory";
+      ui.update_right_sidebar();
+    });
+    if (shape.id === "all") document.getElementById("edit_id")!!.style.display = "none";
+    document.getElementById("edit_id")?.addEventListener("click", function(event) {
+      const old_id = shape.id;
+      const new_id = prompt("new id?", shape.id);
+      if (new_id == null || new_id === old_id) return;
+      if (ui.map.computed?.shape_map == undefined) map_serialiser.compute(ui.map);
+      const shape_map = ui.map.computed?.shape_map!!;
+      for (const s of shape.options.contains ?? []) {
+        shape_map[s].options.parent = new_id;
+      }
+      if (shape.options.parent && shape.options.parent !== "all") {
+        const contains = shape_map[shape.options.parent].options.contains;
+        const index = contains?.indexOf(old_id);
+        if (contains != undefined && index != undefined && index >= 0) contains[index] = new_id;
+      }
+      shape.id = new_id;
+      map_serialiser.compute(ui.map);
+      ui.update_directory();
+      ui.update_properties();
+    });
+
+  },
+
 };
 
-window.addEventListener("resize", (event) => {
+window.addEventListener("resize", function(event) {
   width = window.innerWidth;
   height = window.innerHeight;
 });

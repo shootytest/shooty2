@@ -17,7 +17,7 @@ export class Shape {
         // s.map_shape_type_object = o;
         s.z = o.z;
         s.vertices = vector3.create_many(o.vertices, o.z);
-        s.closed_loop = !(o.options?.open_loop);
+        s.closed_loop = !(o.options.open_loop);
         if (o.computed == undefined) {
             throw "map shape not computed yet!";
         }
