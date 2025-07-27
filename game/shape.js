@@ -1,6 +1,7 @@
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
 import { config } from "../util/config.js";
+import { STYLES } from "../util/map_type.js";
 import { vector, vector3 } from "../util/vector.js";
 import { player } from "./player.js";
 /**
@@ -26,7 +27,7 @@ export class Shape {
             v.x -= dv.x;
             v.y -= dv.y;
         }
-        s.style = o.style;
+        s.style = STYLES[o.options.style ?? "test"];
         s.init_computed();
         if (thing.shapes.length >= 1) {
             s.offset.x = thing.position.x - o.computed.centroid.x;

@@ -2,7 +2,7 @@ import { ui } from "../map/ui.js";
 import { camera } from "./camera.js";
 import { color } from "./color.js";
 import { key, mouse } from "./key.js";
-import { map_serialiser } from "./map_type.js";
+import { map_serialiser, STYLES } from "./map_type.js";
 import { vector, vector3 } from "./vector.js";
 export const map_draw = {
     shapes_on_screen: [],
@@ -92,7 +92,7 @@ export const map_draw = {
     draw_shape: (ctx, shape) => {
         if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0)
             return;
-        const style = shape.style;
+        const style = map_draw.get_style(shape);
         const open_loop = !!shape.options.open_loop;
         ctx.save("draw_shape");
         ctx.begin();
@@ -116,7 +116,7 @@ export const map_draw = {
     draw_shape_ui: (ctx, shape) => {
         if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0)
             return;
-        const style = shape.style;
+        const style = map_draw.get_style(shape);
         const id_prefix = shape.id + "__";
         for (const [i, v] of shape.computed.screen_vertices.entries()) {
             const id_ = id_prefix + i;
@@ -217,6 +217,7 @@ export const map_draw = {
             }
         }
     },
-    update_folder_view: () => {
+    get_style: (shape) => {
+        return STYLES[shape.options.style ?? "test"];
     },
 };

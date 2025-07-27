@@ -1,7 +1,7 @@
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
 import { config } from "../util/config.js";
-import { map_shape_compute_type, map_shape_type, shape_style } from "../util/map_type.js";
+import { map_shape_compute_type, map_shape_type, shape_style, STYLES } from "../util/map_type.js";
 import { AABB3, vector, vector3 } from "../util/vector.js";
 import { player } from "./player.js";
 import { Thing } from "./thing.js";
@@ -34,7 +34,7 @@ export class Shape {
       v.y -= dv.y;
     }
 
-    s.style = o.style;
+    s.style = STYLES[o.options.style ?? "test"];
     s.init_computed();
 
     if (thing.shapes.length >= 1) {

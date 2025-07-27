@@ -314,12 +314,13 @@ export const ui = {
       },
       {
         i: 4,
-        name: "print debug",
+        name: "open properties",
         svg: "info",
-        color: "#777777",
+        color: "#3ca2f6ff",
         fn: () => {
           const target = ui.circle_menu.target;
-          console.log(target);
+          // console.log(target);
+          ui.open_properties(target.shape);
           ui.directory_jump_fns[target.shape.id]?.();
         },
       },
@@ -490,11 +491,12 @@ export const ui = {
 
   draw_grid: () => {
     const grid_size = camera.scale * 10;
-    if (grid_size >= 6) {
-      ui.draw_a_grid(grid_size, color.darkgrey, camera.sqrtscale * 0.4);
-    }
-    ui.draw_a_grid(grid_size * 5, color.darkgrey, camera.sqrtscale * 1.0);
-    ui.draw_a_grid(1000000, color.darkgrey, camera.sqrtscale * 2);
+    if (grid_size >= 50) ui.draw_a_grid(grid_size / 5, color.darkgrey, camera.sqrtscale * 0.1);
+    if (grid_size >= 6) ui.draw_a_grid(grid_size, color.darkgrey, camera.sqrtscale * 0.4);
+    if (grid_size >= 2) ui.draw_a_grid(grid_size * 5, color.darkgrey, camera.sqrtscale * 0.8);
+    ui.draw_a_grid(grid_size * 10, color.darkgrey, camera.sqrtscale * 1.1);
+    ui.draw_a_grid(grid_size * 100, color.darkgrey, camera.sqrtscale * 2.0);
+    ui.draw_a_grid(grid_size * 1000000, color.grey, camera.sqrtscale * 2.0);
     // behaviour when clicked outside of anything important
     if (ui.mouse.drag_target[0]?.id && !ui.circle_menu.active) {
       ui.click.new(() => ui.mouse.drag_target[0] = {});
@@ -581,7 +583,6 @@ export const ui = {
       id: "all",
       z: 0,
       vertices: [],
-      style: {},
       options: { contains: [], },
     };
 
@@ -640,7 +641,8 @@ export const ui = {
         }
         const view_v = vector.aabb2v(ui.viewport);
         const size_v = vector.aabb2v(aabb);
-        size = Math.min(view_v.x / size_v.x, view_v.y / size_v.y) / 1.5;
+        if (shape.vertices.length < 2) size = camera.scale;
+        else size = Math.min(view_v.x / size_v.x, view_v.y / size_v.y) / 1.5;
         camera.jump_to(vector.aabb_centre(aabb), size, vector.aabb_centre(ui.viewport));
       };
       clickable.addEventListener("click", function(event) {
@@ -649,10 +651,7 @@ export const ui = {
         if (event.offsetX > pLeft) {
           // it is not a click on the file
           event.preventDefault();
-          ui.properties_selected = shape;
-          ui.right_sidebar_mode = "properties";
-          ui.update_right_sidebar();
-          ui.update_properties();
+          ui.open_properties(shape);
         }
       });
       clickable.addEventListener("contextmenu", function(event) {
@@ -664,16 +663,29 @@ export const ui = {
   },
 
   properties_selected: {} as map_shape_type,
+
   properties_options: {
-    open_loop: {
-      name: "open loop",
-      type: "checkbox",
+    shape: {
+      open_loop: {
+        name: "open loop",
+        type: "checkbox",
+      },
+      style: {
+        name: "style",
+        type: "text",
+      },
     },
     /*parent: {
       name: "parent",
       type: "text",
     },*/
-  } as { [key: string]: { name: string, type: string } },
+  } as { [key: string]: { [key: string]: { name: string, type: string } } },
+
+  properties_options_metadata: {
+    shape: {
+      name: "Shape",
+    },
+  } as { [key: string]: { name: string }},
 
   update_properties: () => {
 
@@ -729,37 +741,51 @@ export const ui = {
       `;
     }
     else {
-      for (const option_key in ui.properties_options) {
-        const option = ui.properties_options[option_key];
-        const p = document.createElement("p");
-        p.classList.add(option.type);
-        const label = document.createElement("label");
-        label.textContent = option.name;
-        label.setAttribute("for", option_key);
-        const input = document.createElement("input");
-        input.setAttribute("type", option.type);
-        input.setAttribute("autocomplete", "off");
-        input.setAttribute("name", option_key);
-        input.setAttribute("id", option_key);
-        p.appendChild(label);
-        p.appendChild(input);
-        if (option.type === "checkbox") {
-          input.checked = (shape.options as any)[option_key];
-          input.addEventListener("change", function(event) {
-            if (input.checked) (shape.options as any)[option_key] = true;
-            else delete (shape.options as any)[option_key];
-          });
-        } else if (option.type === "text") {
-          input.value = (shape.options as any)[option_key];
-          input.addEventListener("change", function(event) {
-            if (input.value.length) (shape.options as any)[option_key] = input.value;
-            else delete (shape.options as any)[option_key];
-          });
+      for (const group_key in ui.properties_options) {
+        const group = ui.properties_options[group_key];
+        // todo: property groups
+        // const details = document.createElement("details");
+        // const summary = document.createElement("summary");
+        // summary.textContent = group_key;
+        for (const option_key in group) {
+          const option = group[option_key];
+          const p = document.createElement("p");
+          p.classList.add(option.type);
+          const label = document.createElement("label");
+          label.textContent = option.name;
+          label.setAttribute("for", option_key);
+          const input = document.createElement("input");
+          input.setAttribute("type", option.type);
+          input.setAttribute("autocomplete", "off");
+          input.setAttribute("name", option_key);
+          input.setAttribute("id", option_key);
+          p.appendChild(label);
+          p.appendChild(input);
+          if (option.type === "checkbox") {
+            input.checked = (shape.options as any)[option_key];
+            input.addEventListener("change", function(event) {
+              if (input.checked) (shape.options as any)[option_key] = true;
+              else delete (shape.options as any)[option_key];
+            });
+          } else if (option.type === "text") {
+            input.value = (shape.options as any)[option_key];
+            input.addEventListener("change", function(event) {
+              if (input.value.length) (shape.options as any)[option_key] = input.value;
+              else delete (shape.options as any)[option_key];
+            });
+          }
+          div.appendChild(p);
         }
-        div.appendChild(p);
       }
     }
 
+  },  
+
+  open_properties: (shape: map_shape_type) => {
+    ui.properties_selected = shape;
+    ui.right_sidebar_mode = "properties";
+    ui.update_right_sidebar();
+    ui.update_properties();
   },
 
 };

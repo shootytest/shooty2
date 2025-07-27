@@ -63,6 +63,8 @@ export const mouse = {
 export const key = {
     init: () => {
         window.addEventListener("keydown", function (event) {
+            if (event.target.matches("input"))
+                return;
             key_changed = true;
             if (["Tab"].includes(event.code)) {
                 event.preventDefault();
@@ -91,6 +93,8 @@ export const key = {
         });
         */
         window.addEventListener("keyup", function (event) {
+            if (event.target.matches("input"))
+                return;
             key_changed = true;
             const key = event.code;
             keys[key] = false;

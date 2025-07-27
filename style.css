@@ -99,11 +99,11 @@ aside {
 }
 
 /* folder style */
-.folder {
+details {
   width: 100%;
   background-color: #eeeeee33;
 }
-.folder summary {
+details.folder summary {
   user-select: none;
   cursor: pointer;
   list-style: none;
@@ -113,27 +113,27 @@ aside {
   font-weight: bold;
   font-size: 14px;
 }
-.folder:open > summary {
+details.folder:open > summary {
   background-image: url(/map/folder_open.svg);
 }
-.folder::details-content {
+details::details-content {
   transition: height 300ms ease, content-visibility 300ms allow-discrete;
   height: 0;
   overflow: clip;
 }
-.folder:open::details-content {
+details:open::details-content {
   height: auto;
 }
-.folder ul {
+details.folder ul {
   list-style: none;
   margin: 0 0 0 0.5em;
   padding: 0.2em 0 0 0.5em;
   border-left: 1px solid black;
 }
-.folder ul li {
+details.folder ul li {
   padding: 0.2em 0;
 }
-.folder .file {
+details.folder .file {
   user-select: none;
   cursor: pointer;
   padding: 0 0 0 1.5em;

@@ -3,7 +3,7 @@ import { camera } from "./camera.js";
 import { color } from "./color.js";
 import { Context } from "./draw.js";
 import { key, mouse } from "./key.js";
-import { map_serialiser, map_shape_type, map_type, map_vertex_type } from "./map_type.js";
+import { map_serialiser, map_shape_type, map_type, map_vertex_type, STYLES } from "./map_type.js";
 import { AABB3, vector, vector3 } from "./vector.js";
 
 export const map_draw = {
@@ -108,7 +108,7 @@ export const map_draw = {
   draw_shape: (ctx: Context, shape: map_shape_type) => {
 
     if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0) return;
-    const style = shape.style;
+    const style = map_draw.get_style(shape);
     const open_loop = !!shape.options.open_loop;
     ctx.save("draw_shape");
     ctx.begin();
@@ -136,7 +136,7 @@ export const map_draw = {
 
     if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0) return;
 
-    const style = shape.style;
+    const style = map_draw.get_style(shape);
     const id_prefix = shape.id + "__";
     
     for (const [i, v] of shape.computed.screen_vertices.entries()) {
@@ -236,9 +236,8 @@ export const map_draw = {
 
   },
 
-
-  update_folder_view: () => {
-
+  get_style: (shape: map_shape_type) => {
+    return STYLES[shape.options.style ?? "test"];
   },
 
 

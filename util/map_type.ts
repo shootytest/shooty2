@@ -15,7 +15,6 @@ export type map_shape_type = {
   id: string,
   z: number,
   vertices: vector3_[],
-  style: shape_style,
   // all other stuff
   // todo move style into options
   options: map_shape_options_type,
@@ -38,6 +37,9 @@ export type map_shape_options_type = {
   // actual shape options
   open_loop?: boolean, // is the shape loop not closed? (e.g. this is true if the vertices are actually a list of 1d walls instead of a 2d shape)
 
+  // display options
+  style?: string,
+
   // group options
   parent?: string,
   contains?: string[],
@@ -51,12 +53,6 @@ export type map_shape_options_type = {
 export type map_icon_type = {
   icon: string,
   color: string,
-};
-
-export type map_group_type = {
-  id: string,
-  ids: string[],
-  root?: boolean,
 };
 
 export type map_computed_type = {
@@ -81,15 +77,18 @@ export type map_vertex_type = {
   new: boolean,
 };
 
-/*
-export type map_type = {
-  
-  root: map_group_type,
-  all_shapes?: map_shape_type[],
-  all_icons?: map_icon_type[],
-
+export type style_type = {
+  stroke?: string,
+  fill?: string,
+  width?: number,
+  opacity?: number,
+  stroke_opacity?: number,
+  fill_opacity?: number,
 };
-*/
+
+export type styles_type = {
+  [key: string]: style_type,
+};
 
 export const map_serialiser = {
 
@@ -137,7 +136,7 @@ export const map_serialiser = {
       z: shape.z,
       vertices: vector3.clone_list_(shape.vertices),
       options: map_serialiser.clone_object(shape.options),
-      style: map_serialiser.clone_object(shape.style),
+      // style: map_serialiser.clone_object(shape.style),
     };
   },
 
@@ -155,7 +154,7 @@ export const map_serialiser = {
       icons: [],
     };
     for (const s of map.shapes ?? []) {
-      m.shapes!!.push({ id: s.id, z: s.z, vertices: s.vertices, options: s.options, style: s.style });
+      m.shapes!!.push({ id: s.id, z: s.z, vertices: s.vertices, options: s.options });
     }
     for (const i of map.icons ?? []) {
       m.icons!!.push({ icon: i.icon, color: i.color });
@@ -232,17 +231,24 @@ export const TEST_MAP: map_type = {
     },
     */
     {
-      id: "a random square",
+      id: "start",
       z: 0,
       vertices: [
         { x: 0, y: 0 },
-        { x: 0, y: 200 },
-        { x: 200, y: 200 },
-        { x: 200, y: 0 },
-        { x: 300, y: -100 },
       ],
-      options: { open_loop: true, parent: "wall 1", },
-      style: { stroke: "#abcdef", fill: "#abcdef", fill_opacity: 0.8, }
+      options: { open_loop: false, style: "start" }
+    },
+    {
+      id: "a random square",
+      z: 0,
+      vertices: [
+        { x: 50, y: 50 },
+        { x: 50, y: 250 },
+        { x: 250, y: 250 },
+        { x: 250, y: 50 },
+        { x: 350, y: -50 },
+      ],
+      options: { open_loop: true, parent: "wall 1", style: "test" }
     },
     {
       id: "wall 1",
@@ -253,8 +259,7 @@ export const TEST_MAP: map_type = {
         { x: -360, y: 0 },
         { x: -200, y: 0 },
       ],
-      options: { open_loop: false, contains: ["a random square"], },
-      style: { stroke: "#abcdef", fill: "#abcdef", fill_opacity: 0.8, }
+      options: { open_loop: false, contains: ["a random square"], style: "test" }
     },
     /*
     {
@@ -348,9 +353,20 @@ export const TEST_MAP: map_type = {
   icons: [],
 };
 
-for (const s of TEST_MAP.shapes || []) {
+/*for (const s of TEST_MAP.shapes || []) {
   for (const v of s.vertices) {
     v.x += 50;
     v.y += 50;
   }
-}
+}*/
+
+export const STYLES: styles_type = {
+  test: {
+    stroke: "#abcdef",
+    fill: "#abcdef",
+    fill_opacity: 0.8,
+  },
+  start: {
+    stroke: "#14b84d",
+  },
+};
