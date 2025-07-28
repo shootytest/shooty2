@@ -185,32 +185,32 @@ export const ui = {
     {
       name: "clear",
       icon: "x",
-      action: (): void => { ui.editor.mode = "none"; }
+      action: () => { ui.editor.mode = "none"; }
     },
     {
       name: "add",
       icon: "add",
-      action: (): void => { ui.editor.mode = "add"; }
+      action: () => { ui.editor.mode = "add"; }
     },
     {
       name: "edit",
       icon: "edit",
-      action: (): void => { ui.editor.mode = "edit"; }
+      action: () => { ui.editor.mode = "edit"; }
     },
     {
       name: "select",
       icon: "select",
-      action: (): void => { ui.editor.mode = "select"; }
+      action: () => { ui.editor.mode = "select"; }
     },
     {
       name: "delete",
       icon: "delete",
-      action: (): void => { ui.editor.mode = "delete"; }
+      action: () => { ui.editor.mode = "delete"; }
     },
     {
       name: "settings",
       icon: "settings",
-      action: (): void => { ui.editor.settings = true; }
+      action: () => { ui.editor.settings = true; }
     },
   ],
 
@@ -218,22 +218,30 @@ export const ui = {
     {
       name: "save",
       icon: "save",
-      action: (): void => {
+      action: () => {
         map_serialiser.save(ui.settings.slot, ui.map);
       },
     },
     {
       name: "load",
       icon: "load",
-      action: (): void => {
+      action: () => {
         ui.map = map_serialiser.load(ui.settings.slot);
         map_draw.compute_map(ui.map);
       },
     },
     {
+      name: "copy",
+      icon: "copy",
+      action: () => {
+        map_draw.compute_map(ui.map);
+        map_serialiser.copy(ui.map);
+      },
+    },
+    {
       name: "back",
       icon: "start_left",
-      action: (): void => { ui.editor.settings = false; }
+      action: () => { ui.editor.settings = false; }
     },
   ],
 
@@ -259,6 +267,7 @@ export const ui = {
             0,
             vector.add(target.shape.vertices[target.index], vector.create(10, 10))
           );
+          map_draw.change("insert vertex", target.shape);
         },
       },
       {
@@ -273,6 +282,7 @@ export const ui = {
           } else {
             target.shape.vertices.splice(target.index, 1);
             ui.circle_menu.deactivate();
+            map_draw.change("delete vertex", target.shape);
           }
         },
       },
@@ -283,13 +293,11 @@ export const ui = {
         color: "#8c03fc",
         fn: () => {
           const target = ui.circle_menu.target;
-          if (ui.map.shapes) {
-            const insert_index = ui.map.shapes.indexOf(target.shape);
-            if (insert_index >= 0) ui.map.shapes.splice(insert_index, 0, map_draw.duplicate_shape(target.shape));
-            ui.update_directory();
-          } else {
-            console.error("[ui/duplicate_shape] map.shapes doesn't even exist?!");
-          }
+          const insert_index = ui.map.shapes.indexOf(target.shape);
+          const new_shape = map_draw.duplicate_shape(target.shape);
+          if (insert_index >= 0) ui.map.shapes.splice(insert_index, 0, new_shape);
+          ui.update_directory();
+          map_draw.change("duplicate shape", new_shape);
         },
       },
       {
@@ -302,14 +310,11 @@ export const ui = {
           if (!key.shift()) {
             if (!confirm("ARE YOU SURE YOU WANT TO DELETE [" + target.shape.id + "]")) return;
           }
-          if (ui.map.shapes) {
-            const remove_index = ui.map.shapes.indexOf(target.shape);
-            if (remove_index >= 0) ui.map.shapes.splice(remove_index, 1);
-            ui.circle_menu.deactivate();
-            ui.update_directory();
-          } else {
-            console.error("[ui/delete_shape] map.shapes doesn't even exist?!");
-          }
+          const remove_index = ui.map.shapes.indexOf(target.shape);
+          if (remove_index >= 0) ui.map.shapes.splice(remove_index, 1);
+          ui.circle_menu.deactivate();
+          ui.update_directory();
+          map_draw.change("delete shape", target.shape);
         },
       },
       {
@@ -731,9 +736,10 @@ export const ui = {
       map_serialiser.compute(ui.map);
       ui.update_directory();
       ui.update_properties();
+      map_draw.change("edit ID) (from " + old_id + " to " + new_id, shape);
     });
 
-    const div = document.querySelector("aside > div") as HTMLDivElement;
+    const div = document.querySelector("aside#properties > div") as HTMLDivElement;
     if (div == undefined) return console.error("[ui/update_properties] aside > div not found!");
     if (shape.id === "all") {
       div.innerHTML = `
@@ -766,12 +772,14 @@ export const ui = {
             input.addEventListener("change", function(event) {
               if (input.checked) (shape.options as any)[option_key] = true;
               else delete (shape.options as any)[option_key];
+              map_draw.change("edit property " + option_key, shape);
             });
           } else if (option.type === "text") {
             input.value = (shape.options as any)[option_key];
             input.addEventListener("change", function(event) {
               if (input.value.length) (shape.options as any)[option_key] = input.value;
               else delete (shape.options as any)[option_key];
+              map_draw.change("edit property " + option_key, shape);
             });
           }
           div.appendChild(p);

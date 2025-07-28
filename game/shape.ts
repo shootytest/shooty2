@@ -34,7 +34,7 @@ export class Shape {
       v.y -= dv.y;
     }
 
-    s.style = STYLES[o.options.style ?? "test"];
+    s.style = STYLES[o.options.style ?? "test"] ?? STYLES.error;
     s.init_computed();
 
     if (thing.shapes.length >= 1) {

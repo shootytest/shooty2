@@ -8,7 +8,7 @@ import { color } from "./util/color.js";
 import { key, mouse } from "./util/key.js";
 import { map_serialiser, TEST_MAP } from "./util/map_type.js";
 import { do_visibility, undo_visibility } from "./util/see.js";
-import { vector } from "./util/vector.js";
+import { vector, vector3 } from "./util/vector.js";
 export const engine = Engine.create();
 export const world = engine.world;
 engine.gravity.x = 0;
@@ -57,6 +57,7 @@ for (const map_shape of shapelist) {
         t.make_map(map_shape);
     }
 }
+player.position = vector3.create_(TEST_MAP.computed?.shape_map.start.vertices[0] ?? vector.create());
 // todo remove debugs :()()
 // console.log(Thing.things);
 // console.log(Shape.shapes);

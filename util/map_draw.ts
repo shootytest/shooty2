@@ -39,7 +39,7 @@ export const map_draw = {
     ui.all_aabb = vector.aabb_combine(ui.all_aabb, shape.computed.aabb);
   },
 
-  duplicate_shape: (shape: map_shape_type) => {
+  duplicate_shape: (shape: map_shape_type): map_shape_type => {
     const new_shape = map_serialiser.clone_shape(shape);
     const move_vector = shape.computed ? vector.aabb2v(shape.computed?.aabb) : vector.create(10, 10);
     for (const v of new_shape.vertices) {
@@ -216,20 +216,24 @@ export const map_draw = {
         }
         if (ui.mouse.release_click) {
           /*if (vector.in_circle(mouse, v, 10) && (mouse.drag_vector_old[0] === false || vector.length2(mouse.drag_vector_old[0]) < 30)) {
-            // todo make this use ui.click.new
             ui.circle_menu.active = true;
             ui.circle_menu.active_time = ui.time;
             ui.circle_menu.target = o;
           }*/
           o.new = false;
-          if (key.shift()) {
-            for (let i = 0; i < o.shape.vertices.length; i++) {
-              o.shape.vertices[i] = vector.round_to(o.shape.vertices[i], 10);
+          if (!(mouse.drag_vector_old[0] === false || vector.length2(mouse.drag_vector_old[0]) < 30)) { 
+            // if actually dragged
+            if (key.shift()) {
+              for (let i = 0; i < o.shape.vertices.length; i++) {
+                o.shape.vertices[i] = vector.round_to(o.shape.vertices[i], 10);
+              }
+              map_draw.change("move shape", o.shape);
+            } else {
+              o.shape.vertices[o.index] = vector.round_to(ov, 10);
+              map_draw.change("move vertex #" + o.index, o.shape);
             }
-          } else {
-            o.shape.vertices[o.index] = vector.round_to(ov, 10);
+            map_draw.compute_shape(o.shape);
           }
-          map_draw.compute_shape(o.shape);
         }
       }
     }
@@ -237,9 +241,17 @@ export const map_draw = {
   },
 
   get_style: (shape: map_shape_type) => {
-    return STYLES[shape.options.style ?? "test"];
+    return STYLES[shape.options.style ?? "test"] ?? STYLES.error;
   },
 
-
+  change: (type: string, shapes: map_shape_type | map_shape_type[]) => {
+    if (!Array.isArray(shapes)) shapes = [shapes];
+    let s = `[change] (${type}) `;
+    for (const shape of shapes) {
+      s += shape.id + ", ";
+    }
+    console.log(s.substring(0, s.length - 2));
+  },
+  
 
 };

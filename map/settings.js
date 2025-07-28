@@ -1,3 +1,3 @@
 export const settings_default = {
-    slot: "a",
+    slot: "default",
 };

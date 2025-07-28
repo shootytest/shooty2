@@ -61,7 +61,7 @@ export type map_computed_type = {
 
 export type map_type = {
 
-  shapes?: map_shape_type[],
+  shapes: map_shape_type[],
   icons?: map_icon_type[],
   computed?: map_computed_type,
 
@@ -148,22 +148,27 @@ export const map_serialiser = {
     return result;
   },
 
-  stringify: (map: map_type): string => {
+  stringify_: (map: map_type): object => {
     const m: map_type = {
       shapes: [],
       icons: [],
     };
     for (const s of map.shapes ?? []) {
+      if (s.options.parent === "all") delete s.options.parent;
       m.shapes!!.push({ id: s.id, z: s.z, vertices: s.vertices, options: s.options });
     }
     for (const i of map.icons ?? []) {
       m.icons!!.push({ icon: i.icon, color: i.color });
     }
-    return JSON.stringify(m);
+    return m;
+  },
+
+  stringify: (map: map_type): string => {
+    return zipson.stringify(map_serialiser.stringify_(map));
   },
 
   parse: (raw_string: string): map_type => {
-    const m = JSON.parse(raw_string);
+    const m = zipson.parse(raw_string);
     const map: map_type = {
       shapes: m.shapes ?? [],
       icons: m.icons ?? [],
@@ -175,15 +180,15 @@ export const map_serialiser = {
   save: (slot: string, map: map_type): void => {
     const raw_string = map_serialiser.stringify(map);
     localStorage.setItem("map_" + slot, raw_string);
-    console.log("saved current map to slot \"" + slot + "\"!");
-    return; // JSON.parse(raw_string);
+    if (slot !== "auto") console.log("saved current map to slot \"" + slot + "\"!");
+    return; // return zipson.parse(raw_string);
   },
 
   load: (slot: string): map_type => {
     const raw_string = localStorage.getItem("map_" + slot);
     if (raw_string == null) {
       console.error("map slot \"" + slot + "\" doesn't exist!");
-      return { };
+      return { shapes: [] };
     } else {
       console.log("loaded current map from slot \"" + slot + "\"!");
     }
@@ -196,6 +201,28 @@ export const map_serialiser = {
     localStorage.removeItem("map_" + slot);
     console.log("deleted current map from slot \"" + slot + "\"!");
     return map;
+  },
+
+  special_stringify(o: any): string {
+    if (typeof o !== "object") {
+      return JSON.stringify(o);
+    } else if (Array.isArray(o)) {
+      if (o.length <= 0) return "[]";
+      let s = "[";
+      for (const p of o) {
+        s += map_serialiser.special_stringify(p) + ",";
+      }
+      return s.substring(0, s.length - 1) + "]";
+    } else {
+      const s = Object.keys(o).map(
+        key => `${key}:${map_serialiser.special_stringify(o[key])}`
+      ).join(",");
+      return `{${s}}`;
+    }
+  },
+
+  copy: (map: map_type): void => {
+    navigator.clipboard.writeText(map_serialiser.special_stringify(map_serialiser.stringify_(map)));
   },
 
 };
@@ -361,6 +388,10 @@ export const TEST_MAP: map_type = {
 }*/
 
 export const STYLES: styles_type = {
+  error: {
+    stroke: "#ff0000",
+    fill: "#ff0000",
+  },
   test: {
     stroke: "#abcdef",
     fill: "#abcdef",
