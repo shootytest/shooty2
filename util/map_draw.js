@@ -232,5 +232,6 @@ export const map_draw = {
             s += shape.id + ", ";
         }
         console.log(s.substring(0, s.length - 2));
+        map_serialiser.save("auto", ui.map);
     },
 };

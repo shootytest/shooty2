@@ -96,12 +96,20 @@ export const ui = {
         });
         */
         key.add_key_listener("Escape", () => {
-            if (ui.mouse.drag_target[0]) {
+            if (ui.properties_selecting_parent) {
+                ui.properties_selecting_parent = "";
+                ui.update_directory();
+                ui.update_properties();
+                ui.open_properties();
+            }
+            else if (ui.mouse.click && ui.mouse.drag_target[0]) {
                 const target = ui.mouse.drag_target[0];
                 ui.mouse.drag_target[0] = false;
                 target.shape.vertices = target.vertex_old;
+                // map_draw.change("reset 'move vertex'", target.shape); // pressing escape shouldn't change stuff
             }
         });
+        ui.map = map_serialiser.load("auto");
         map_draw.compute_map(ui.map);
         ui.update_directory();
         ui.update_properties();
@@ -633,7 +641,7 @@ export const ui = {
                 }
                 const view_v = vector.aabb2v(ui.viewport);
                 const size_v = vector.aabb2v(aabb);
-                if (shape.vertices.length < 2)
+                if (size_v.x <= 0 && size_v.y <= 0)
                     size = camera.scale;
                 else
                     size = Math.min(view_v.x / size_v.x, view_v.y / size_v.y) / 1.5;
@@ -645,7 +653,10 @@ export const ui = {
                 if (event.offsetX > pLeft) {
                     // it is not a click on the file
                     event.preventDefault();
-                    ui.open_properties(shape);
+                    if (ui.properties_selecting_parent && ui.properties_selecting_parent !== shape.id)
+                        ui.select_parent(shape);
+                    else
+                        ui.open_properties(shape);
                 }
             });
             clickable.addEventListener("contextmenu", function (event) {
@@ -655,8 +666,13 @@ export const ui = {
         }
     },
     properties_selected: {},
+    properties_selecting_parent: "",
     properties_options: {
         shape: {
+            parent: {
+                name: "parent",
+                type: "button",
+            },
             open_loop: {
                 name: "open loop",
                 type: "checkbox",
@@ -761,7 +777,7 @@ export const ui = {
                                 shape.options[option_key] = true;
                             else
                                 delete shape.options[option_key];
-                            map_draw.change("edit property " + option_key, shape);
+                            map_draw.change("edit property: " + option_key, shape);
                         });
                     }
                     else if (option.type === "text") {
@@ -771,8 +787,36 @@ export const ui = {
                                 shape.options[option_key] = input.value;
                             else
                                 delete shape.options[option_key];
-                            map_draw.change("edit property " + option_key, shape);
+                            map_draw.change("edit property: " + option_key, shape);
                         });
+                    }
+                    else if (option.type === "button") {
+                        if (option_key === "parent") {
+                            const is_selecting = ui.properties_selected.id === ui.properties_selecting_parent;
+                            label.innerHTML += `
+                : ${(shape.options.parent === "all" ? "&lt;none&gt;" : (shape.options.parent ?? "&lt;none&gt;"))}
+                <button style="font-size: 0.8em;" id="edit_parent" title="${is_selecting ? "don't edit parent" : "edit parent"}">
+                  <svg xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;" viewBox="0 0 24 24"><path fill="currentColor" d="${is_selecting ? SVG.edit_off : SVG.edit}"/></svg>
+                </button>
+              `.trim();
+                            input.style.display = "none";
+                            label.querySelector("button")?.addEventListener("click", function (event) {
+                                if (is_selecting) {
+                                    ui.properties_selecting_parent = "";
+                                    ui.update_properties();
+                                }
+                                else {
+                                    ui.properties_selecting_parent = ui.properties_selected.id;
+                                    ui.right_sidebar_mode = "directory";
+                                    ui.update_directory();
+                                    ui.directory_elements.all.style.backgroundColor = "#d7e11155";
+                                    ui.update_right_sidebar();
+                                }
+                            });
+                        }
+                        else {
+                            // why
+                        }
                     }
                     div.appendChild(p);
                 }
@@ -780,10 +824,64 @@ export const ui = {
         }
     },
     open_properties: (shape) => {
-        ui.properties_selected = shape;
+        if (shape)
+            ui.properties_selected = shape;
         ui.right_sidebar_mode = "properties";
-        ui.update_right_sidebar();
         ui.update_properties();
+        ui.update_right_sidebar();
+    },
+    select_parent: (shape) => {
+        const child_id = ui.properties_selected.id;
+        const old_parent_id = ui.properties_selected.options.parent;
+        if (old_parent_id === shape.id || child_id === shape.id || child_id === undefined)
+            return;
+        if (ui.check_child(child_id, shape))
+            return console.error(`[ui/select_parent] child '${shape.id}' can't be set to the parent of '${child_id}'!`);
+        const old_parent = old_parent_id == undefined ? undefined :
+            (old_parent_id === "all" ? ui.all_shape : ui.map.computed?.shape_map[old_parent_id]);
+        if (shape.id === "all")
+            delete ui.properties_selected.options.parent;
+        else
+            ui.properties_selected.options.parent = shape.id; // actually set the parent
+        // make parent contain child
+        if (shape.options.contains === undefined)
+            shape.options.contains = [child_id];
+        else
+            shape.options.contains?.push(child_id);
+        // delete child from old parent
+        if (old_parent !== undefined && old_parent.id !== "all") {
+            const found_index = old_parent.options.contains?.indexOf(child_id);
+            if (found_index !== undefined && found_index >= 0)
+                old_parent.options.contains?.splice(found_index, 1);
+            if ((old_parent.options.contains?.length ?? -1) === 0)
+                delete old_parent.options.contains;
+        }
+        ui.properties_selecting_parent = "";
+        map_serialiser.compute(ui.map);
+        ui.update_directory();
+        // ui.open_properties();
+        ui.right_sidebar_mode = "directory";
+        ui.update_right_sidebar();
+        map_draw.change("edit property: parent", ui.properties_selected);
+    },
+    // recursive
+    check_child: (check_id, shape) => {
+        if ((shape.options.parent?.length ?? 0) > 0 && shape.options.parent !== "all")
+            return false;
+        let s = shape;
+        let depth = 1;
+        while ((s?.computed?.depth ?? 0) === 0 && (s?.options.parent?.length ?? 0) > 0 && s?.options.parent !== "all" && depth < 100) {
+            const parent_id = s?.options.parent;
+            // const old_id = s.id; // todo remove, debug only
+            s = ui.map.computed?.shape_map[parent_id];
+            if (s == undefined) {
+                console.error(`[ui/check_child] (${shape.id}) why is '${parent_id}' not in the computed shape map?`);
+                return false;
+            }
+            if (s.id === check_id)
+                return true;
+        }
+        return false;
     },
 };
 window.addEventListener("resize", function (event) {

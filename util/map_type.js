@@ -1,5 +1,4 @@
 import { vector, vector3 } from "./vector.js";
-;
 export const map_serialiser = {
     compute: (map) => {
         map.computed = {
@@ -8,6 +7,13 @@ export const map_serialiser = {
         if (map.shapes != undefined) {
             for (const shape of map.shapes) {
                 map.computed.shape_map[shape.id] = shape;
+                // debug, this shouldn't happen normally i hope
+                if (shape.options.contains?.includes(shape.id))
+                    console.error("[map_serialiser/compute] why does '" + shape.id + "' contain itself?");
+                if ((shape.options.contains?.length ?? -1) === 0) {
+                    console.error("[map_serialiser/compute] deleting empty contains list in '" + shape.id + "'");
+                    delete shape.options.contains;
+                }
                 const world_vertices = vector3.create_many(shape.vertices, shape.z);
                 shape.computed = {
                     aabb: vector.make_aabb(world_vertices),
@@ -22,9 +28,12 @@ export const map_serialiser = {
                 if ((shape.options.parent?.length ?? 0) > 0 && shape.options.parent !== "all") {
                     let s = shape;
                     let depth = 1;
-                    while ((s.computed?.depth ?? 0) === 0 && (s.options.parent?.length ?? 0) > 0 && depth < 100) {
+                    while ((s?.computed?.depth ?? 0) === 0 && (s.options.parent?.length ?? 0) > 0 && s.options.parent !== "all" && depth < 100) {
                         const parent_id = s.options.parent;
+                        // const old_id = s.id; // todo remove, debug only
                         s = map.computed.shape_map[parent_id];
+                        if (s == undefined)
+                            console.error(`[map_serialiser/compute] (${shape.id}) why is '${parent_id}' not in the computed shape map?`);
                         depth++;
                     }
                     shape.computed.depth = depth + (s.computed?.depth ?? 0);
@@ -124,9 +133,12 @@ export const map_serialiser = {
     },
     copy: (map) => {
         navigator.clipboard.writeText(map_serialiser.special_stringify(map_serialiser.stringify_(map)));
+        // map_serialiser.compute(map);
     },
 };
-export const TEST_MAP = {
+// just realised it's possible to paste the zipped JSON
+export const TEST_MAP = { shapes: [{ id: "start", z: 0, vertices: [{ x: 0, y: 0 }], options: { open_loop: false, style: "start" } }, { id: "wall 1", z: 0, vertices: [{ x: -200, y: 160 }, { x: -360, y: 160 }, { x: -360, y: 0 }, { x: -200, y: 0 }], options: { open_loop: false, contains: ["a random square"], style: "test" } }, { id: "a random square", z: 0, vertices: [{ x: 50, y: 50 }, { x: 50, y: 250 }, { x: 250, y: 250 }, { x: 250, y: 50 }, { x: 350, y: -50 }], options: { open_loop: true, parent: "wall 1", style: "test" } }], icons: [] };
+const TEST_MAP_ = {
     shapes: [
         /*
         // todo imagine rendering these 2 "arch" shapes with shadows accurately...

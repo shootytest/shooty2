@@ -6,7 +6,7 @@ import { camera } from "./util/camera.js";
 import { ctx, init_canvas } from "./util/canvas.js";
 import { color } from "./util/color.js";
 import { key, mouse } from "./util/key.js";
-import { map_serialiser, TEST_MAP } from "./util/map_type.js";
+import { map_serialiser } from "./util/map_type.js";
 import { do_visibility, undo_visibility } from "./util/see.js";
 import { vector, vector3 } from "./util/vector.js";
 export const engine = Engine.create();
@@ -16,6 +16,7 @@ engine.gravity.y = 0;
 camera.move_by(vector.create(-window.innerWidth / 2, -window.innerHeight / 2));
 export const runner = Runner.create();
 Runner.run(runner, engine);
+export const MAP = map_serialiser.load("auto");
 const init_all = () => {
     init_canvas();
     // ui.init();
@@ -39,13 +40,12 @@ const tick_all = () => {
     undo_visibility();
 };
 Events.on(runner, "tick", tick_all);
-player.create_player();
-map_serialiser.compute(TEST_MAP);
+map_serialiser.compute(MAP);
 /*for (const shape of TEST_MAP.shapes ?? []) {
   const t = new Thing();
   t.make_map(shape);
 }*/
-const shapelist = TEST_MAP.shapes?.sort((s1, s2) => (s1.computed?.depth ?? 0) - (s2.computed?.depth ?? 0)) ?? [];
+const shapelist = MAP.shapes?.sort((s1, s2) => (s1.computed?.depth ?? 0) - (s2.computed?.depth ?? 0)) ?? [];
 for (const map_shape of shapelist) {
     if (map_shape.vertices.length < 2)
         continue;
@@ -57,7 +57,13 @@ for (const map_shape of shapelist) {
         t.make_map(map_shape);
     }
 }
-player.position = vector3.create_(TEST_MAP.computed?.shape_map.start.vertices[0] ?? vector.create());
+player.position = vector3.create_(MAP.computed?.shape_map.start.vertices[0] ?? vector.create());
+player.create_player();
 // todo remove debugs :()()
 // console.log(Thing.things);
 // console.log(Shape.shapes);
+// autoreload map
+window.addEventListener("storage", function (event) {
+    if (event.key === "map_auto")
+        window.location.reload();
+});

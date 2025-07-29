@@ -1,7 +1,7 @@
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
 import { config } from "../util/config.js";
-import { map_shape_compute_type, map_shape_type, shape_style, STYLES } from "../util/map_type.js";
+import { map_shape_compute_type, map_shape_type, style_type, STYLES } from "../util/map_type.js";
 import { AABB3, vector, vector3 } from "../util/vector.js";
 import { player } from "./player.js";
 import { Thing } from "./thing.js";
@@ -135,7 +135,7 @@ export class Shape {
   computed_aabb?: AABB3; // for use in Shape.filter()
 
   // map_shape_type_object?: map_shape_type;
-  style: shape_style = {};
+  style: style_type = {};
 
   constructor(thing: Thing) {
     this.thing = thing;
