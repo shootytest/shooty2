@@ -138,17 +138,31 @@ export const map_draw = {
 
     const style = map_draw.get_style(shape);
     const id_prefix = shape.id + "__";
+    const selected = shape.id === ui.mouse.drag_target[0]?.shape?.id;
     
     for (const [i, v] of shape.computed.screen_vertices.entries()) {
       const id_ = id_prefix + i;
+      const vertex_size = (shape.id === "start") ? camera.scale * 30 : camera.sqrtscale * 5;
       if (Math.abs(v.z) <= 0.005) {
         ctx.begin();
-        ctx.circle(v.x, v.y, camera.sqrtscale * 5);
+        ctx.circle(v.x, v.y, vertex_size);
         ctx.fillStyle = style.stroke ?? style.fill ?? color.purewhite;
         ctx.lineWidth = camera.sqrtscale * 2;
         ctx.fill();
+        if (selected && shape.vertices.length > 1) {
+          const size = 10;
+          if (camera.sqrtscale * 6 >= size) {
+            ctx.fillStyle = color.black;
+            ctx.set_font_mono(camera.sqrtscale * 5);
+            ctx.text("" + i, v.x, v.y);
+          } else {
+            ctx.fillStyle = color.white;
+            ctx.set_font_mono(size);
+            ctx.text("" + i, v.x + size, v.y + size);
+          }
+        }
       }
-      const hove_r = Math.max(6, camera.sqrtscale * 10);
+      const hove_r = Math.max(6, vertex_size + camera.sqrtscale * 5);
       if (vector.in_circle(mouse, v, hove_r)) {
         // mouse hover
         ctx.begin();
@@ -168,16 +182,10 @@ export const map_draw = {
           new: true,
         };
         ui.mouse.hover_target = target;
-        ui.click.new(() => { // left click
-          ui.mouse.drag_target[0] = target;
-          if (ui.circle_menu.active) {
-            ui.circle_menu.target = target;
-          }
-        });
+        ui.click.new(() => ui.select_shape(target));
         ui.click.new(() => { // right click
-          ui.mouse.drag_target[0] = target;
           ui.circle_menu.activate(true, ui.circle_menu.target.id !== target.id);
-          ui.circle_menu.target = target;
+          ui.select_shape(target); // ui.circle_menu.target = target;
         }, 2);
       }
       if (ui.mouse.drag_target[0].id === id_) {

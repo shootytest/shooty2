@@ -114,7 +114,7 @@ export const ui = {
         ui.open_properties();
       } else if (ui.mouse.click && ui.mouse.drag_target[0]) {
         const target = ui.mouse.drag_target[0] as map_vertex_type;
-        ui.mouse.drag_target[0] = false;
+        ui.deselect_shape();
         target.shape.vertices = target.vertex_old;
         // map_draw.change("reset 'move vertex'", target.shape); // pressing escape shouldn't change stuff
       }
@@ -490,7 +490,7 @@ export const ui = {
       if (!vector.in_circle(mouse, v, 100)) {
         const close_fn = () => {
           ui.circle_menu.deactivate();
-          ui.mouse.drag_target[0] = {};
+          ui.deselect_shape();
         };
         ui.click.new(close_fn);
         ui.click.new(close_fn, 2, false); // don't overwrite
@@ -512,7 +512,7 @@ export const ui = {
     ui.draw_a_grid(grid_size * 1000000, color.grey, camera.sqrtscale * 2.0);
     // behaviour when clicked outside of anything important
     if (ui.mouse.drag_target[0]?.id && !ui.circle_menu.active) {
-      ui.click.new(() => ui.mouse.drag_target[0] = {});
+      ui.click.new(ui.deselect_shape);
     }
   },
 
@@ -531,6 +531,21 @@ export const ui = {
       ctx.line(0, y, view.width, y);
       y += grid_size;
     }
+  },
+
+  select_shape: (target: map_vertex_type) => {
+    const old_id = ui.mouse.drag_target[0]?.shape?.id;
+    ui.mouse.drag_target[0] = target;
+    ui.color_directory_element(old_id, "");
+    ui.color_directory_element(target.shape.id, "#ff000033");
+    if (ui.circle_menu.active) {
+      ui.circle_menu.target = target;
+    }
+  },
+
+  deselect_shape: () => {
+    ui.color_directory_element(ui.mouse.drag_target[0]?.shape?.id, "");
+    ui.mouse.drag_target[0] = {};
   },
 
   draw_mouse: () => {
@@ -572,6 +587,12 @@ export const ui = {
     style: {},
     options: { contains: [], },
   } as map_shape_type,
+
+  color_directory_element: (shape_id: string, color: string) => {
+    if (ui.directory_elements[shape_id]?.querySelector("span")) {
+      ui.directory_elements[shape_id].querySelector("span")!!.style.backgroundColor = color;
+    }
+  },
 
   update_right_sidebar: () => {
     const aside_directory = document.getElementById("directory");
@@ -618,7 +639,7 @@ export const ui = {
         details.classList.add("folder");
         details.setAttribute("open", "");
         const summary = document.createElement("summary");
-        summary.textContent = id;
+        summary.innerHTML = `<span>${id}</span>`;
         details.appendChild(summary);
         const ul = document.createElement("ul");
         details.appendChild(ul);
@@ -637,7 +658,7 @@ export const ui = {
         const span = document.createElement("span");
         span.classList.add("file");
         span.style.backgroundImage = `url("/shape.svg")`;
-        span.textContent = id;
+        span.innerHTML = `<span>${id}</span>`;
         li.appendChild(span);
         if (!ui.directory_elements[shape.options.parent]) console.error("[ui/update_directory] parent folder (" + shape.options.parent + ") not found for leaf (" + id + ")");
         else ui.directory_elements[shape.options.parent].querySelector("ul")!!.appendChild(li);
@@ -718,7 +739,7 @@ export const ui = {
       <button id="close" title="close">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.x}"/></svg>
       </button>
-      <h3 style="margin: 0; user-select: none;">properties for ${shape.id}
+      <h3 style="margin: 0; user-select: none;">properties for <span id="jump_to_shape">${shape.id}</span>
       <button id="edit_id" title="edit id">
         <svg xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.edit}"/></svg>
       </button>
@@ -726,6 +747,9 @@ export const ui = {
       <div style="float: left; user-select: none;"></div>
     `;
 
+    document.getElementById("jump_to_shape")?.addEventListener("click", function(event) {
+      ui.directory_jump_fns[shape.id]?.();
+    });
     document.getElementById("close")?.addEventListener("click", function(event) {
       ui.properties_selected = ui.all_shape;
       ui.right_sidebar_mode = "directory";
@@ -807,6 +831,7 @@ export const ui = {
               label.querySelector("button")?.addEventListener("click", function(event) {
                 if (is_selecting) {
                   ui.properties_selecting_parent = "";
+                  ui.directory_elements.all.style.backgroundColor = "";
                   ui.update_properties();
                 } else {
                   ui.properties_selecting_parent = ui.properties_selected.id;
@@ -863,18 +888,18 @@ export const ui = {
   
   // recursive
   check_child: (check_id: string, shape: map_shape_type): boolean => {
-    if ((shape.options.parent?.length ?? 0) > 0 && shape.options.parent !== "all") return false;
+    if ((shape.options.parent?.length ?? 0) <= 0 || shape.options.parent === "all") return false;
     let s = shape as (map_shape_type | undefined);
     let depth = 1;
-    while ((s?.computed?.depth ?? 0) === 0 && (s?.options.parent?.length ?? 0) > 0 && s?.options.parent !== "all" && depth < 100) {
+    while ((s?.options.parent?.length ?? 0) > 0 && s?.options.parent !== "all" && depth < 100) {
       const parent_id = s?.options.parent!!;
-      // const old_id = s.id; // todo remove, debug only
       s = ui.map.computed?.shape_map[parent_id];
       if (s == undefined) {
         console.error(`[ui/check_child] (${shape.id}) why is '${parent_id}' not in the computed shape map?`);
         return false;
       }
-      if (s.id === check_id) return true;
+      if (s.id === check_id || s?.options.parent === check_id) return true;
+      depth++;
     }
     return false;
   },

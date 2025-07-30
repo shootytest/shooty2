@@ -30,7 +30,6 @@ export const map_serialiser = {
                     let depth = 1;
                     while ((s?.computed?.depth ?? 0) === 0 && (s.options.parent?.length ?? 0) > 0 && s.options.parent !== "all" && depth < 100) {
                         const parent_id = s.options.parent;
-                        // const old_id = s.id; // todo remove, debug only
                         s = map.computed.shape_map[parent_id];
                         if (s == undefined)
                             console.error(`[map_serialiser/compute] (${shape.id}) why is '${parent_id}' not in the computed shape map?`);
@@ -289,12 +288,14 @@ const TEST_MAP_ = {
     ],
     icons: [],
 };
-/*for (const s of TEST_MAP.shapes || []) {
+/*
+for (const s of TEST_MAP_.shapes || []) {
   for (const v of s.vertices) {
     v.x += 50;
     v.y += 50;
   }
-}*/
+}
+*/
 export const STYLES = {
     error: {
         stroke: "#ff0000",
@@ -304,6 +305,11 @@ export const STYLES = {
         stroke: "#abcdef",
         fill: "#abcdef",
         fill_opacity: 0.8,
+    },
+    tutorial: {
+        stroke: "#8b83f2",
+        fill: "#544bdb",
+        fill_opacity: 0.7,
     },
     start: {
         stroke: "#14b84d",
