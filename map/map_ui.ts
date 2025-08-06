@@ -88,23 +88,24 @@ export const ui = {
       let dz = 0;
       if (event.code === "KeyQ" && event.shiftKey) dz -= 0.1;
       if (event.code === "KeyE" && event.shiftKey) dz += 0.1;
-      camera.look_z += dz;
-    });
-
-    /*
-    key.add_keyup_listener((event) => {
-      if (event.key === "Shift") {
-        // released shift when dragging revert
-        if (ui.mouse.drag_target[0]) {
-          const target = ui.mouse.drag_target[0] as map_vertex_type;
-          for (let i = 0; i < o.shape.vertices.length; i++) {
-            if (i === target.index) continue;
-            o.shape.vertices[i] = o.vertex_old[i];
+      if (event.code === "KeyZ" && event.ctrlKey) {
+        if (event.shiftKey) { // full undo
+          if (confirm("undo all the way to the start?") && map_serialiser.initial_state) {
+            ui.map = map_serialiser.parse(map_serialiser.initial_state);
+            ui.init_map();
+            map_draw.change("undo all the way", []);
+          }
+        } else { // one step undo
+          const undo = map_serialiser.undo();
+          if (undo) {
+            ui.map = undo;
+            ui.init_map();
+            map_draw.change("undo", []);
           }
         }
       }
+      camera.look_z += dz;
     });
-    */
 
     key.add_key_listener("Escape", () => {
       if (ui.properties_selecting_parent) {
@@ -124,12 +125,22 @@ export const ui = {
 
     ui.map = map_serialiser.load("auto");
 
+    ui.init_map();
+
+    // focus on the all shape
+    ui.directory_jump_fns.all();
+    ui.properties_selected = ui.all_shape;
+
+    // load initial undo state
+    map_draw.change("nothing!", []);
+
+  },
+
+  init_map: function() {
+
     map_draw.compute_map(ui.map);
     ui.update_directory();
     ui.update_properties();
-    // mouse.rclick_element(ui.directory_elements.all.querySelector("summary")!!);
-    ui.directory_jump_fns.all();
-    ui.properties_selected = ui.all_shape;
     ui.update_right_sidebar();
 
   },
@@ -150,11 +161,6 @@ export const ui = {
     ui.mouse.was_rclick = ui.mouse.clickbuttons[2];
     ui.mouse.release_rclick = mouse.up_buttons[2];
     ui.mouse.clickbuttons = [ui.mouse.click, ui.mouse.mclick, ui.mouse.rclick];
-    /*for (let b = 0; b < 3; b++) {
-      if (mouse.up_buttons[b]) {
-        ui.mouse.drag_target[b] = {};
-      }
-    }*/
     
     ui.click.new_fns = [() => {}, () => {}, () => {}];
     
@@ -913,7 +919,6 @@ export const ui = {
     ui.properties_selecting_parent = "";
     map_serialiser.compute(ui.map);
     ui.update_directory();
-    // ui.open_properties();
     ui.right_sidebar_mode = "directory";
     ui.update_right_sidebar();
     map_draw.change("edit property: parent", ui.properties_selected);

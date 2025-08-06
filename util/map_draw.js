@@ -266,7 +266,9 @@ export const map_draw = {
         for (const shape of shapes) {
             s += shape.id + ", ";
         }
-        console.log(s.substring(0, s.length - 2));
-        map_serialiser.save("auto", ui.map);
+        console.log("%c%s", "background-color: #111; color: #abcdef", s.substring(0, s.length - (shapes.length <= 0 ? 1 : 2)));
+        const raw_string = map_serialiser.save("auto", ui.map);
+        if (!type.startsWith("undo"))
+            map_serialiser.save_undo_state(raw_string);
     },
 };

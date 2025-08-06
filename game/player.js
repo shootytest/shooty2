@@ -20,7 +20,7 @@ export class Player extends Thing {
     create_player() {
         this.create_body({
             frictionAir: 0.2,
-            restitution: 0, // no more boing
+            restitution: 0.1,
         });
     }
     tick() {

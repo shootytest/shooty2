@@ -80,6 +80,9 @@ export type styles_type = {
 
 export const map_serialiser = {
 
+  initial_state: "",
+  undo_states: [] as string[],
+
   compute: (map: map_type) => {
 
     map.computed = {
@@ -172,11 +175,11 @@ export const map_serialiser = {
     return map;
   },
 
-  save: (slot: string, map: map_type): void => {
+  save: (slot: string, map: map_type): string => {
     const raw_string = map_serialiser.stringify(map);
     localStorage.setItem("map_" + slot, raw_string);
     if (slot !== "auto") console.log("saved current map to slot \"" + slot + "\"!");
-    return; // return zipson.parse(raw_string);
+    return raw_string;
   },
 
   load: (slot: string): map_type => {
@@ -220,6 +223,33 @@ export const map_serialiser = {
     navigator.clipboard.writeText(map_serialiser.special_stringify(map_serialiser.stringify_(map)));
     // map_serialiser.compute(map);
   },
+
+  save_undo_state: (raw_string: string) => {
+    if (map_serialiser.undo_states.length <= 0) map_serialiser.initial_state = raw_string;
+    map_serialiser.undo_states.push(raw_string);
+    while (map_serialiser.undo_states.length > 10) map_serialiser.undo_states.shift();
+  },
+
+  undo: (): map_type | undefined => {
+    if (map_serialiser.undo_states.length <= 1) return undefined;
+    map_serialiser.undo_states.pop();
+    // if (raw_string === undefined) return undefined;
+    return map_serialiser.parse(map_serialiser.undo_states[map_serialiser.undo_states.length - 1]);
+  },
+
+  // update_map: (map: map_type, new_map: map_type) => {
+  //   map_serialiser.compute(new_map);
+  //   for (const s of map.shapes) {
+      
+  //   }
+  // },
+  
+  // update_shape: (shape: map_shape_type, new_shape: map_shape_type) => {
+  //   shape.id = new_shape.id;
+  //   shape.z = new_shape.z;
+  //   shape.vertices = new_shape.vertices;
+  //   shape.options = new_shape.options;
+  // },
 
 };
 

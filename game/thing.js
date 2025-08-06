@@ -99,9 +99,9 @@ export class Thing {
             if (s.closed_loop && s.vertices.length > 2) {
                 body = Bodies.fromVertices(s.offset.x, s.offset.y, [s.vertices], options);
                 // console.log(vector.adds(vector.adds(s.vertices, this.target.position), vector.create(-14.28, -8.66)), body.vertices);
-                const offset_i_took_3_hours_to_get_this = vector.sub(vector.aabb2bounds(vector.make_aabb(s.vertices)).min, body.bounds.min);
-                body.offset = offset_i_took_3_hours_to_get_this;
-                Body.setPosition(body, vector.add(this.target.position, offset_i_took_3_hours_to_get_this));
+                const offset_3_hour = vector.sub(vector.aabb2bounds(vector.make_aabb(s.vertices)).min, body.bounds.min);
+                body.offset = offset_3_hour;
+                Body.setPosition(body, vector.add(this.target.position, offset_3_hour));
                 Body.setAngle(body, this.target.angle);
             }
             else {
