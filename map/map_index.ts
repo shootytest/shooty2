@@ -1,7 +1,7 @@
 import { camera } from "../util/camera.js";
 import { ctx, init_canvas, view } from "../util/canvas.js";
 import { key, keys, mouse } from "../util/key.js";
-import { ui } from "./ui.js";
+import { ui } from "./map_ui.js";
 
 const init_all = () => {
   init_canvas();

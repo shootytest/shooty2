@@ -1,4 +1,4 @@
-import { ui } from "../map/ui.js";
+import { ui } from "../map/map_ui.js";
 import { camera } from "./camera.js";
 import { color } from "./color.js";
 import { Context } from "./draw.js";
