@@ -21,28 +21,43 @@ export const map_draw = {
         shape.computed = {
             aabb: vector.make_aabb(world_vertices),
             aabb3: vector3.make_aabb(world_vertices),
-            centroid: vector3.mean(world_vertices),
+            mean: vector3.mean(world_vertices),
             vertices: world_vertices,
             screen_vertices: screen_vertices,
             depth: depth,
         };
         ui.all_aabb = vector.aabb_combine(ui.all_aabb, shape.computed.aabb);
     },
-    duplicate_shape: (shape) => {
+    duplicate_shape: (shape, at_vertex_index = 0) => {
         const new_shape = map_serialiser.clone_shape(shape);
-        const move_vector = shape.computed ? vector.aabb2v(shape.computed?.aabb) : vector.create(10, 10);
-        for (const v of new_shape.vertices) {
-            v.x += move_vector.x;
-            v.y += move_vector.y;
+        if (at_vertex_index > 0) { // splitting shape
+            // wow 1 line, this works because the deleted vertices from the old shape are exactly the new shape
+            new_shape.vertices = shape.vertices.splice(at_vertex_index, shape.vertices.length - at_vertex_index);
         }
-        const shape_id_number = +new_shape.id.split("_").pop();
-        if (isNaN(shape_id_number))
-            new_shape.id += "_0";
-        else if (shape_id_number >= 0) {
-            const s = new_shape.id.split("_");
-            s[s.length - 1] = (shape_id_number + 1).toString();
-            new_shape.id = s.join("_");
-        } // todo this is untested
+        else {
+            const move_vector = shape.computed ? vector.aabb2v(shape.computed?.aabb) : vector.create(10, 10);
+            for (const v of new_shape.vertices) {
+                v.x += move_vector.x;
+                v.y += move_vector.y;
+            }
+        }
+        // set id of new shape
+        const split_by = " ";
+        let shape_id_number = +new_shape.id.split(split_by).pop();
+        if (isNaN(shape_id_number) || shape_id_number == undefined) {
+            shape_id_number = 0;
+            new_shape.id += split_by + "0";
+        }
+        else
+            shape_id_number++;
+        const splitted = new_shape.id.split(split_by);
+        while (ui.map.computed?.shape_map?.[new_shape.id] != undefined && shape_id_number <= 9999) {
+            splitted[splitted.length - 1] = shape_id_number.toString();
+            new_shape.id = splitted.join(split_by);
+            shape_id_number++;
+        }
+        // make sure new shape doesn't contain anything
+        delete new_shape.options.contains;
         return new_shape;
     },
     draw: (ctx, map) => {
@@ -62,7 +77,7 @@ export const map_draw = {
                     // compute vertices
                     shape.computed.vertices = vector3.create_many(shape.vertices, shape.z);
                     // compute distance
-                    shape.computed.distance2 = vector.length2(vector.sub(shape.computed?.centroid, cam));
+                    shape.computed.distance2 = vector.length2(vector.sub(shape.computed?.mean, cam));
                     // compute location on screen
                     const vs = [];
                     let i = 0;
@@ -184,6 +199,17 @@ export const map_draw = {
                                 const difference = vector.sub(newpos, o.vertex_old[o.index]);
                                 for (let i = 0; i < o.shape.vertices.length; i++) {
                                     o.shape.vertices[i] = vector.add(o.vertex_old[i], difference);
+                                }
+                                if (o.shape.vertices.length === 1 && (o.shape.options.contains?.length ?? 0) > 0) {
+                                    const same_difference = vector.sub(newpos, ov);
+                                    for (const s_id of o.shape.options.contains ?? []) {
+                                        const s = ui.map.computed?.shape_map?.[s_id];
+                                        if (s == undefined)
+                                            continue;
+                                        for (let i = 0; i < s.vertices.length; i++) {
+                                            s.vertices[i] = vector.add(s.vertices[i], same_difference);
+                                        }
+                                    }
                                 }
                             }
                             else {

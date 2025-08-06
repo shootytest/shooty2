@@ -989,6 +989,9 @@ declare namespace Matter {
          * are both true.
          */
         collisionFilter: ICollisionFilter;
+
+        // test
+        offset: Vector;
     }
 
     /**

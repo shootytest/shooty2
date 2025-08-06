@@ -12,8 +12,8 @@ export const view = {
 };
 export const init_canvas = () => {
     ctx.resetTransform();
-    ctx.lineCap = "square";
-    ctx.lineJoin = "miter";
+    ctx.lineCap = "butt";
+    ctx.lineJoin = "bevel";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     resize_canvas();

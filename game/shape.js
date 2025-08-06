@@ -22,7 +22,7 @@ export class Shape {
         if (o.computed == undefined) {
             throw "map shape not computed yet!";
         }
-        const dv = (thing.shapes.length >= 1) ? thing.position : o.computed.centroid;
+        const dv = (thing.shapes.length >= 1) ? thing.position : o.computed.mean;
         for (const v of s.vertices) {
             v.x -= dv.x;
             v.y -= dv.y;
@@ -30,8 +30,8 @@ export class Shape {
         s.style = STYLES[o.options.style ?? "test"] ?? STYLES.error;
         s.init_computed();
         if (thing.shapes.length >= 1) {
-            s.offset.x = thing.position.x - o.computed.centroid.x;
-            s.offset.y = thing.position.y - o.computed.centroid.y;
+            s.offset.x = thing.position.x - o.computed.mean.x;
+            s.offset.y = thing.position.y - o.computed.mean.y;
         }
         return s;
     }
@@ -80,7 +80,7 @@ export class Shape {
                 // translate by thing position
                 vector3.add_to_list(s.computed.vertices, vector3.flatten(s.thing.position));
                 // compute distance (whatever for? i forgot)
-                s.computed.distance2 = vector.length2(vector.sub(s.computed.centroid, cam));
+                s.computed.distance2 = vector.length2(vector.sub(s.computed.mean, cam));
                 // compute location on screen using camera transformation
                 s.compute_screen();
             }
@@ -139,7 +139,7 @@ export class Shape {
         this.computed = {
             aabb: vector.make_aabb(this.vertices),
             aabb3: vector3.make_aabb(this.vertices),
-            centroid: vector3.mean(this.vertices),
+            mean: vector3.mean(this.vertices),
             vertices: vector3.clone_list(this.vertices),
         };
     }
@@ -160,6 +160,7 @@ export class Shape {
         ctx.begin();
         this.draw_path();
         ctx.lineCap = "square";
+        ctx.lineJoin = "bevel";
         ctx.globalAlpha = style.opacity ?? 1;
         if (style.stroke) {
             ctx.strokeStyle = style.stroke;
@@ -231,9 +232,9 @@ export class Polygon extends Shape {
     }
     compute_screen() {
         if (this.sides === 0) {
-            if (this.computed?.centroid == undefined)
+            if (this.computed?.mean == undefined)
                 return;
-            let c = this.computed.centroid;
+            let c = this.computed.mean;
             if (this.thing)
                 c = vector3.add(c, vector3.flatten(this.thing.position));
             let r = vector3.create(this.radius, 0, this.z);

@@ -7,8 +7,10 @@ import { ctx, init_canvas } from "./util/canvas.js";
 import { color } from "./util/color.js";
 import { key, mouse } from "./util/key.js";
 import { map_serialiser } from "./util/map_type.js";
+// import polyDecomp from "./util/polydecomp.js";
 import { do_visibility, undo_visibility } from "./util/see.js";
 import { vector, vector3 } from "./util/vector.js";
+// Common.setDecomp(polyDecomp); todo remove
 export const engine = Engine.create();
 export const world = engine.world;
 engine.gravity.x = 0;
@@ -16,6 +18,18 @@ engine.gravity.y = 0;
 camera.move_by(vector.create(-window.innerWidth / 2, -window.innerHeight / 2));
 export const runner = Runner.create();
 Runner.run(runner, engine);
+/*
+const render = Render.create({
+  canvas: canvas,
+  engine: engine,
+  options: {
+    showAngleIndicator: true,
+    showCollisions: false,
+    wireframes: true,
+  }
+});
+Render.run(render);
+*/
 export const MAP = map_serialiser.load("auto");
 const init_all = () => {
     init_canvas();

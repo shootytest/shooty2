@@ -2,6 +2,7 @@ import { Context } from "./draw.js";
 
 export const canvas = document.createElement("canvas");
 export const ctx = new Context(canvas.getContext("2d", { alpha: false }));
+
 canvas.classList.add("canvas");
 document.body.appendChild(canvas);
 
@@ -15,8 +16,8 @@ export const view = {
 
 export const init_canvas = () => {
   ctx.resetTransform();
-  ctx.lineCap = "square";
-  ctx.lineJoin = "miter";
+  ctx.lineCap = "butt";
+  ctx.lineJoin = "bevel";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   resize_canvas();

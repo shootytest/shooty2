@@ -18,7 +18,7 @@ export const map_serialiser = {
                 shape.computed = {
                     aabb: vector.make_aabb(world_vertices),
                     aabb3: vector3.make_aabb(world_vertices),
-                    centroid: vector3.mean(world_vertices),
+                    mean: vector3.mean(world_vertices),
                     vertices: world_vertices,
                 };
             }
@@ -136,7 +136,7 @@ export const map_serialiser = {
     },
 };
 // just realised it's possible to paste the zipped JSON
-export const TEST_MAP = { shapes: [{ id: "start", z: 0, vertices: [{ x: 0, y: 0 }], options: { open_loop: false, style: "start" } }, { id: "wall 1", z: 0, vertices: [{ x: -200, y: 160 }, { x: -360, y: 160 }, { x: -360, y: 0 }, { x: -200, y: 0 }], options: { open_loop: false, contains: ["a random square"], style: "test" } }, { id: "a random square", z: 0, vertices: [{ x: 50, y: 50 }, { x: 50, y: 250 }, { x: 250, y: 250 }, { x: 250, y: 50 }, { x: 350, y: -50 }], options: { open_loop: true, parent: "wall 1", style: "test" } }], icons: [] };
+export const TEST_MAP = { shapes: [{ id: "start", z: 0, vertices: [{ x: -160, y: 110 }], options: { contains: ["test 1_0"], open_loop: false, style: "start" } }, { id: "tutorial rocks", z: 0, vertices: [{ x: -120, y: -180 }], options: { contains: ["tutorial rock 1", "tutorial rock 2", "tutorial rock 3", "tutorial rock 4", "tutorial rock 5"], open_loop: false, style: "tutorial" } }, { id: "test group", z: 0, vertices: [{ x: 290, y: -400 }], options: { contains: ["test 1"], open_loop: false, style: "test" } }, { id: "wall 1", z: 0, vertices: [{ x: -260, y: -360 }, { x: -420, y: -360 }, { x: -420, y: -520 }, { x: -260, y: -520 }], options: { style: "tutorial", contains: ["tutorial wall 1", "tutorial wall 2"] } }, { id: "test 1", z: 0, vertices: [{ x: 321.947, y: -350.067 }, { x: 431.947, y: -460.067 }, { x: 121.947, y: -440.067 }], options: { open_loop: true, style: "test", parent: "test group" } }, { id: "tutorial rock 4", z: 0, vertices: [{ x: -230, y: 330 }, { x: -190, y: 310 }, { x: -140, y: 310 }, { x: -110, y: 350 }, { x: -120, y: 410 }, { x: -150, y: 370 }, { x: -250, y: 380 }], options: { style: "tutorial", parent: "tutorial rocks" } }, { id: "tutorial rock 3", z: 0, vertices: [{ x: -361.236, y: -78.547 }, { x: -351.236, y: -98.547 }, { x: -311.236, y: -108.547 }, { x: -281.236, y: -98.547 }, { x: -271.236, y: -58.547 }, { x: -301.236, y: -28.547 }, { x: -351.236, y: -38.547 }], options: { style: "tutorial", parent: "tutorial rocks" } }, { id: "tutorial rock 2", z: 0, vertices: [{ x: 140, y: 320 }, { x: 160, y: 280 }, { x: 210, y: 260 }, { x: 250, y: 300 }, { x: 250, y: 360 }, { x: 200, y: 380 }, { x: 150, y: 370 }], options: { style: "tutorial", parent: "tutorial rocks" } }, { id: "tutorial rock 1", z: 0, vertices: [{ x: -40, y: -210 }, { x: 0, y: -230 }, { x: 70, y: -220 }, { x: 100, y: -180 }, { x: 58.764, y: -148.547 }, { x: 18.764, y: -138.547 }, { x: -21.236, y: -158.547 }], options: { style: "tutorial", parent: "tutorial rocks" } }, { id: "tutorial rock 5", z: 0, vertices: [{ x: 510, y: -100 }, { x: 630, y: -190 }, { x: 740, y: -100 }, { x: 630, y: -160 }], options: { style: "tutorial", parent: "tutorial rocks" } }, { id: "tutorial wall 1", z: 0, vertices: [{ x: 580, y: -330 }, { x: 290, y: -160 }, { x: -100, y: -310 }, { x: -390, y: -100 }, { x: -420, y: 250 }, { x: -250, y: 380 }], options: { open_loop: true, style: "tutorial", parent: "wall 1" } }, { id: "tutorial wall 2", z: 0, vertices: [{ x: -190, y: 440 }, { x: -130, y: 500 }, { x: 260, y: 430 }, { x: 420, y: 130 }, { x: 680, y: 240 }], options: { open_loop: true, style: "tutorial", parent: "wall 1" } }], icons: [] };
 const TEST_MAP_ = {
     shapes: [
         /*
@@ -302,16 +302,16 @@ export const STYLES = {
         fill: "#ff0000",
     },
     test: {
-        stroke: "#abcdef",
-        fill: "#abcdef",
+        stroke: "#abcdef99",
+        fill: "#abcdef99",
         fill_opacity: 0.8,
     },
     tutorial: {
-        stroke: "#8b83f2",
+        stroke: "#7f77ea99",
         fill: "#544bdb",
         fill_opacity: 0.7,
     },
     start: {
-        stroke: "#14b84d",
+        stroke: "#00ddff99",
     },
 };

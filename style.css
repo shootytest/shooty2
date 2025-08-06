@@ -101,7 +101,7 @@ aside {
 /* folder style */
 details {
   width: 100%;
-  background-color: #eeeeee33;
+  background-color: #eeeeee30;
 }
 details.folder summary {
   user-select: none;
@@ -128,7 +128,7 @@ details.folder ul {
   list-style: none;
   margin: 0 0 0 0.5em;
   padding: 0.2em 0 0 0.5em;
-  border-left: 1px solid black;
+  border-left: 1px solid #111111;
 }
 details.folder ul li {
   padding: 0.2em 0;

@@ -1,5 +1,6 @@
 import { world } from "../index.js";
 import { Bodies, Body, Composite } from "../matter.js";
+import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { Polygon, Shape } from "./shape.js";
@@ -32,7 +33,7 @@ export class Thing {
         Thing.things.push(this);
     }
     get position() {
-        return (this.body) ? vector3.create2(this.body.position, this.target.position.z) : vector3.clone(this.target.position);
+        return (this.body) ? vector3.create2(vector.sub(this.body.position, this.body.offset ?? vector.create()), this.target.position.z) : vector3.clone(this.target.position);
     }
     set position(position) {
         this.target.position.x = position.x;
@@ -69,7 +70,7 @@ export class Thing {
         const s = Shape.from_map(this, o);
         s.thing = this;
         if (this.shapes.length <= 0)
-            this.position = o.computed.centroid;
+            this.position = /*(o.vertices.length >= 3 && !o.options.open_loop) ? Vertices.centre(o.computed.vertices) :*/ vector3.mean(o.computed.vertices);
         this.shapes.push(s);
         if (this.id.startsWith("generic thing #"))
             this.create_id(o.id);
@@ -97,7 +98,10 @@ export class Thing {
         else { // just use vertices
             if (s.closed_loop && s.vertices.length > 2) {
                 body = Bodies.fromVertices(s.offset.x, s.offset.y, [s.vertices], options);
-                Body.setPosition(body, this.target.position);
+                // console.log(vector.adds(vector.adds(s.vertices, this.target.position), vector.create(-14.28, -8.66)), body.vertices);
+                const offset_i_took_3_hours_to_get_this = vector.sub(vector.aabb2bounds(vector.make_aabb(s.vertices)).min, body.bounds.min);
+                body.offset = offset_i_took_3_hours_to_get_this;
+                Body.setPosition(body, vector.add(this.target.position, offset_i_took_3_hours_to_get_this));
                 Body.setAngle(body, this.target.angle);
             }
             else {
@@ -105,23 +109,23 @@ export class Thing {
                 // console.log(math.expand_lines(s.vertices, 1));
                 const composite = Composite.create();
                 const sm = vector.mean(s.vertices);
-                const b = Bodies.fromVertices(sm.x, sm.y, math.expand_lines(s.vertices, 1), options);
+                const b = Bodies.fromVertices(sm.x, sm.y, math.expand_lines(s.vertices, config.main.wall_width), options);
                 b.density = 0;
                 b.collisionFilter = { category: 0 };
                 Composite.add(composite, b);
-                Composite.add(world, b);
+                // Composite.add(world, b);
                 Body.setPosition(b, vector.add(this.target.position, sm));
                 Body.setAngle(b, 0);
-                for (const vs of math.expand_lines(s.vertices, 1)) {
+                for (const vs of math.expand_lines(s.vertices, config.main.wall_width)) {
                     const vm = vector.mean(vs);
                     const b = Bodies.fromVertices(s.offset.x + vm.x, s.offset.y + vm.y, [vs], options);
                     Composite.add(composite, b);
-                    Composite.add(world, b);
+                    // Composite.add(world, b);
                     Body.setPosition(b, vector.add(this.target.position, vm));
                     Body.setAngle(b, 0);
                 }
-                // Composite.add(world, composite);
-                body = composite.bodies[0];
+                Composite.add(world, composite);
+                body = b; // composite.bodies[0];
             }
         }
         this.body = body;

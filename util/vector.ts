@@ -65,6 +65,13 @@ export const vector = {
       y: v1.y + v2.y,
     };
   },
+  adds: (vs: vector[], v2: vector): vector[] => {
+    const result = [];
+    for (const v1 of vs) {
+      result.push(vector.add(v1, v2));
+    }
+    return result;
+  },
   sub: (v1: vector, v2: vector): vector => {
     return {
       x: v1.x - v2.x,
@@ -96,6 +103,9 @@ export const vector = {
       math.round_to(v.x, n),
       math.round_to(v.y, n),
     );
+  },
+  direction: (v: vector) => {
+    return Math.atan2(-v.y, v.x);
   },
   createpolar: (theta: number, r = 1) => {
     return vector.create(r * Math.cos(theta), r * Math.sin(theta));
@@ -137,6 +147,21 @@ export const vector = {
       mean = vector.add(mean, v);
     }
     return vector.div(mean, vertices.length);
+  },
+  centroid: (vertices: vector[]): vector => {
+    const first = vertices[0], last = vertices[vertices.length-1];
+    if (first.x != last.x || first.y != last.y) vertices.push(first);
+    let twice_area = 0, x = 0, y = 0, n = vertices.length, p1, p2, f;
+    for (var i = 0, j = n - 1; i < n; j = i++) {
+        p1 = vertices[i];
+        p2 = vertices[j];
+        f = p1.x * p2.y - p2.x * p1.y;
+        twice_area += f;          
+        x += (p1.x + p2.x) * f;
+        y += (p1.y + p2.y) * f;
+    }
+    f = twice_area * 3;
+    return { x: x / f, y: y / f, };
   },
   dot: (v1: vector, v2: vector): number => {
     return v1.x * v2.x + v1.y * v2.y;
@@ -187,6 +212,12 @@ export const vector = {
     return {
       x: a.max_x - a.min_x,
       y: a.max_y - a.min_y,
+    };
+  },
+  aabb2bounds: (a: AABB): { min: vector, max: vector } => {
+    return {
+      min: vector.create(a.min_x, a.min_y),
+      max: vector.create(a.max_x, a.max_y)
     };
   },
   aabb2vs: (a: AABB): vector[] => {
@@ -354,6 +385,22 @@ export const vector3 = {
       mean = vector3.add(mean, v);
     }
     return vector3.div(mean, vertices.length);
+  },
+  centroid: (vertices: vector3[]): vector3 => {
+    const first = vertices[0], last = vertices[vertices.length-1];
+    if (first.x != last.x || first.y != last.y) vertices.push(first);
+    let twice_area = 0, x = 0, y = 0, z = 0, n = vertices.length, p1, p2, f;
+    for (var i = 0, j = n - 1; i < n; j = i++) {
+        p1 = vertices[i];
+        p2 = vertices[j];
+        f = p1.x * p2.y - p2.x * p1.y;
+        twice_area += f;
+        x += (p1.x + p2.x) * f;
+        y += (p1.y + p2.y) * f;
+    }
+    for (const v of vertices) z += v.z;
+    f = twice_area * 3;
+    return { x: x / f, y: y / f, z: z / vertices.length };
   },
   make_aabb: (vertices: vector3[]): AABB3 => {
     let aabb: AABB3 = {

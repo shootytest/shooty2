@@ -102,11 +102,13 @@ export const ui = {
                 ui.update_properties();
                 ui.open_properties();
             }
-            else if (ui.mouse.click && ui.mouse.drag_target[0]) {
+            else if (ui.mouse.drag_target[0]) {
                 const target = ui.mouse.drag_target[0];
                 ui.deselect_shape();
-                target.shape.vertices = target.vertex_old;
-                // map_draw.change("reset 'move vertex'", target.shape); // pressing escape shouldn't change stuff
+                if (ui.mouse.click) {
+                    target.shape.vertices = target.vertex_old;
+                    // map_draw.change("reset 'move vertex'", target.shape); // pressing escape shouldn't change stuff
+                }
             }
         });
         ui.map = map_serialiser.load("auto");
@@ -259,6 +261,7 @@ export const ui = {
                     target.shape.vertices.splice(target.index + (key.shift() ? 1 : 0), 0, vector.add(target.shape.vertices[target.index], vector.create(10, 10)));
                     map_draw.change("insert vertex", target.shape);
                 },
+                enabled: () => true,
             },
             {
                 i: 1,
@@ -276,27 +279,32 @@ export const ui = {
                         map_draw.change("delete vertex", target.shape);
                     }
                 },
+                enabled: () => true,
             },
             {
                 i: 2,
                 name: "duplicate shape",
                 svg: "copy",
-                color: "#8c03fc",
+                color: "#cc2be1",
                 fn: () => {
                     const target = ui.circle_menu.target;
-                    const insert_index = ui.map.shapes.indexOf(target.shape);
+                    const insert_index = ui.map.shapes.indexOf(target.shape) + 1;
                     const new_shape = map_draw.duplicate_shape(target.shape);
+                    if (new_shape.options.parent) {
+                        ui.map.computed?.shape_map?.[new_shape.options.parent]?.options.contains?.push(new_shape.id);
+                    }
                     if (insert_index >= 0)
                         ui.map.shapes.splice(insert_index, 0, new_shape);
                     ui.update_directory();
                     map_draw.change("duplicate shape", new_shape);
                 },
+                enabled: () => true,
             },
             {
                 i: 3,
                 name: "delete shape",
                 svg: "delete",
-                color: "#fc0352",
+                color: "#fc0b03",
                 fn: () => {
                     const target = ui.circle_menu.target;
                     if (!key.shift()) {
@@ -310,9 +318,34 @@ export const ui = {
                     ui.update_directory();
                     map_draw.change("delete shape", target.shape);
                 },
+                enabled: () => true,
             },
             {
                 i: 4,
+                name: "split shape",
+                svg: "split",
+                color: "#655fff",
+                fn: () => {
+                    const target = ui.circle_menu.target;
+                    if (target.index === target.shape.vertices.length - 1)
+                        return;
+                    const insert_index = ui.map.shapes.indexOf(target.shape) + 1;
+                    const new_shape = map_draw.duplicate_shape(target.shape, target.index);
+                    if (new_shape.options.parent) {
+                        ui.map.computed?.shape_map?.[new_shape.options.parent]?.options.contains?.push(new_shape.id);
+                    }
+                    if (insert_index >= 0)
+                        ui.map.shapes.splice(insert_index, 0, new_shape);
+                    ui.update_directory();
+                    // map_draw.change("split shape at vertex " + target.index, new_shape);
+                },
+                enabled: () => {
+                    const target = ui.circle_menu.target;
+                    return target.index !== target.shape.vertices.length - 1;
+                },
+            },
+            {
+                i: 5,
                 name: "open properties",
                 svg: "info",
                 color: "#3ca2f6ff",
@@ -322,6 +355,7 @@ export const ui = {
                     ui.open_properties(target.shape);
                     ui.directory_jump_fns[target.shape.id]?.();
                 },
+                enabled: () => true,
             },
         ],
     },
@@ -447,24 +481,25 @@ export const ui = {
             let ratio = Math.min(1, (ui.time - ui.circle_menu.active_time) ** 0.7 / 5);
             if (!ui.circle_menu.active)
                 ratio = 1 - ratio;
-            const a = Math.PI / 2.5;
+            const a = Math.PI * 2 / ui.circle_menu.options.length;
             const a_ = (ui.time / 100) % (Math.PI * 2);
             size = 50 * ratio;
             for (const option of ui.circle_menu.options) {
                 const i = option.i;
-                ctx.fillStyle = option.color;
+                const disabled = !option.enabled();
+                ctx.fillStyle = disabled ? color.grey : option.color;
                 ctx.beginPath();
                 ctx.donut_arc(v.x, v.y, 90 * ratio, 10 * ratio, a_ + a * (i + 0.05), a_ + a * (i + 0.95), a_ + a * (i + 0.4), a_ + a * (i + 0.6));
                 hovering = ctx.point_in_path_v(mouse);
-                ctx.globalAlpha = 0.2 * ratio + (hovering ? 0.3 : 0);
+                ctx.globalAlpha = 0.2 * ratio + ((hovering && !disabled) ? 0.3 : 0);
                 ctx.fill();
                 ctx.beginPath();
                 ctx.donut_arc(v.x, v.y, 90 * ratio, 80 * ratio, a_ + a * (i + 0.05), a_ + a * (i + 0.95), a_ + a * (i + 0.05625), a_ + a * (i + 0.94375));
-                ctx.globalAlpha = 0.7 * ratio + (hovering ? 0.2 : 0);
+                ctx.globalAlpha = 0.7 * ratio + ((hovering && !disabled) ? 0.2 : 0);
                 ctx.fill();
                 ctx.svg(option.svg, v.x + size * Math.cos(a_ + a * (i + 0.5)), v.y + size * Math.sin(a_ + a * (i + 0.5)), size * 0.9);
                 if (hovering)
-                    ui.click.new(option.fn);
+                    ui.click.new(disabled ? () => { } : option.fn);
             }
             ctx.globalAlpha = 1;
             if (!vector.in_circle(mouse, v, 100)) {

@@ -206,6 +206,14 @@ export const math = {
     if (v2) result_left.push(v2);
     if (v1) result_right.push(v1);
     return result_left.concat(result_right.reverse());
-  }
+  },
+  expand_polygon: (vertices: vector[], width: number): vector[] => {
+    const centre = vector.mean(vertices);
+    const result: vector[] = [];
+    for (const v of vertices) {
+      result.push(vector.add(v, vector.createpolar(-vector.direction(vector.sub(v, centre)), width)));
+    }
+    return result;
+  },
 
 };
