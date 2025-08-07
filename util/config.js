@@ -1,11 +1,9 @@
 export const config = {
-    main: {
-        wall_width: 6,
-    },
     physics: {
+        wall_width: 1,
         force_factor: 0.0005,
     },
     graphics: {
-        linewidth_mult: 6,
+        linewidth_mult: 15,
     },
 };

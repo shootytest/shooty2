@@ -108,7 +108,7 @@ export const map_draw = {
         if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0)
             return;
         const style = map_draw.get_style(shape);
-        const open_loop = !!shape.options.open_loop;
+        const open_loop = Boolean(shape.options.open_loop);
         ctx.save("draw_shape");
         ctx.begin();
         ctx.lines_v(shape.computed.screen_vertices, !open_loop);

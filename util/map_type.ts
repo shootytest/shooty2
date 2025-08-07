@@ -26,16 +26,20 @@ export type map_shape_options_type = {
   // important options
   parent?: string,
   contains?: string[],
-
+  
   // actual shape options
   open_loop?: boolean, // is the shape loop not closed? (e.g. this is true if the vertices are actually a list of 1d walls instead of a 2d shape)
-
+  
   // display options
   style?: string,
-  style_?: style_type, // consider renaming to style_override
+  style_?: style_type, // consider renaming to style_override (not really)
+  
+  // game options
+  merge?: boolean, // use the same thing object as its parent?
+  decoration?: boolean, // this won't add a physics object
+  movable?: boolean, // dynamic physics object
+  seethrough?: boolean, // visibility
 
-  // physics options
-  movable?: boolean, // default should be static, there should be more walls than movable objects right? surely
 };
 
 export type map_icon_type = {
@@ -112,7 +116,7 @@ export const map_serialiser = {
           let s = shape;
           let depth = 1;
           while ((s?.computed?.depth ?? 0) === 0 && (s.options.parent?.length ?? 0) > 0 && s.options.parent !== "all" && depth < 100) {
-            const parent_id = s.options.parent!!;
+            const parent_id = s.options.parent!;
             s = map.computed.shape_map[parent_id];
             if (s == undefined) console.error(`[map_serialiser/compute] (${shape.id}) why is '${parent_id}' not in the computed shape map?`);
             depth++;
@@ -153,10 +157,10 @@ export const map_serialiser = {
     };
     for (const s of map.shapes ?? []) {
       if (s.options.parent === "all") delete s.options.parent;
-      m.shapes!!.push({ id: s.id, z: s.z, vertices: s.vertices, options: s.options });
+      m.shapes!.push({ id: s.id, z: s.z, vertices: s.vertices, options: s.options });
     }
     for (const i of map.icons ?? []) {
-      m.icons!!.push({ icon: i.icon, color: i.color });
+      m.icons!.push({ icon: i.icon, color: i.color });
     }
     return m;
   },
@@ -236,20 +240,6 @@ export const map_serialiser = {
     // if (raw_string === undefined) return undefined;
     return map_serialiser.parse(map_serialiser.undo_states[map_serialiser.undo_states.length - 1]);
   },
-
-  // update_map: (map: map_type, new_map: map_type) => {
-  //   map_serialiser.compute(new_map);
-  //   for (const s of map.shapes) {
-      
-  //   }
-  // },
-  
-  // update_shape: (shape: map_shape_type, new_shape: map_shape_type) => {
-  //   shape.id = new_shape.id;
-  //   shape.z = new_shape.z;
-  //   shape.vertices = new_shape.vertices;
-  //   shape.options = new_shape.options;
-  // },
 
 };
 
@@ -409,15 +399,6 @@ const TEST_MAP_: map_type = {
   icons: [],
 };
 
-/*
-for (const s of TEST_MAP_.shapes || []) {
-  for (const v of s.vertices) {
-    v.x += 50;
-    v.y += 50;
-  }
-}
-*/
-
 export const STYLES: styles_type = {
   error: {
     stroke: "#ff0000",
@@ -429,9 +410,15 @@ export const STYLES: styles_type = {
     fill_opacity: 0.8,
   },
   tutorial: {
-    stroke: "#7f77ea99",
+    stroke: "#7f77ea",
     fill: "#544bdb",
     fill_opacity: 0.7,
+  },
+  tutorial_ceiling: {
+    stroke: "#7f77ea00",
+    stroke_opacity: 0,
+    fill: "#544bdb",
+    fill_opacity: 0.1,
   },
   start: {
     stroke: "#00ddff99",

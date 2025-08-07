@@ -405,11 +405,11 @@ export const vector3 = {
     aabb_combine: (a, b) => {
         return {
             min_x: Math.min(a.min_x, b.min_x),
-            max_x: Math.max(a.max_x + b.max_x),
+            max_x: Math.max(a.max_x, b.max_x),
             min_y: Math.min(a.min_y, b.min_y),
             max_y: Math.max(a.max_y, b.max_y),
             min_z: Math.min(a.min_z, b.min_z),
-            max_z: Math.max(a.max_z + b.max_z),
+            max_z: Math.max(a.max_z, b.max_z),
         };
     },
     aabb_add: (a, v) => {

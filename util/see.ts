@@ -37,6 +37,9 @@ const add_wall = (p1: vector, p2: vector, force = false): void => {
 export const do_visibility = () => {
 
   clip_visibility_polygon(player);
+  Shape.draw(0);
+  ctx.restore("see");
+
   /* // not so good
   ctx.globalAlpha = 0.1;
   for (let i = 0; i < 3; i++) {
@@ -48,11 +51,13 @@ export const do_visibility = () => {
 
 };
 
+/*
 export const undo_visibility = () => {
 
   ctx.restore("see");
 
 };
+*/
 
 const clip_visibility_polygon = (v: vector) => {
   

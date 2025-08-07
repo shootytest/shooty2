@@ -74,7 +74,7 @@ export class Thing {
         this.shapes.push(s);
         if (this.id.startsWith("generic thing #"))
             this.create_id(o.id);
-        if (!this.body)
+        if (!this.body && !o.options.decoration)
             this.create_body({
                 isStatic: !o.options.movable,
             });
@@ -109,14 +109,14 @@ export class Thing {
                 // console.log(math.expand_lines(s.vertices, 1));
                 const composite = Composite.create();
                 const sm = vector.mean(s.vertices);
-                const b = Bodies.fromVertices(sm.x, sm.y, math.expand_lines(s.vertices, config.main.wall_width), options);
+                const b = Bodies.fromVertices(sm.x, sm.y, math.expand_lines(s.vertices, config.physics.wall_width), options);
                 b.density = 0;
                 b.collisionFilter = { category: 0 };
                 Composite.add(composite, b);
                 // Composite.add(world, b);
                 Body.setPosition(b, vector.add(this.target.position, sm));
                 Body.setAngle(b, 0);
-                for (const vs of math.expand_lines(s.vertices, config.main.wall_width)) {
+                for (const vs of math.expand_lines(s.vertices, config.physics.wall_width)) {
                     const vm = vector.mean(vs);
                     const b = Bodies.fromVertices(s.offset.x + vm.x, s.offset.y + vm.y, [vs], options);
                     Composite.add(composite, b);

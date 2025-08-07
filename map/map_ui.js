@@ -81,10 +81,10 @@ export const ui = {
                 dz += 0.1;
             if (event.code === "KeyZ" && event.ctrlKey) {
                 if (event.shiftKey) { // full undo
-                    if (confirm("undo all the way to the start?") && map_serialiser.initial_state) {
+                    if (confirm("undo all and revert to initial state?") && map_serialiser.initial_state) {
                         ui.map = map_serialiser.parse(map_serialiser.initial_state);
                         ui.init_map();
-                        map_draw.change("undo all the way", []);
+                        map_draw.change("undo all", []);
                     }
                 }
                 else { // one step undo
@@ -170,6 +170,7 @@ export const ui = {
         ui.draw_clear();
         ui.draw_grid();
         ui.draw_map();
+        ui.draw_circle_menu();
         ui.draw_overlay();
         ui.draw_top();
         ui.draw_left();
@@ -317,6 +318,25 @@ export const ui = {
                     const remove_index = ui.map.shapes.indexOf(target.shape);
                     if (remove_index >= 0)
                         ui.map.shapes.splice(remove_index, 1);
+                    // handle parent
+                    let contains = undefined;
+                    if (target.shape.options.parent && target.shape.options.parent !== "all") {
+                        contains = ui.map.computed?.shape_map[target.shape.options.parent].options.contains;
+                        const contains_index = contains?.indexOf(target.shape.id) ?? -1;
+                        if (contains_index >= 0)
+                            contains?.splice(contains_index, 1);
+                    }
+                    // handle children
+                    if (target.shape.options.contains?.length) {
+                        for (const s_id of target.shape.options.contains ?? []) {
+                            if (contains) {
+                                contains.push(s_id);
+                                ui.map.computed.shape_map[s_id].options.parent = target.shape.options.parent;
+                            }
+                            else
+                                delete ui.map.computed?.shape_map[s_id].options.parent; // orphan :(
+                        }
+                    }
                     ui.circle_menu.deactivate();
                     ui.update_directory();
                     map_draw.change("delete shape", target.shape);
@@ -476,8 +496,7 @@ export const ui = {
     draw_a_map: (map) => {
         map_draw.draw(ctx, map);
     },
-    draw_overlay: () => {
-        // draw right click circle menu
+    draw_circle_menu: () => {
         if (ui.circle_menu.active || (ui.circle_menu.target?.id && (ui.time - ui.circle_menu.active_time <= 20))) {
             const target = ui.circle_menu.target;
             const v = target.shape.computed?.screen_vertices ? (target.shape.computed?.screen_vertices[target.index] ?? target.vertex) : target.vertex;
@@ -487,6 +506,10 @@ export const ui = {
             const a = Math.PI * 2 / ui.circle_menu.options.length;
             const a_ = (ui.time / 100) % (Math.PI * 2);
             size = 50 * ratio;
+            ctx.fillStyle = color.black + "99";
+            ctx.beginPath();
+            ctx.circle(v.x, v.y, size * 1.9);
+            ctx.fill();
             for (const option of ui.circle_menu.options) {
                 const i = option.i;
                 const disabled = !option.enabled();
@@ -514,6 +537,8 @@ export const ui = {
                 ui.click.new(close_fn, 2, false); // don't overwrite
             }
         }
+    },
+    draw_overlay: () => {
     },
     draw_selection: (map) => {
     },
@@ -729,13 +754,32 @@ export const ui = {
                 name: "parent",
                 type: "button",
             },
+            style: {
+                name: "style",
+                type: "text",
+            },
+            z: {
+                name: "z<br>",
+                type: "number",
+                min: -1,
+                max: 1,
+                step: 0.1,
+            },
             open_loop: {
                 name: "open loop",
                 type: "checkbox",
             },
-            style: {
-                name: "style",
-                type: "text",
+            decoration: {
+                name: "decoration",
+                type: "checkbox",
+            },
+            seethrough: {
+                name: "see-through",
+                type: "checkbox",
+            },
+            movable: {
+                name: "movable object",
+                type: "checkbox",
             },
         },
         /*parent: {
@@ -820,7 +864,7 @@ export const ui = {
                     const p = document.createElement("p");
                     p.classList.add(option.type);
                     const label = document.createElement("label");
-                    label.textContent = option.name;
+                    label.innerHTML = option.name;
                     label.setAttribute("for", option_key);
                     const input = document.createElement("input");
                     input.setAttribute("type", option.type);
@@ -848,6 +892,43 @@ export const ui = {
                                 delete shape.options[option_key];
                             map_draw.change("edit property: " + option_key, shape);
                         });
+                    }
+                    else if (option.type === "number") {
+                        const span = document.createElement("span");
+                        span.innerHTML = " " + `
+              <button style="font-size: 0.85em;" id="${option_key}_minus" title="${option_key} -= 0.1">
+                <svg xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.minus}"/></svg>
+              </button><button style="font-size: 0.85em;" id="${option_key}_plus" title="${option_key} -= 0.1">
+                <svg xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.add}"/></svg>
+              </button>
+            `.trim();
+                        p.appendChild(span);
+                        input.setAttribute("min", (option.min ?? 0).toString());
+                        input.setAttribute("max", (option.max ?? 0).toString());
+                        input.setAttribute("step", (option.step ?? 0).toString());
+                        let change_fn = () => { };
+                        if (option_key === "z") {
+                            input.value = shape.z.toString();
+                            change_fn = () => {
+                                if (input.value.length || input.value !== "0")
+                                    shape.z = Number(input.value);
+                                map_draw.change("edit property: " + option_key, shape);
+                            };
+                        }
+                        else {
+                            input.value = shape.options[option_key];
+                            change_fn = () => {
+                                if (input.value.length || input.value !== "0")
+                                    shape.options[option_key] = Number(input.value);
+                                else
+                                    delete shape.options[option_key];
+                                map_draw.change("edit property: " + option_key, shape);
+                            };
+                        }
+                        // add change listeners
+                        input.addEventListener("change", change_fn);
+                        span.querySelector("#" + option_key + "_minus")?.addEventListener("click", (_) => { input.stepDown(); change_fn(); });
+                        span.querySelector("#" + option_key + "_plus")?.addEventListener("click", (_) => { input.stepUp(); change_fn(); });
                     }
                     else if (option.type === "button") {
                         if (option_key === "parent") {

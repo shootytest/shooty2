@@ -13,6 +13,8 @@ export class Context {
         }
         this.ctx = ctx;
         this.saves = {};
+        // why
+        this.ctx.textRendering = "optimizeSpeed";
     }
     // get
     get canvas() {

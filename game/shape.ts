@@ -14,6 +14,7 @@ export class Shape {
 
   static shapes: Shape[] = [];
   static draw_shapes: Shape[] = [];
+  static draw_zs: number[] = [];
 
   static cumulative_id = 0;
   static type: string = "shape";
@@ -23,11 +24,14 @@ export class Shape {
     
     // s.map_shape_type_object = o;
     s.z = o.z;
-    s.vertices = vector3.create_many(o.vertices, o.z);
+
+    // booleans
     s.closed_loop = !(o.options.open_loop);
-    if (o.computed == undefined) {
-      throw "map shape not computed yet!";
-    }
+    s.seethrough = Boolean(o.options.seethrough);
+
+    // handle vertices
+    s.vertices = vector3.create_many(o.vertices, o.z);
+    if (o.computed == undefined) throw "map shape not computed yet!";
     const dv = (thing.shapes.length >= 1) ? thing.position : o.computed.mean;
     for (const v of s.vertices) {
       v.x -= dv.x;
@@ -37,7 +41,7 @@ export class Shape {
     s.style = STYLES[o.options.style ?? "test"] ?? STYLES.error;
     s.init_computed();
 
-    if (thing.shapes.length >= 1) {
+    if (thing.shapes.length >= 1) { // runs for merged shapes
       s.offset.x = thing.position.x - o.computed.mean.x;
       s.offset.y = thing.position.y - o.computed.mean.y;
     }
@@ -70,7 +74,9 @@ export class Shape {
       min_x: screen_topleft.x, min_y: screen_topleft.y, max_x: screen_bottomright.x, max_y: screen_bottomright.y, min_z: -Infinity, max_z: Infinity,
     };
     Shape.draw_shapes = Shape.filter(screen_aabb);
+    Shape.draw_zs = [0];
     for (const s of Shape.draw_shapes) {
+      if (s.z !== 0 && !Shape.draw_zs.includes(s.z)) Shape.draw_zs.push(s.z);
       if (s.computed == undefined) {
         s.init_computed();
       }
@@ -95,10 +101,11 @@ export class Shape {
     }
   };
 
-  static draw() {
+  static draw(z?: number) {
     // hope this doesn't take too long per tick...
     Shape.compute();
     for (const s of Shape.draw_shapes) {
+      if (z != undefined && s.z !== z) continue;
       s.draw();
     }
     ctx.globalAlpha = 1;
@@ -107,19 +114,20 @@ export class Shape {
   // gets screen vertices for everything on screen
   // for visibility purposes
   static get_vertices() {
-    const verticess: vector3[][] = [];
+    const result: vector3[][] = [];
     for (const s of Shape.draw_shapes) {
       const vs = s.computed?.vertices;
       if (!vs) continue;
+      if (s.seethrough) continue;
       if (s.thing.is_player) continue;
       if (s.z !== player.z) {
         // todo when the time comes...
         continue;
       }
       if (s.closed_loop) vs.push(vs[0]);
-      verticess.push(vs);
+      result.push(vs);
     }
-    return verticess;
+    return result;
   };
   
   id: number = ++Shape.cumulative_id;
@@ -128,7 +136,8 @@ export class Shape {
 
   vertices: vector3[] = [];
   offset: vector3 = vector3.create();
-  closed_loop: boolean = true;
+  closed_loop = true;
+  seethrough = false;
 
   // computed
   computed?: map_shape_compute_type;
@@ -172,8 +181,8 @@ export class Shape {
     // if (this.thing) ctx.rotate(this.thing?.angle);
     ctx.begin();
     this.draw_path();
-    ctx.lineCap = "square";
-    ctx.lineJoin = "bevel";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
     ctx.globalAlpha = style.opacity ?? 1;
     if (style.stroke) {
       ctx.strokeStyle = style.stroke;

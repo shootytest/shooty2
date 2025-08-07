@@ -105,7 +105,7 @@ export const map_draw = {
       //   so that static objects (which should be the majority?) don't always recompute world AABB
       //   and only calculate screen position for all objects on screen
       //   hopefully this is fast enough? although i'll probably make a chunk-like system too?
-      map_draw.shapes_on_screen = map.shapes.filter((s) => s.computed?.on_screen).sort((a, b) => b.computed?.distance2!! - a.computed?.distance2!!);
+      map_draw.shapes_on_screen = map.shapes.filter((s) => s.computed?.on_screen).sort((a, b) => b.computed?.distance2! - a.computed?.distance2!);
       let i = 0;
       for (const shape of map_draw.shapes_on_screen) {
         map_draw.draw_shape(ctx, shape);
@@ -122,7 +122,7 @@ export const map_draw = {
 
     if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0) return;
     const style = map_draw.get_style(shape);
-    const open_loop = !!shape.options.open_loop;
+    const open_loop = Boolean(shape.options.open_loop);
     ctx.save("draw_shape");
     ctx.begin();
     ctx.lines_v(shape.computed.screen_vertices, !open_loop);

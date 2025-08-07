@@ -1,5 +1,4 @@
 import { player } from "./game/player.js";
-import { Shape } from "./game/shape.js";
 import { Thing } from "./game/thing.js";
 import { Engine, Events, Runner } from "./matter.js";
 import { camera } from "./util/camera.js";
@@ -7,7 +6,7 @@ import { ctx, init_canvas } from "./util/canvas.js";
 import { color } from "./util/color.js";
 import { key, mouse } from "./util/key.js";
 import { map_serialiser } from "./util/map_type.js";
-import { do_visibility, undo_visibility } from "./util/see.js";
+import { do_visibility } from "./util/see.js";
 import { vector, vector3 } from "./util/vector.js";
 export const engine = Engine.create();
 export const world = engine.world;
@@ -36,8 +35,6 @@ const tick_all = () => {
     ctx.fill_screen(color.blackground);
     // draw all shapes
     do_visibility();
-    Shape.draw();
-    undo_visibility();
 };
 Events.on(runner, "tick", tick_all);
 map_serialiser.compute(MAP);

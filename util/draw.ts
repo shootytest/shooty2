@@ -46,6 +46,8 @@ export class Context {
     }
     this.ctx = ctx;
     this.saves = {};
+    // why
+    (this.ctx as any).textRendering = "optimizeSpeed";
   }
 
   // get
