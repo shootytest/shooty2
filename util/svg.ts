@@ -1,4 +1,4 @@
-export const SVG: { [key: string]: string } = {
+export const SVG = {
 
   none: "",
   
@@ -58,5 +58,5 @@ export const SVG: { [key: string]: string } = {
 // generate svg paths
 export const svg_paths: { [key: string]: Path2D } = { };
 for (const svg in SVG) {
-  svg_paths[svg] = new Path2D(SVG[svg]);
+  svg_paths[svg] = new Path2D((SVG as { [key: string]: string })[svg]);
 }

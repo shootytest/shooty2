@@ -52,6 +52,11 @@ export class Player extends Thing {
     }
   }
 
+  camera_scale() {
+    const v = camera.halfscreen;
+    return Math.sqrt(v.x * v.y) / 500;
+  }
+
 };
 
 export const player: Player = new Player();

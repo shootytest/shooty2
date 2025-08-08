@@ -1,7 +1,7 @@
 import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
 import { camera } from "../util/camera.js";
-import { ctx, view } from "../util/canvas.js";
+import { canvas, ctx } from "../util/canvas.js";
 import { color } from "../util/color.js";
 import { key, keys, mouse } from "../util/key.js";
 import { map_draw } from "../util/map_draw.js";
@@ -9,8 +9,8 @@ import { TEST_MAP, map_serialiser } from "../util/map_type.js";
 import { settings_default } from "./settings.js";
 import { SVG } from "../util/svg.js";
 // globals, why not?
-let width = window.innerWidth;
-let height = window.innerHeight;
+let width = canvas.width;
+let height = canvas.height;
 let x, y, w, h;
 let r, c, size;
 let o;
@@ -311,35 +311,7 @@ export const ui = {
                 color: "#fc0b03",
                 fn: () => {
                     const target = ui.circle_menu.target;
-                    if (!key.shift()) {
-                        if (!confirm("ARE YOU SURE YOU WANT TO DELETE [" + target.shape.id + "]"))
-                            return;
-                    }
-                    const remove_index = ui.map.shapes.indexOf(target.shape);
-                    if (remove_index >= 0)
-                        ui.map.shapes.splice(remove_index, 1);
-                    // handle parent
-                    let contains = undefined;
-                    if (target.shape.options.parent && target.shape.options.parent !== "all") {
-                        contains = ui.map.computed?.shape_map[target.shape.options.parent].options.contains;
-                        const contains_index = contains?.indexOf(target.shape.id) ?? -1;
-                        if (contains_index >= 0)
-                            contains?.splice(contains_index, 1);
-                    }
-                    // handle children
-                    if (target.shape.options.contains?.length) {
-                        for (const s_id of target.shape.options.contains ?? []) {
-                            if (contains) {
-                                contains.push(s_id);
-                                ui.map.computed.shape_map[s_id].options.parent = target.shape.options.parent;
-                            }
-                            else
-                                delete ui.map.computed?.shape_map[s_id].options.parent; // orphan :(
-                        }
-                    }
-                    ui.circle_menu.deactivate();
-                    ui.update_directory();
-                    map_draw.change("delete shape", target.shape);
+                    map_draw.delete_shape(target.shape);
                 },
                 enabled: () => true,
             },
@@ -408,7 +380,7 @@ export const ui = {
         for (const button of top) {
             ctx.beginPath();
             ctx.rectangle(x, y, w, size);
-            hovering = ctx.point_in_path_v(mouse);
+            hovering = ctx.point_in_path_v(mouse.position);
             ctx.fillStyle = hovering ? color.red_dark : color.black;
             ctx.svg(button.icon, x, y, size * 0.8);
             if (button.name === ui.editor.mode) {
@@ -452,7 +424,7 @@ export const ui = {
         ctx.fillStyle = color.black;
         ctx.set_font_condensed(10);
         ctx.text(math.round_dp(camera.z / camera.scale, 1) + "", x, y);
-        hovering = ctx.point_in_path_v(mouse);
+        hovering = ctx.point_in_path_v(mouse.position);
         if (hovering) {
             ui.click.new(() => ui.mouse.drag_target[2] = { id: "_leftbar_z", change: 0, }, 2);
         }
@@ -472,7 +444,7 @@ export const ui = {
         ctx.stroke();
         ctx.fillStyle = color.black;
         ctx.text(math.round_dp(camera.look_z, 1) + "", x, y);
-        hovering = ctx.point_in_path_v(mouse);
+        hovering = ctx.point_in_path_v(mouse.position);
         if (hovering) {
             ui.click.new(() => ui.mouse.drag_target[2] = { id: "_leftbar_zlook", change: 0, }, 2);
         }
@@ -516,7 +488,7 @@ export const ui = {
                 ctx.fillStyle = disabled ? color.grey : option.color;
                 ctx.beginPath();
                 ctx.donut_arc(v.x, v.y, 90 * ratio, 10 * ratio, a_ + a * (i + 0.05), a_ + a * (i + 0.95), a_ + a * (i + 0.4), a_ + a * (i + 0.6));
-                hovering = ctx.point_in_path_v(mouse);
+                hovering = ctx.point_in_path_v(mouse.position);
                 ctx.globalAlpha = 0.2 * ratio + ((hovering && !disabled) ? 0.3 : 0);
                 ctx.fill();
                 ctx.beginPath();
@@ -528,7 +500,7 @@ export const ui = {
                     ui.click.new(disabled ? () => { } : option.fn);
             }
             ctx.globalAlpha = 1;
-            if (!vector.in_circle(mouse, v, 100)) {
+            if (!vector.in_circle(mouse.position, v, 100)) {
                 const close_fn = () => {
                     ui.circle_menu.deactivate();
                     ui.deselect_shape();
@@ -565,12 +537,12 @@ export const ui = {
         let y = yy % grid_size;
         ctx.strokeStyle = color;
         ctx.lineWidth = line_width;
-        while (x < view.width) {
-            ctx.line(x, 0, x, view.height);
+        while (x < width) {
+            ctx.line(x, 0, x, height);
             x += grid_size;
         }
-        while (y < view.height) {
-            ctx.line(0, y, view.width, y);
+        while (y < height) {
+            ctx.line(0, y, width, y);
             y += grid_size;
         }
     },
@@ -588,9 +560,9 @@ export const ui = {
         ui.mouse.drag_target[0] = {};
     },
     draw_mouse: () => {
-        const size = 10;
+        const size = camera.sqrtscale * 15;
         const mode = ui.editor.mode;
-        let v = vector.clone(mouse);
+        let v = vector.clone(mouse.position);
         let offset = vector.create();
         if (mode === "select")
             offset = vector.create(size * 0.6, size);
@@ -609,10 +581,10 @@ export const ui = {
         }
         if (mouse.scroll !== 0 && !keys.Shift) {
             if (mouse.scroll < 0) {
-                camera.scale_by(vector.clone(mouse), 1.3);
+                camera.scale_by(vector.clone(mouse.position), 1.3);
             }
             else {
-                camera.scale_by(vector.clone(mouse), 1 / 1.3);
+                camera.scale_by(vector.clone(mouse.position), 1 / 1.3);
             }
         }
     },
@@ -804,9 +776,14 @@ export const ui = {
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.x}"/></svg>
       </button>
       <h3 style="margin: 0; user-select: none;">properties for <span id="jump_to_shape">${shape.id}</span>
-      <button id="edit_id" title="edit id">
-        <svg xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.edit}"/></svg>
-      </button>
+      <span id="button_group">
+        <button id="edit_id" title="edit id">
+          <svg xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.edit}"/></svg>
+        </button>
+        <button id="delete_shape" title="delete shape">
+          <svg xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.delete}"/></svg>
+        </button>
+      </span>
       </h3>
       <div style="float: left; user-select: none;"></div>
     `;
@@ -818,9 +795,10 @@ export const ui = {
             ui.right_sidebar_mode = "directory";
             ui.update_right_sidebar();
         });
-        if (shape.id === "all")
-            document.getElementById("edit_id").style.display = "none";
-        else
+        if (shape.id === "all") {
+            document.getElementById("button_group").style.display = "none";
+        }
+        else {
             document.getElementById("edit_id")?.addEventListener("click", function (event) {
                 const old_id = shape.id;
                 const new_id = prompt("new id?", shape.id);
@@ -844,6 +822,10 @@ export const ui = {
                 ui.update_properties();
                 map_draw.change("edit ID) (from " + old_id + " to " + new_id, shape);
             });
+            document.getElementById("delete_shape")?.addEventListener("click", function (event) {
+                map_draw.delete_shape(shape);
+            });
+        }
         const div = document.querySelector("aside#properties > div");
         if (div == undefined)
             return console.error("[ui/update_properties] aside > div not found!");
@@ -895,17 +877,18 @@ export const ui = {
                     }
                     else if (option.type === "number") {
                         const span = document.createElement("span");
+                        const step = (option.step ?? 0).toString();
                         span.innerHTML = " " + `
-              <button style="font-size: 0.85em;" id="${option_key}_minus" title="${option_key} -= 0.1">
+              <button style="font-size: 0.85em;" id="${option_key}_minus" title="${option_key} -= ${step}">
                 <svg xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.minus}"/></svg>
-              </button><button style="font-size: 0.85em;" id="${option_key}_plus" title="${option_key} -= 0.1">
+              </button><button style="font-size: 0.85em;" id="${option_key}_plus" title="${option_key} += ${step}">
                 <svg xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.add}"/></svg>
               </button>
             `.trim();
                         p.appendChild(span);
                         input.setAttribute("min", (option.min ?? 0).toString());
                         input.setAttribute("max", (option.max ?? 0).toString());
-                        input.setAttribute("step", (option.step ?? 0).toString());
+                        input.setAttribute("step", step);
                         let change_fn = () => { };
                         if (option_key === "z") {
                             input.value = shape.z.toString();
@@ -1024,7 +1007,7 @@ export const ui = {
         return false;
     },
 };
-window.addEventListener("resize", function (event) {
-    width = window.innerWidth;
-    height = window.innerHeight;
+window.addEventListener("resize", function (_) {
+    width = canvas.width;
+    height = canvas.height;
 });

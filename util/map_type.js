@@ -12,6 +12,8 @@ export const map_serialiser = {
                 // debug, this shouldn't happen normally i hope
                 if (shape.options.contains?.includes(shape.id))
                     console.error("[map_serialiser/compute] why does '" + shape.id + "' contain itself?");
+                if (shape.id === "start")
+                    delete shape.options.contains;
                 if ((shape.options.contains?.length ?? -1) === 0) {
                     console.error("[map_serialiser/compute] deleting empty contains list in '" + shape.id + "'");
                     delete shape.options.contains;
@@ -323,7 +325,7 @@ export const STYLES = {
         stroke: "#7f77ea00",
         stroke_opacity: 0,
         fill: "#544bdb",
-        fill_opacity: 0.1,
+        fill_opacity: 0.05,
     },
     start: {
         stroke: "#00ddff99",

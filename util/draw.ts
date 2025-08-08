@@ -35,12 +35,12 @@ const images: { [key: string]: HTMLImageElement } = {};
 
 export class Context {
 
-  ctx: CanvasRenderingContext2D;
+  ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D;
   saves: { [key: string]: ctx_save };
 
   // ready
 
-  constructor(ctx: CanvasRenderingContext2D | null) {
+  constructor(ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D | null) {
     if (ctx == null) {
       throw "bad context";
     }
@@ -142,7 +142,7 @@ export class Context {
 
   save(slot: string) {
     const ctx = this.ctx;
-    ctx.save();
+    ctx.save(); // save first, in case of ctx.clip calls
     this.saves[slot] = {
       strokeStyle: ctx.strokeStyle,
       fillStyle: ctx.fillStyle,
@@ -411,8 +411,8 @@ export class Context {
 
   resetTransform() {
     this.ctx.resetTransform();
-    const pixel_ratio = window.devicePixelRatio;
-    this.ctx.scale(pixel_ratio, pixel_ratio);
+    // const pixel_ratio = window.devicePixelRatio;
+    // this.ctx.scale(pixel_ratio, pixel_ratio);
   }
   
   translate(x: number, y: number) {
@@ -439,8 +439,12 @@ export class Context {
     this.ctx.clip(fillRule);
   }
 
+  clip_path(path: Path2D, fillRule?: CanvasFillRule) {
+    this.ctx.clip(path, fillRule);
+  }
+
   point_in_path(px: number, py: number, fillRule?: CanvasFillRule) {
-    return this.ctx.isPointInPath(px * window.devicePixelRatio, py * window.devicePixelRatio, fillRule);
+    return this.ctx.isPointInPath(px, py, fillRule);
   }
 
   point_in_path_v(p: vector, fillRule?: CanvasFillRule) {
@@ -448,7 +452,7 @@ export class Context {
   }
 
   point_in_stroke(px: number, py: number) {
-    return this.ctx.isPointInStroke(px * window.devicePixelRatio, py * window.devicePixelRatio);
+    return this.ctx.isPointInStroke(px, py);
   }
 
   point_in_stroke_v(p: vector) {

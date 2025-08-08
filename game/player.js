@@ -44,6 +44,10 @@ export class Player extends Thing {
             Body.applyForce(this.body, this.position, vector.mult(move_v, 10 * this.body.mass * config.physics.force_factor));
         }
     }
+    camera_scale() {
+        const v = camera.halfscreen;
+        return Math.sqrt(v.x * v.y) / 500;
+    }
 }
 ;
 export const player = new Player();

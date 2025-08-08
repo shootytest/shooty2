@@ -1,9 +1,8 @@
 import { player } from "./game/player.js";
-import { Shape } from "./game/shape.js";
 import { Thing } from "./game/thing.js";
-import { Common, Engine, Events, Render, Runner } from "./matter.js";
+import { Engine, Events, IRunnerCallback, Runner } from "./matter.js";
 import { camera } from "./util/camera.js";
-import { canvas, ctx, init_canvas } from "./util/canvas.js";
+import { ctx, init_canvas } from "./util/canvas.js";
 import { color } from "./util/color.js";
 import { key, mouse } from "./util/key.js";
 import { map_serialiser } from "./util/map_type.js";
@@ -16,7 +15,9 @@ export const world = engine.world;
 engine.gravity.x = 0;
 engine.gravity.y = 0;
 
-camera.move_by(vector.create(-window.innerWidth / 2, -window.innerHeight / 2));
+// todo move camera straight to player position
+// camera.move_by(vector.create(-window.innerWidth / 2, -window.innerHeight / 2));
+// camera.position_jump();
 
 export const runner = Runner.create();
 Runner.run(runner, engine);
@@ -31,13 +32,13 @@ const init_all = () => {
 };
 window.addEventListener("load", init_all);
 
-
-const tick_all = () => {
+/*const tick_all = (event: Matter.IEventTimestamped<Runner>) => {
 
   // ui.tick();
   // ui.draw();
   camera.tick();
   camera.location_target = player.position;
+  camera.scale_target = player.camera_scale();
   mouse.tick();
   Thing.tick_things();
   // clear screen
@@ -48,7 +49,24 @@ const tick_all = () => {
   do_visibility();
 
 };
-Events.on(runner, "tick", tick_all);
+Events.on(runner, "tick", tick_all);*/
+
+const tick_all = (timestamp_unused: number) => {
+
+  camera.tick();
+  camera.location_target = player.position;
+  camera.scale_target = player.camera_scale();
+  mouse.tick();
+  Thing.tick_things();
+  Engine.update(engine, 16);
+  ctx.clear();
+  ctx.fill_screen(color.blackground);
+  do_visibility(); // draw all shapes
+  requestAnimationFrame(tick_all);
+
+};
+
+requestAnimationFrame(tick_all);
 
 map_serialiser.compute(MAP);
 /*for (const shape of TEST_MAP.shapes ?? []) {

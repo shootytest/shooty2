@@ -1,6 +1,7 @@
 import { math } from "./math.js";
 import { vector } from "./vector.js";
 import { mouse } from "./key.js";
+import { canvas } from "./canvas.js";
 export const ZEPSILON = 0.0001;
 export const camera = {
     position: vector.create(0, 0),
@@ -22,7 +23,7 @@ export const camera = {
         return vector.create(mouse.x, mouse.y);
     },
     get halfscreen() {
-        return vector.create(window.innerWidth / 2, window.innerHeight / 2);
+        return vector.create(canvas.width / 2, canvas.height / 2);
     },
     get sqrtscale() {
         return Math.sqrt(this.scale);
@@ -54,12 +55,13 @@ export const camera = {
       if (scale == undefined) scale = this.scale;
       // todo
     },*/
-    world3screen: function (world_vector, scale) {
+    world3screen: function (world_vector, world_center, scale) {
+        const centre = world_center ? camera.world2screen(world_center) : this.halfscreen;
         if (scale == undefined)
             scale = this.scale;
         const sv = this.world2screen(vector.create3(world_vector), scale);
         let z = this.zscale(world_vector.z);
-        return vector.add(this.halfscreen, vector.mult(vector.sub(sv, this.halfscreen), z));
+        return vector.add(centre, vector.mult(vector.sub(sv, centre), z));
     },
     zscale: function (z) {
         let z_ = (this.z / this.scale - this.look_z) / (this.z / this.scale - z + ZEPSILON);
@@ -109,7 +111,7 @@ export const camera = {
     scale_adjust: function (screen_position) {
         this.position_target = vector.sub(vector.add(this.position, vector.mult(screen_position, 1 / this.scale)), vector.mult(screen_position, 1 / this.scale_target));
     },
-    jump_to: function (world_position, scale, screen_position = vector.create(window.innerWidth / 2, window.innerHeight / 2)) {
+    jump_to: function (world_position, scale, screen_position = vector.create(canvas.width / 2, canvas.height / 2)) {
         this.scale_target = scale;
         this.scale_target = math.bound(this.scale_target, 0.1, 10);
         this.position_target = vector.sub(world_position, vector.mult(screen_position, 1 / this.scale_target));

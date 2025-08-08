@@ -1,3 +1,4 @@
+import { Vertices } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
 import { config } from "../util/config.js";
@@ -99,11 +100,11 @@ export class Shape {
         s.compute_screen();
       }
     }
+    Shape.draw_zs.sort();
   };
 
   static draw(z?: number) {
     // hope this doesn't take too long per tick...
-    Shape.compute();
     for (const s of Shape.draw_shapes) {
       if (z != undefined && s.z !== z) continue;
       s.draw();
@@ -122,7 +123,7 @@ export class Shape {
       if (s.thing.is_player) continue;
       if (s.z !== player.z) {
         // todo when the time comes...
-        continue;
+        //continue;
       }
       if (s.closed_loop) vs.push(vs[0]);
       result.push(vs);
@@ -159,7 +160,7 @@ export class Shape {
     this.computed = {
       aabb: vector.make_aabb(this.vertices),
       aabb3: vector3.make_aabb(this.vertices),
-      mean: vector3.mean(this.vertices),
+      mean: vector3.create2(Vertices.centre(this.vertices), this.z), // don't use mean...
       vertices: vector3.clone_list(this.vertices),
     };
   }
@@ -206,7 +207,7 @@ export class Shape {
     if (this.computed?.vertices == undefined) return;
     const vs: vector3[] = [];
     for (const world_v of this.computed.vertices) {
-      const v = camera.world3screen(world_v);
+      const v = camera.world3screen(world_v, player);
       vs.push(vector3.create2(v, world_v.z - camera.look_z));
     }
     this.computed.screen_vertices = vs;
@@ -266,7 +267,7 @@ export class Polygon extends Shape {
       r = vector3.add(r, vector3.create2(camera.position));
       const vs: vector3[] = [];
       for (const world_v of [c, r]) {
-        const v = camera.world3screen(world_v);
+        const v = camera.world3screen(world_v, player);
         vs.push(vector3.create2(v, world_v.z - camera.look_z));
       }
       this.computed.screen_vertices = vs;

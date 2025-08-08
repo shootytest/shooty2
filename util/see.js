@@ -2,9 +2,16 @@
 import { player } from "../game/player.js";
 import { Shape } from "../game/shape.js";
 import { camera } from "./camera.js";
-import { ctx } from "./canvas.js";
+import { canvas, ctx } from "./canvas.js";
+import { color } from "./color.js";
 import { math } from "./math.js";
 import { vector } from "./vector.js";
+let w = canvas.width;
+let h = canvas.height;
+window.addEventListener("resize", function (_) {
+    w = canvas.width;
+    h = canvas.height;
+});
 const PI = Math.PI;
 const BIG_NUMBER = 1234567890;
 const start = {
@@ -30,9 +37,20 @@ const add_wall = (p1, p2, force = false) => {
     end_points.push(...collide.get_endpoints_from_segments([segment]));
 };
 export const do_visibility = () => {
-    clip_visibility_polygon(player);
-    Shape.draw(0);
-    ctx.restore("see");
+    Shape.compute();
+    const path = calc_visibility_path(player);
+    const inverted = invert_path(path);
+    for (const z of Shape.draw_zs) {
+        ctx.save("see");
+        clip_visibility_path(player, path, z);
+        Shape.draw(z);
+        ctx.restore("see");
+    }
+    for (let z = 0; z < 0.9; z += 0.1) {
+        ctx.ctx.save();
+        clip_inverted_path(player, inverted, z);
+        ctx.ctx.restore();
+    }
     /* // not so good
     ctx.globalAlpha = 0.1;
     for (let i = 0; i < 3; i++) {
@@ -42,22 +60,13 @@ export const do_visibility = () => {
     ctx.globalAlpha = 1;
     */
 };
-/*
-export const undo_visibility = () => {
-
-  ctx.restore("see");
-
-};
-*/
-const clip_visibility_polygon = (v) => {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    const radius = Math.sqrt(w * w + h * h) * 1.5; // multiplied by 1.5, just in case
+const calc_visibility_path = (v) => {
+    // const radius = Math.sqrt(w * w + h * h) * 1.5; // multiplied by 1.5, just in case
     reset_lists();
-    start.x = v.x;
-    start.y = v.y;
+    start.x = Math.round(v.x);
+    start.y = Math.round(v.y);
     start.r = Math.max(w, h);
-    const display_radius = start.r * camera.scale;
+    // const display_radius = start.r * camera.scale;
     add_wall({ x: -BIG_NUMBER, y: -BIG_NUMBER, }, { x: -BIG_NUMBER, y: BIG_NUMBER }, true);
     add_wall({ x: BIG_NUMBER, y: -BIG_NUMBER, }, { x: BIG_NUMBER, y: BIG_NUMBER }, true);
     add_wall({ x: -BIG_NUMBER, y: -BIG_NUMBER, }, { x: BIG_NUMBER, y: -BIG_NUMBER }, true);
@@ -68,44 +77,72 @@ const clip_visibility_polygon = (v) => {
         }
     }
     const result = collide.calculate_visibility(start, end_points);
-    ctx.save("see");
     // clip
+    // todo reverse triangulation
     const s = camera.world2screen(start);
-    ctx.beginPath();
-    ctx.moveTo(s.x, s.y);
+    const path = new Path2D();
+    path.moveTo(Math.round(s.x), Math.round(s.y));
     for (let i = 0; i < result.length; i++) {
         const triangle = result[i];
         const e1 = camera.world2screen(triangle[0]);
         const e2 = camera.world2screen(triangle[1]);
         // const e1 = triangle[0];
         // const e2 = triangle[1];
-        ctx.lineTo(e1.x, e1.y);
+        path.lineTo(Math.round(e1.x), Math.round(e1.y));
         if (result[i + 1] && vector.equal(result[i + 1][0], triangle[1])) {
             continue;
         }
-        ctx.lineTo(e2.x, e2.y);
+        path.lineTo(Math.round(e2.x), Math.round(e2.y));
         // ctx.lineTo(s.x, s.y); // removing this fixes the thin line missing bug! yay! (if there are any weird errors add this line back in and see)
     }
+    return path;
     // ctx.fillStyle = "#ff000055";
     // ctx.strokeStyle = "#00000000";
     // ctx.stroke();
     // ctx.fill();
-    // actually clip
-    ctx.clip();
     // clip the big circle too
+    // ctx.beginPath();
+    // ctx.moveTo(s.x, s.y);
+    // ctx.arc(s.x, s.y, display_radius, 0, 2 * Math.PI);
+    // ctx.clip();
+};
+const invert_path = (path) => {
+    const w = canvas.width;
+    const h = canvas.height;
+    const inverted = new Path2D();
+    inverted.rect(w, h, -w, -h);
+    inverted.addPath(path);
+    return inverted;
+};
+const clip_path = (center, path, z) => {
+    if (z === 1)
+        return;
+    const s = camera.world2screen(center);
+    const scale = 1 / (1 - z);
+    ctx.translate(s.x, s.y);
+    ctx.scale(scale, scale);
+    ctx.translate(-s.x, -s.y);
+    ctx.clip_path(path, "evenodd");
+    ctx.resetTransform();
+};
+const clip_visibility_path = (center, path, z) => {
+    clip_path(center, path, z);
+    const s = camera.world2screen(center);
+    if (z === 0) {
+        draw_lighting(s, Math.max(w, h) * camera.scale);
+    }
+};
+const clip_inverted_path = (center, inverted, z) => {
+    clip_path(center, inverted, z);
     ctx.beginPath();
-    ctx.moveTo(s.x, s.y);
-    ctx.arc(s.x, s.y, display_radius, 0, 2 * Math.PI);
-    ctx.clip();
-    // todo draw???
-    draw_lighting(s, display_radius);
+    ctx.rect(0, 0, w, h);
+    ctx.fillStyle = z === 0 ? "#544bdb80" : color.blackground + "28"; // todo replace color
+    ctx.fill();
 };
 // call this function after clipping
 export const draw_lighting = (centre, display_radius) => {
     const x = centre.x;
     const y = centre.y;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
     const min_radius = display_radius / 10;
     const max_radius = display_radius;
     const gradient = ctx.createRadialGradient(x, y, min_radius, x, y, max_radius);

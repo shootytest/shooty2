@@ -176,7 +176,7 @@ export const map_draw = {
         }
       }
       const hove_r = Math.max(6, vertex_size + camera.sqrtscale * 5);
-      if (vector.in_circle(mouse, v, hove_r)) {
+      if (vector.in_circle(mouse.position, v, hove_r)) {
         // mouse hover
         ctx.begin();
         ctx.circle(v.x, v.y, hove_r);
@@ -212,7 +212,7 @@ export const map_draw = {
         if (mouse.drag_vector_old[0] !== false && !ui.circle_menu.active) { // if the user is actually dragging the mouse
           if (o.new) {
             if (mouse.buttons[0]) {
-              const newpos = camera.screen2world(mouse);
+              const newpos = camera.screen2world(mouse.position);
               if (key.shift()) {
                 const difference = vector.sub(newpos, o.vertex_old[o.index]);
                 for (let i = 0; i < o.shape.vertices.length; i++) {
@@ -246,7 +246,7 @@ export const map_draw = {
           }
         }
         if (ui.mouse.release_click) {
-          /*if (vector.in_circle(mouse, v, 10) && (mouse.drag_vector_old[0] === false || vector.length2(mouse.drag_vector_old[0]) < 30)) {
+          /*if (vector.in_circle(mouse.position, v, 10) && (mouse.drag_vector_old[0] === false || vector.length2(mouse.drag_vector_old[0]) < 30)) {
             ui.circle_menu.active = true;
             ui.circle_menu.active_time = ui.time;
             ui.circle_menu.target = o;
@@ -285,6 +285,33 @@ export const map_draw = {
     const raw_string = map_serialiser.save("auto", ui.map);
     if (!type.startsWith("undo")) map_serialiser.save_undo_state(raw_string);
   },
+
+  delete_shape: (shape: map_shape_type) => {
+    if (!key.shift()) {
+      if (!confirm("ARE YOU SURE YOU WANT TO DELETE [" + shape.id + "]")) return;
+    }
+    const remove_index = ui.map.shapes.indexOf(shape);
+    if (remove_index >= 0) ui.map.shapes.splice(remove_index, 1);
+    // handle parent
+    let contains: string[] | undefined = undefined;
+    if (shape.options.parent && shape.options.parent !== "all") {
+      contains = ui.map.computed?.shape_map[shape.options.parent].options.contains;
+      const contains_index = contains?.indexOf(shape.id) ?? -1;
+      if (contains_index >= 0) contains?.splice(contains_index, 1);
+    }
+    // handle children
+    if (shape.options.contains?.length) {
+      for (const s_id of shape.options.contains ?? []) {
+        if (contains) {
+          contains.push(s_id);
+          ui.map.computed!.shape_map[s_id].options.parent = shape.options.parent;
+        } else delete ui.map.computed?.shape_map[s_id].options.parent; // orphan :(
+      }
+    }
+    ui.circle_menu.deactivate();
+    ui.update_directory();
+    map_draw.change("delete shape", shape);
+  }
   
 
 };

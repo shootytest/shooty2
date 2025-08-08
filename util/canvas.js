@@ -1,8 +1,9 @@
 import { Context } from "./draw.js";
-export const canvas = document.createElement("canvas");
+export const canvas_ = document.createElement("canvas");
+export const canvas = canvas_.transferControlToOffscreen();
 export const ctx = new Context(canvas.getContext("2d", { alpha: false }));
-canvas.classList.add("canvas");
-document.body.appendChild(canvas);
+canvas_.classList.add("canvas");
+document.body.appendChild(canvas_);
 // just the window...
 export const view = {
     x: 0,
@@ -16,7 +17,8 @@ export const init_canvas = () => {
     ctx.lineJoin = "bevel";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    resize_canvas();
+    // resize_canvas();
+    window.dispatchEvent(new Event("resize"));
 };
 export const resize_canvas = () => {
     const pixel_ratio = window.devicePixelRatio;
@@ -24,8 +26,9 @@ export const resize_canvas = () => {
     const h = window.innerHeight;
     view.width = w;
     view.height = h;
-    canvas.width = w * pixel_ratio;
-    canvas.height = h * pixel_ratio;
+    canvas.width = w * pixel_ratio * 1;
+    canvas.height = h * pixel_ratio * 1;
+    window.canvas_ratio = pixel_ratio * 1;
     // canvas.style.width = w + "";
     // canvas.style.height = h + "";
     ctx.resetTransform();

@@ -1,6 +1,6 @@
 import { player } from "./game/player.js";
 import { Thing } from "./game/thing.js";
-import { Engine, Events, Runner } from "./matter.js";
+import { Engine, Runner } from "./matter.js";
 import { camera } from "./util/camera.js";
 import { ctx, init_canvas } from "./util/canvas.js";
 import { color } from "./util/color.js";
@@ -12,7 +12,9 @@ export const engine = Engine.create();
 export const world = engine.world;
 engine.gravity.x = 0;
 engine.gravity.y = 0;
-camera.move_by(vector.create(-window.innerWidth / 2, -window.innerHeight / 2));
+// todo move camera straight to player position
+// camera.move_by(vector.create(-window.innerWidth / 2, -window.innerHeight / 2));
+// camera.position_jump();
 export const runner = Runner.create();
 Runner.run(runner, engine);
 export const MAP = map_serialiser.load("auto");
@@ -22,21 +24,37 @@ const init_all = () => {
     key.init();
 };
 window.addEventListener("load", init_all);
-const tick_all = () => {
-    // ui.tick();
-    // ui.draw();
+/*const tick_all = (event: Matter.IEventTimestamped<Runner>) => {
+
+  // ui.tick();
+  // ui.draw();
+  camera.tick();
+  camera.location_target = player.position;
+  camera.scale_target = player.camera_scale();
+  mouse.tick();
+  Thing.tick_things();
+  // clear screen
+  // ctx.clear();
+  ctx.clear();
+  ctx.fill_screen(color.blackground);
+  // draw all shapes
+  do_visibility();
+
+};
+Events.on(runner, "tick", tick_all);*/
+const tick_all = (timestamp_unused) => {
     camera.tick();
     camera.location_target = player.position;
+    camera.scale_target = player.camera_scale();
     mouse.tick();
     Thing.tick_things();
-    // clear screen
-    // ctx.clear();
+    Engine.update(engine, 16);
     ctx.clear();
     ctx.fill_screen(color.blackground);
-    // draw all shapes
-    do_visibility();
+    do_visibility(); // draw all shapes
+    requestAnimationFrame(tick_all);
 };
-Events.on(runner, "tick", tick_all);
+requestAnimationFrame(tick_all);
 map_serialiser.compute(MAP);
 /*for (const shape of TEST_MAP.shapes ?? []) {
   const t = new Thing();

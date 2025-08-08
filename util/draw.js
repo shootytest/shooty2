@@ -84,7 +84,7 @@ export class Context {
     // go
     save(slot) {
         const ctx = this.ctx;
-        ctx.save();
+        ctx.save(); // save first, in case of ctx.clip calls
         this.saves[slot] = {
             strokeStyle: ctx.strokeStyle,
             fillStyle: ctx.fillStyle,
@@ -320,8 +320,8 @@ export class Context {
     }
     resetTransform() {
         this.ctx.resetTransform();
-        const pixel_ratio = window.devicePixelRatio;
-        this.ctx.scale(pixel_ratio, pixel_ratio);
+        // const pixel_ratio = window.devicePixelRatio;
+        // this.ctx.scale(pixel_ratio, pixel_ratio);
     }
     translate(x, y) {
         this.ctx.translate(x, y);
@@ -341,14 +341,17 @@ export class Context {
     clip(fillRule) {
         this.ctx.clip(fillRule);
     }
+    clip_path(path, fillRule) {
+        this.ctx.clip(path, fillRule);
+    }
     point_in_path(px, py, fillRule) {
-        return this.ctx.isPointInPath(px * window.devicePixelRatio, py * window.devicePixelRatio, fillRule);
+        return this.ctx.isPointInPath(px, py, fillRule);
     }
     point_in_path_v(p, fillRule) {
         return this.point_in_path(p.x, p.y, fillRule);
     }
     point_in_stroke(px, py) {
-        return this.ctx.isPointInStroke(px * window.devicePixelRatio, py * window.devicePixelRatio);
+        return this.ctx.isPointInStroke(px, py);
     }
     point_in_stroke_v(p) {
         return this.point_in_stroke(p.x, p.y);

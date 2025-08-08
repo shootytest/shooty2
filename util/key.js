@@ -1,4 +1,4 @@
-import { canvas } from "./canvas.js";
+import { canvas_ } from "./canvas.js";
 import { vector } from "./vector.js";
 export const keys = {};
 const key_listeners = {};
@@ -27,6 +27,9 @@ export const mouse = {
     drag_vector_old: [vector.create(), vector.create(), vector.create()],
     drag_change: [vector.create(), vector.create(), vector.create()],
     old_touches: {},
+    get position() {
+        return vector.mult(mouse, window.canvas_ratio ?? 1);
+    },
     // run this tick right at the end!
     tick: () => {
         mouse.down_buttons = [false, false, false];
@@ -138,18 +141,18 @@ export const key = {
             mouse.drag_vector[b] = false;
             mouse.drag_vector_old[b] = false;
         };
-        canvas.addEventListener("mousedown", function (event) {
+        canvas_.addEventListener("mousedown", function (event) {
             key_changed = true;
             mousedown(event);
             event.preventDefault();
             update_mouse(event.buttons);
         });
-        canvas.addEventListener("touchstart", function (event) {
+        canvas_.addEventListener("touchstart", function (event) {
             key_changed = true;
             mousedown(event);
             event.preventDefault();
         });
-        canvas.addEventListener("contextmenu", function (event) {
+        canvas_.addEventListener("contextmenu", function (event) {
             key_changed = true;
             event.preventDefault();
             update_mouse(event.buttons);
@@ -194,12 +197,12 @@ export const key = {
             return false;
         }
         ;
-        canvas.addEventListener("wheel", function (event) {
+        canvas_.addEventListener("wheel", function (event) {
             wheel(event);
         }, {
             passive: false,
         });
-        canvas.addEventListener("dblclick", function (event) {
+        canvas_.addEventListener("dblclick", function (event) {
             dblclick(event);
         });
     },
