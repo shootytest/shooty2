@@ -8,6 +8,9 @@ Matter.Common.setDecomp(polyDecomp);
 import polygonOffset from 'https://cdn.jsdelivr.net/npm/polygon-offset@0.3.2/+esm';
 Matter.Common.polygonOffset = polygonOffset;
 
+import { breakIntersections, compute, computeViewport, convertToSegments, inPolygon, inViewport } from 'https://cdn.jsdelivr.net/npm/visibility-polygon@1.1.0/+esm';
+Matter.Common.visibilityPolygon = { breakIntersections, compute, computeViewport, convertToSegments, inPolygon, inViewport };
+
 export default Matter;
 
 export const Axes = Matter.Axes;

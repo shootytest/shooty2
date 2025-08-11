@@ -1,5 +1,5 @@
 import { math } from "../util/math.js";
-import { vector } from "../util/vector.js";
+import { vector, vector3 } from "../util/vector.js";
 import { camera } from "../util/camera.js";
 import { canvas, ctx } from "../util/canvas.js";
 import { color } from "../util/color.js";
@@ -546,13 +546,16 @@ export const ui = {
             y += grid_size;
         }
     },
-    select_shape: (target) => {
+    select_shape: (target, dont_open_properties = false) => {
         const old_id = ui.mouse.drag_target[0]?.shape?.id;
         ui.mouse.drag_target[0] = target;
         ui.color_directory_element(old_id, "");
         ui.color_directory_element(target.shape.id, "#ff000033");
         if (ui.circle_menu.active) {
             ui.circle_menu.target = target;
+        }
+        if (!dont_open_properties && ui.right_sidebar_mode === "properties") {
+            ui.open_properties(target.shape);
         }
     },
     deselect_shape: () => {
@@ -743,6 +746,14 @@ export const ui = {
             },
             decoration: {
                 name: "decoration",
+                type: "checkbox",
+            },
+            sensor: {
+                name: "sensor",
+                type: "checkbox",
+            },
+            invisible: {
+                name: "invisible",
                 type: "checkbox",
             },
             seethrough: {
@@ -948,8 +959,18 @@ export const ui = {
         }
     },
     open_properties: (shape) => {
-        if (shape)
+        if (shape) {
             ui.properties_selected = shape;
+            if (ui.mouse.drag_target[0]?.shape?.id !== shape.id)
+                ui.select_shape({
+                    shape: shape,
+                    vertex: shape.computed?.screen_vertices?.[0] ?? vector3.create(),
+                    vertex_old: vector3.clone_list_(shape?.vertices),
+                    id: shape.id + "__0",
+                    index: 0,
+                    new: true,
+                }, false);
+        }
         ui.right_sidebar_mode = "properties";
         ui.update_properties();
         ui.update_right_sidebar();

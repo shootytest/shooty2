@@ -1,6 +1,6 @@
-// CTS?
 import { player } from "../game/player.js";
 import { Shape } from "../game/shape.js";
+import { Common } from "../matter.js";
 import { camera } from "./camera.js";
 import { canvas, ctx } from "./canvas.js";
 import { color } from "./color.js";
@@ -38,7 +38,7 @@ const add_wall = (p1, p2, force = false) => {
 };
 export const do_visibility = () => {
     Shape.compute();
-    const path = calc_visibility_path(player);
+    const path = calc_visibility_path_2(player);
     const inverted = invert_path(path);
     for (const z of Shape.draw_zs) {
         ctx.save("see");
@@ -106,11 +106,37 @@ const calc_visibility_path = (v) => {
     // ctx.arc(s.x, s.y, display_radius, 0, 2 * Math.PI);
     // ctx.clip();
 };
+const calc_visibility_path_2 = (v) => {
+    start.x = Math.round(v.x);
+    start.y = Math.round(v.y);
+    start.r = Math.max(w, h);
+    const viewport_1 = camera.screen2world(vector.create());
+    const viewport_2 = camera.screen2world(vector.create(w, h));
+    const result = collide.get_visibility_polygon(start, Shape.get_vertices(), viewport_1, viewport_2);
+    // clip
+    // todo reverse triangulation
+    const s = camera.world2screen(start);
+    const path = new Path2D();
+    //path.moveTo(Math.round(s.x), Math.round(s.y));
+    let first = true;
+    let first_e = vector.create();
+    for (const r of result) {
+        const e = camera.world2screen(vector.create(r[0], r[1]));
+        if (first) {
+            first = false;
+            first_e = e;
+            path.moveTo(Math.round(e.x), Math.round(e.y));
+        }
+        else {
+            path.lineTo(Math.round(e.x), Math.round(e.y));
+        }
+    }
+    path.lineTo(Math.round(first_e.x), Math.round(first_e.y));
+    return path;
+};
 const invert_path = (path) => {
-    const w = canvas.width;
-    const h = canvas.height;
     const inverted = new Path2D();
-    inverted.rect(w, h, -w, -h);
+    inverted.rect(w * 2, h * 2, -w * 3, -h * 3);
     inverted.addPath(path);
     return inverted;
 };
@@ -136,7 +162,7 @@ const clip_inverted_path = (center, inverted, z) => {
     clip_path(center, inverted, z);
     ctx.beginPath();
     ctx.rect(0, 0, w, h);
-    ctx.fillStyle = z === 0 ? "#544bdb80" : color.blackground + "28"; // todo replace color
+    ctx.fillStyle = Math.abs(z) < math.epsilon ? "#544bdb80" : color.blackground + "28"; // todo replace color
     ctx.fill();
 };
 // call this function after clipping
@@ -404,5 +430,16 @@ export const collide = {
     },
     get_endpoints_from_segments: (segments) => {
         return collide._flat_map((segment) => [segment.p1, segment.p2], segments);
+    },
+    // use library wow
+    get_visibility_polygon: (start, vertices, viewport_1, viewport_2) => {
+        let segments = Common.visibilityPolygon.convertToSegments([[[-BIG_NUMBER, -BIG_NUMBER], [BIG_NUMBER, -BIG_NUMBER], [BIG_NUMBER, BIG_NUMBER], [-BIG_NUMBER, BIG_NUMBER]]]);
+        for (const vs of vertices) {
+            for (let i = 0; i < vs.length - 1; i++) {
+                segments.push([[vs[i].x, vs[i].y], [vs[i + 1].x, vs[i + 1].y]]);
+            }
+        }
+        segments = Common.visibilityPolygon.breakIntersections(segments);
+        return Common.visibilityPolygon.computeViewport([start.x, start.y], segments, [viewport_1.x, viewport_1.y], [viewport_2.x, viewport_2.y]);
     },
 };

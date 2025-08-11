@@ -47,7 +47,7 @@ export class Shape {
     static filter(aabb) {
         const result = [];
         for (const s of Shape.shapes) {
-            if (s.computed == undefined || s.thing == undefined)
+            if (s.computed == undefined || s.thing == undefined || s.thing.options.invisible)
                 continue;
             s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position);
             const inside = vector3.aabb_intersect(s.computed_aabb, aabb);
@@ -151,7 +151,7 @@ export class Shape {
         this.computed = {
             aabb: vector.make_aabb(this.vertices),
             aabb3: vector3.make_aabb(this.vertices),
-            mean: vector3.create2(Vertices.centre(this.vertices), this.z),
+            mean: this.closed_loop ? vector3.create2(Vertices.centre(this.vertices), this.z) : vector3.mean(this.vertices),
             vertices: vector3.clone_list(this.vertices),
         };
     }
@@ -176,6 +176,7 @@ export class Shape {
         ctx.globalAlpha = style.opacity ?? 1;
         if (style.stroke) {
             ctx.strokeStyle = style.stroke;
+            ctx.globalAlpha = style.stroke_opacity ?? 1;
             ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * config.graphics.linewidth_mult;
             ctx.stroke();
         }

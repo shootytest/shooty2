@@ -67,8 +67,8 @@ export const vector = {
     length: (v) => {
         return Math.sqrt(vector.length2(v));
     },
-    normalise: (v) => {
-        let l = vector.length(v);
+    normalise: (v, mult = 1) => {
+        let l = vector.length(v) / mult;
         if (!l)
             return v;
         return vector.div(v, l);

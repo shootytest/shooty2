@@ -130,13 +130,14 @@ export const map_draw = {
     if (open_loop && !style.stroke) style.stroke = style.fill; // hmmm
     if (style.stroke) {
       ctx.strokeStyle = style.stroke;
+      ctx.globalAlpha = style.stroke_opacity ?? 1;
       ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
     }
-    ctx.globalAlpha = style.opacity ?? 1;
+    ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1);
     ctx.stroke();
     if (style.fill && !open_loop) {
       ctx.fillStyle = style.fill;
-      ctx.globalAlpha = style.fill_opacity ?? 1;
+      ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1);
       ctx.fill();
     }
     ctx.restore("draw_shape");

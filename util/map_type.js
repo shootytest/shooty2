@@ -321,13 +321,17 @@ export const STYLES = {
         fill: "#544bdb",
         fill_opacity: 0.7,
     },
-    tutorial_ceiling: {
-        stroke: "#7f77ea00",
-        stroke_opacity: 0,
-        fill: "#544bdb",
-        fill_opacity: 0.05,
+    tutorial_door: {
+        stroke: "#7f77ea",
+        stroke_opacity: 0.5,
     },
     start: {
         stroke: "#00ddff99",
+    },
+    sensor: {
+        stroke: "#00ddff",
+        stroke_opacity: 0.4,
+        fill: "#00ddff",
+        fill_opacity: 0.4,
     },
 };

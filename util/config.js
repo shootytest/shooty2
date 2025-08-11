@@ -1,6 +1,6 @@
 export const config = {
     physics: {
-        wall_width: 5,
+        wall_width: 3,
         force_factor: 0.0005,
     },
     graphics: {

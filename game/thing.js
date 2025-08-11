@@ -1,8 +1,10 @@
 import { world } from "../index.js";
-import { Bodies, Body, Composite } from "../matter.js";
+import { Bodies, Body, Composite, Vector } from "../matter.js";
 import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
+import { detector } from "./detector.js";
+// import { detector } from "./detector.js";
 import { Polygon, Shape } from "./shape.js";
 /**
  * the thing class... i don't know anymore i have made like 5 of these already... maybe more
@@ -21,6 +23,7 @@ export class Thing {
     uid = ++Thing.cumulative_id;
     id = "generic thing #" + this.uid;
     body = undefined; // physics body
+    options = {};
     shapes = [];
     target = {
         position: vector3.create(),
@@ -29,6 +32,7 @@ export class Thing {
         velocity: vector.create(),
     };
     is_player = false;
+    is_touching_player = false;
     constructor() {
         Thing.things.push(this);
     }
@@ -72,12 +76,16 @@ export class Thing {
         if (this.shapes.length <= 0)
             this.position = /*(o.vertices.length >= 3 && !o.options.open_loop) ? Vertices.centre(o.computed.vertices) :*/ vector3.mean(o.computed.vertices);
         this.shapes.push(s);
-        if (this.id.startsWith("generic thing #"))
-            this.create_id(o.id);
+        this.options = o.options;
+        // if (this.id.startsWith("generic thing #"))
+        this.create_id(o.id);
         if (!this.body && !o.options.decoration)
             this.create_body({
                 isStatic: !o.options.movable,
+                isSensor: Boolean(o.options.sensor),
             });
+        if (this.body)
+            this.body.label = o.id;
     }
     create_id(id) {
         this.id = id;
@@ -90,6 +98,7 @@ export class Thing {
         }
         const s = this.shapes[shape_index];
         let body;
+        let add_body = true;
         if (s instanceof Polygon && s.sides === 0) {
             body = Bodies.circle(s.offset.x, s.offset.y, s.radius, options);
             Body.setPosition(body, this.target.position);
@@ -103,6 +112,10 @@ export class Thing {
                 body.offset = offset_3_hour;
                 Body.setPosition(body, vector.add(this.target.position, offset_3_hour));
                 Body.setAngle(body, this.target.angle);
+                if (body.parts.length >= 2)
+                    for (const b of body.parts) {
+                        b.thing = this;
+                    }
             }
             else {
                 // console.log(s.vertices);
@@ -110,36 +123,59 @@ export class Thing {
                 const composite = Composite.create();
                 const sm = vector.mean(s.vertices);
                 const b = Bodies.fromVertices(sm.x, sm.y, math.expand_lines(s.vertices, config.physics.wall_width), options);
+                const walls = [];
                 b.density = 0;
                 b.collisionFilter = { category: 0 };
-                Composite.add(composite, b);
+                // Composite.add(composite, b);
                 // Composite.add(world, b);
                 Body.setPosition(b, vector.add(this.target.position, sm));
                 Body.setAngle(b, 0);
+                let i = 0;
+                b.label = this.id + "_" + i;
+                i++;
                 for (const vs of math.expand_lines(s.vertices, config.physics.wall_width)) {
                     const vm = vector.mean(vs);
-                    const b = Bodies.fromVertices(s.offset.x + vm.x, s.offset.y + vm.y, [vs], options);
-                    Composite.add(composite, b);
-                    // Composite.add(world, b);
-                    Body.setPosition(b, vector.add(this.target.position, vm));
-                    Body.setAngle(b, 0);
+                    const b_ = Bodies.fromVertices(s.offset.x + vm.x, s.offset.y + vm.y, [vs], options);
+                    b_.label = this.id + "_" + i;
+                    i++;
+                    b_.thing = this;
+                    // Composite.add(composite, b);
+                    Composite.add(world, b_);
+                    Body.setPosition(b_, vector.add(this.target.position, vm));
+                    Body.setAngle(b_, 0);
+                    walls.push(b_);
                 }
-                Composite.add(world, composite);
-                body = b; // composite.bodies[0];
+                // Composite.add(world, composite);
+                b.thing = this;
+                b.walls = walls;
+                body = b;
+                add_body = false;
             }
         }
         this.body = body;
-        if (s.z === 0)
-            Composite.add(world, this.body);
+        this.body.thing = this;
+        if (s.z === 0 && add_body)
+            Composite.add(world, this.body); // todo handle other z?
         Body.setVelocity(body, this.target.velocity);
     }
     tick() {
+        detector.tick_fns[this.id]?.(this);
+        if (this.is_touching_player && !this.is_player) {
+            detector.collision_fns[this.id]?.(this);
+        }
     }
-    draw() {
+    // useful
+    lookup(id) {
+        return Thing.things_lookup[id];
+    }
+    translate(vector) {
         if (!this.body)
             return;
-        for (const b of this.body.parts) {
-            b.vertices;
-        }
+        const walls = this.body.walls ?? [];
+        Body.setPosition(this.body, Vector.add(this.body.position, vector), true);
+        if (walls)
+            for (const wall of walls) {
+                Body.setPosition(wall, Vector.add(wall.position, vector), true);
+            }
     }
 }

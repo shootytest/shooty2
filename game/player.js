@@ -22,6 +22,8 @@ export class Player extends Thing {
             frictionAir: 0.2,
             restitution: 0.1,
         });
+        if (this.body)
+            this.body.label = "player";
     }
     tick() {
         super.tick();

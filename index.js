@@ -1,3 +1,4 @@
+import { detector } from "./game/detector.js";
 import { player } from "./game/player.js";
 import { Thing } from "./game/thing.js";
 import { Engine, Runner } from "./matter.js";
@@ -21,6 +22,7 @@ export const MAP = map_serialiser.load("auto");
 const init_all = () => {
     init_canvas();
     // ui.init();
+    detector.init();
     key.init();
 };
 window.addEventListener("load", init_all);

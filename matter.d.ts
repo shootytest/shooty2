@@ -513,7 +513,7 @@ declare namespace Matter {
          * @param {Body} body
          * @param {number} rotation
          */
-        static rotate(body: Body, rotation: number): void;
+        static rotate(body: Body, rotation: number, point?: Vector, updateVelocity = false): void;
         /**
          * Returns the next unique group index for which bodies will collide.
          * If `isNonColliding` is `true`, returns the next unique group index for which bodies will _not_ collide.
@@ -603,7 +603,7 @@ declare namespace Matter {
          * @param {Body} body
          * @param {Vector} position
          */
-        static setPosition(body: Body, position: Vector): void;
+        static setPosition(body: Body, position: Vector, updateVelocity = false): void;
         /**
          * Sets the angle of the body instantly. Angular velocity, position, force etc. are unchanged.
          * @method setAngle
@@ -3547,7 +3547,21 @@ declare namespace Matter {
         static getDecomp(): any;
 
         static polygonOffset = Offset;
+        static visibilityPolygon: {
+            compute: (position: vp_Vector2D, segments: vp_Segments) => vp_Vector2D[],
+            computeViewport: (position: vp_Vector2D, segments: vp_Segments, viewportMinCorner: vp_Vector2D, viewportMaxCorner: vp_Vector2D) => vp_Vector2D[],
+            inViewport: (position: vp_Vector2D, viewportMinCorner: vp_Vector2D, viewportMaxCorner: vp_Vector2D) => boolean;
+            inPolygon: (position: vp_Vector2D, polygon: vp_Vector2D[]) => boolean;
+            convertToSegments: (polygons: vp_Polygon[]) => vp_Segments;
+            breakIntersections: (segments: vp_Segments) => vp_Segments;
+        };
     }
+    
+    export declare type vp_Vector2D = [number, number];
+    export declare type vp_Segments = vp_Vector2D[][];
+    export declare type vp_Angle = number;
+    export declare type vp_Points = [number, number, Angle];
+    export declare type vp_Polygon = vp_Vector2D[];
 
     export class Offset {
         data(points: number[][]): {

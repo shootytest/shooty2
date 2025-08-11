@@ -37,6 +37,8 @@ export type map_shape_options_type = {
   // game options
   merge?: boolean, // use the same thing object as its parent?
   decoration?: boolean, // this won't add a physics object
+  sensor?: boolean, // invisible physics sensor
+  invisible?: boolean, // invisible shape
   movable?: boolean, // dynamic physics object
   seethrough?: boolean, // visibility
 
@@ -415,13 +417,17 @@ export const STYLES: styles_type = {
     fill: "#544bdb",
     fill_opacity: 0.7,
   },
-  tutorial_ceiling: {
-    stroke: "#7f77ea00",
-    stroke_opacity: 0,
-    fill: "#544bdb",
-    fill_opacity: 0.05,
+  tutorial_door: {
+    stroke: "#7f77ea",
+    stroke_opacity: 0.5,
   },
   start: {
     stroke: "#00ddff99",
+  },
+  sensor: {
+    stroke: "#00ddff",
+    stroke_opacity: 0.4,
+    fill: "#00ddff",
+    fill_opacity: 0.4,
   },
 };
