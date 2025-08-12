@@ -11,9 +11,10 @@ export class Player extends Thing {
         super();
         const s = Shape.circle(this, 30);
         s.thing = this;
-        s.style.fill = color.neon_blue + "99";
+        s.style.fill = "#1aa5ab";
+        color.neon_blue + "99";
         this.shapes.push(s);
-        this.create_id("generic player #0"); // hmmm
+        this.create_id("player"); // hmmm
         this.is_player = true;
         this.position = vector3.create();
     }

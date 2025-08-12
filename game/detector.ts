@@ -1,6 +1,8 @@
 import { engine } from "../index.js";
 import { Events, Pair } from "../matter.js";
+import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
+import { player } from "./player.js";
 import type { Thing } from "./thing.js";
 
 export const detector = {
@@ -22,41 +24,52 @@ export const detector = {
   },
   collision_start: (pair: Matter.Pair, ba: Matter.Body, bb: Matter.Body, flipped: boolean) => {
     const a = ((ba.parent as any).thing as Thing), b = ((bb.parent as any).thing as Thing);
-    console.log(`Collision started betwixt ${ba.label} & ${bb.label}!`);
+    // console.log(`Collision started betwixt ${ba.label} & ${bb.label}!`);
     if (a.is_player) {
       if (b.options.sensor) {
+        detector.collision_start_fns[b.id]?.(b);
         b.is_touching_player = true;
       }
     }
   },
   collision_end: (pair: Matter.Pair, ba: Matter.Body, bb: Matter.Body, flipped: boolean) => {
     const a = ((ba.parent as any).thing as Thing), b = ((bb.parent as any).thing as Thing);
-    console.log(`Collision ended betwixt ${ba.label} & ${bb.label}!`);
+    // console.log(`Collision ended betwixt ${ba.label} & ${bb.label}!`);
     if (a.is_player) {
       if (b.options.sensor) {
+        detector.collision_end_fns[b.id]?.(b);
         b.is_touching_player = false;
       }
     }
   },
 
 
-  collision_fns: {
-    ["tutorial door 1 sensor"]: (thing) => {
-      const door = thing.lookup("tutorial door 1");
-      if (door) {
-        const vs = door.shapes[0].vertices;
-        const diff = vector.sub(vs[1], vs[0]);
-        const exceeded = door.position.y - door.target.position.y > diff.y;
-        door.translate(vector.normalise(diff, exceeded ? 5 : 10));
-      }
+  collision_during_fns: {
+    ["tutorial room 1 sensor"]: (thing) => {
+      thing.lookup("tutorial room 1 arrow").shapes[0].style.stroke_opacity = 1 - math.bound((player.position.x - thing.position.x) / 350, 0, 1);
     },
+  } as { [key: string]: (thing: Thing) => void },
+
+
+  collision_start_fns: {
+    // nothing for now
+  } as { [key: string]: (thing: Thing) => void },
+  
+
+  collision_end_fns: {
+    // nothing for now
   } as { [key: string]: (thing: Thing) => void },
   
 
   tick_fns: {
     ["tutorial door 1"]: (door) => {
       const vs = door.shapes[0].vertices;
-      if (door.position.y > door.target.position.y) door.translate(vector.normalise(vector.sub(vs[1], vs[0]), -5));
+      const diff = vector.sub(vs[1], vs[0]);
+      const triggered = Boolean(door.lookup("tutorial door 1 sensor")?.is_touching_player);
+      let exceeded = true;
+      if (triggered) exceeded = door.position.y - door.target.position.y > diff.y;
+      else exceeded = door.position.y <= door.target.position.y;
+      if (!exceeded) door.translate(vector.normalise(diff, triggered ? 5 : -5));
     },
   } as { [key: string]: (thing: Thing) => void },
 };

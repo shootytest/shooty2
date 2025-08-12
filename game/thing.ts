@@ -31,6 +31,7 @@ export class Thing {
 
   body?: Body = undefined; // physics body
   options: map_shape_options_type = {};
+  object: { [key: string]: any } = {};
   shapes: Shape[] = [];
   
   target: {
@@ -132,6 +133,7 @@ export class Thing {
         Body.setAngle(body, this.target.angle);
         if (body.parts.length >= 2) for (const b of body.parts) {
           (b as any).thing = this;
+          b.label = this.id;
         }
       } else {
         // console.log(s.vertices);
@@ -175,7 +177,7 @@ export class Thing {
   tick() {
     detector.tick_fns[this.id]?.(this);
     if (this.is_touching_player && !this.is_player) {
-      detector.collision_fns[this.id]?.(this);
+      detector.collision_during_fns[this.id]?.(this);
     }
   }
 

@@ -2,7 +2,7 @@ import { Vertices } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
 import { config } from "../util/config.js";
-import { STYLES } from "../util/map_type.js";
+import { map_serialiser, STYLES } from "../util/map_type.js";
 import { vector, vector3 } from "../util/vector.js";
 import { player } from "./player.js";
 /**
@@ -31,7 +31,7 @@ export class Shape {
             v.x -= dv.x;
             v.y -= dv.y;
         }
-        s.style = STYLES[o.options.style ?? "test"] ?? STYLES.error;
+        s.style = map_serialiser.clone_style(STYLES[o.options.style ?? "test"] ?? STYLES.error);
         s.init_computed();
         if (thing.shapes.length >= 1) { // runs for merged shapes
             s.offset.x = thing.position.x - o.computed.mean.x;
@@ -97,6 +97,13 @@ export class Shape {
     ;
     static draw(z) {
         // hope this doesn't take too long per tick...
+        Shape.draw_shapes.sort((s1, s2) => {
+            if (s1.thing.options.decoration && !s2.thing.options.decoration)
+                return -1;
+            if (s2.thing.options.decoration && !s1.thing.options.decoration)
+                return 1;
+            return s1.z - s2.z;
+        });
         for (const s of Shape.draw_shapes) {
             if (z != undefined && s.z !== z)
                 continue;

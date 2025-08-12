@@ -24,6 +24,7 @@ export class Thing {
     id = "generic thing #" + this.uid;
     body = undefined; // physics body
     options = {};
+    object = {};
     shapes = [];
     target = {
         position: vector3.create(),
@@ -115,6 +116,7 @@ export class Thing {
                 if (body.parts.length >= 2)
                     for (const b of body.parts) {
                         b.thing = this;
+                        b.label = this.id;
                     }
             }
             else {
@@ -161,7 +163,7 @@ export class Thing {
     tick() {
         detector.tick_fns[this.id]?.(this);
         if (this.is_touching_player && !this.is_player) {
-            detector.collision_fns[this.id]?.(this);
+            detector.collision_during_fns[this.id]?.(this);
         }
     }
     // useful

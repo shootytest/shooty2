@@ -255,13 +255,14 @@ export const map_draw = {
           o.new = false;
           if (!(mouse.drag_vector_old[0] === false || vector.length2(mouse.drag_vector_old[0]) < 30)) { 
             // if actually dragged
+            const round_to_number = key.ctrl() ? 1 : 10;
             if (key.shift()) {
               for (let i = 0; i < o.shape.vertices.length; i++) {
-                o.shape.vertices[i] = vector.round_to(o.shape.vertices[i], 10);
+                o.shape.vertices[i] = vector.round_to(o.shape.vertices[i], round_to_number);
               }
               map_draw.change("move shape", o.shape);
             } else {
-              o.shape.vertices[o.index] = vector.round_to(ov, 10);
+              o.shape.vertices[o.index] = vector.round_to(ov, round_to_number);
               map_draw.change("move vertex #" + o.index, o.shape);
             }
             map_draw.compute_shape(o.shape);

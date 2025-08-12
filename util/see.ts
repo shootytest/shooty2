@@ -53,7 +53,7 @@ export const do_visibility = () => {
     Shape.draw(z);
     ctx.restore("see");
   }
-  for (let z = 0; z < 0.9; z += 0.1) {
+  for (let z = 0 /* + ((performance.now() / 300) % 1) / 10*/; z < 0.9; z += 0.1) {
     ctx.ctx.save();
     clip_inverted_path(player, inverted, z);
     ctx.ctx.restore();
@@ -139,10 +139,8 @@ const calc_visibility_path_2 = (v: vector): Path2D => {
   const result = collide.get_visibility_polygon(start, Shape.get_vertices(), viewport_1, viewport_2);
 
   // clip
-  // todo reverse triangulation
   const s = camera.world2screen(start);
   const path = new Path2D();
-  //path.moveTo(Math.round(s.x), Math.round(s.y));
   let first = true;
   let first_e = vector.create();
   for (const r of result) {
