@@ -4,18 +4,19 @@ import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { detector } from "./detector.js";
-// import { detector } from "./detector.js";
 import { Polygon, Shape } from "./shape.js";
 /**
- * the thing class... i don't know anymore i have made like 5 of these already... maybe more
+ * the thing class... i probably have made like 5 of these already
  * this covers all things (which interact with each other)
  * maybe this is everything
  */
 export class Thing {
+    static time = 0;
     static things = [];
     static things_lookup = {};
     static cumulative_id = 0;
     static tick_things = () => {
+        Thing.time++;
         for (const thing of Thing.things) {
             thing.tick();
         }
@@ -156,7 +157,7 @@ export class Thing {
         }
         this.body = body;
         this.body.thing = this;
-        if (s.z === 0 && add_body)
+        if ( /*s.z === 0 &&*/add_body)
             Composite.add(world, this.body); // todo handle other z?
         Body.setVelocity(body, this.target.velocity);
     }

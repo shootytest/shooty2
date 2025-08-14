@@ -80,10 +80,13 @@ export const vector = {
         return vector.create(math.round_to(v.x, n), math.round_to(v.y, n));
     },
     direction: (v) => {
-        return Math.atan2(-v.y, v.x);
+        return Math.atan2(v.y, v.x);
     },
     createpolar: (theta, r = 1) => {
         return vector.create(r * Math.cos(theta), r * Math.sin(theta));
+    },
+    createpolar_deg: (theta, r = 1) => {
+        return vector.createpolar(vector.deg_to_rad(theta), r);
     },
     lerp: (v1, v2, t) => {
         return vector.add(vector.mult(v1, 1 - t), vector.mult(v2, t));
@@ -337,6 +340,9 @@ export const vector3 = {
     },
     createpolar: (theta, r = 1, z = 0) => {
         return vector3.create(r * Math.cos(theta), r * Math.sin(theta), z);
+    },
+    createpolar_deg: (theta, r = 1, z = 0) => {
+        return vector3.createpolar(vector3.deg_to_rad(theta), r, z);
     },
     lerp: (v1, v2, t) => {
         return vector3.add(vector3.mult(v1, 1 - t), vector3.mult(v2, t));

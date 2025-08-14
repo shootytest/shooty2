@@ -4,6 +4,6 @@ export const config = {
         force_factor: 0.0005,
     },
     graphics: {
-        linewidth_mult: 15,
+        linewidth_mult: 8,
     },
 };

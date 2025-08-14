@@ -1,9 +1,9 @@
 import { Body } from "../matter.js";
 import { camera } from "../util/camera.js";
-import { color } from "../util/color.js";
 import { config } from "../util/config.js";
 import { keys } from "../util/key.js";
 import { vector, vector3 } from "../util/vector.js";
+import { filters } from "./detector.js";
 import { Shape } from "./shape.js";
 import { Thing } from "./thing.js";
 
@@ -12,10 +12,18 @@ export class Player extends Thing {
   constructor() {
     super();
     
-    const s = Shape.circle(this, 30);
+    const s = Shape.circle(this, 31);
     s.thing = this;
-    s.style.fill = "#1aa5ab"; color.neon_blue + "99";
+    s.seethrough = true;
+    s.style.stroke = "#eeeeee";
+    // s.style.fill = "#1aa5ab"; color.neon_blue + "99";
     this.shapes.push(s);
+
+    const s2 = Shape.line(this, vector.createpolar_deg(0, 30));
+    s2.thing = this;
+    s2.seethrough = true;
+    s2.style.stroke = "#eeeeee"; // color.neon_blue + "99";
+    this.shapes.push(s2);
 
     this.create_id("player"); // hmmm
 
@@ -27,6 +35,7 @@ export class Player extends Thing {
     this.create_body({
       frictionAir: 0.2,
       restitution: 0.1,
+      collisionFilter: filters.player,
     });
     if (this.body) this.body.label = "player";
   }
@@ -50,7 +59,14 @@ export class Player extends Thing {
     const move_v = vector.normalise(vector.create(move_x, move_y));
     if (this.body) {
       Body.applyForce(this.body, this.position, vector.mult(move_v, 10 * this.body.mass * config.physics.force_factor));
+      Body.setAngle(this.body, vector.direction(vector.sub(this.target.facing, camera.world2screen(this.position) ?? this.target.position)));
     }
+  }
+
+  camera_position() {
+    let v = vector.sub(this.target.facing, camera.world2screen(this.position) ?? this.target.position);
+    v = vector.normalise(v, vector.length(v) / 30 * camera.scale);
+    return vector.add(player.position, v);
   }
 
   camera_scale() {

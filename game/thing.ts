@@ -1,19 +1,20 @@
 import { world } from "../index.js";
-import { Bodies, Body, Composite, IBodyDefinition, Vector, Vertices } from "../matter.js";
+import { Bodies, Body, Composite, IBodyDefinition, Vector } from "../matter.js";
 import { config } from "../util/config.js";
 import { map_shape_options_type, map_shape_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { detector } from "./detector.js";
-// import { detector } from "./detector.js";
 import { Polygon, Shape } from "./shape.js";
 
 /**
- * the thing class... i don't know anymore i have made like 5 of these already... maybe more
+ * the thing class... i probably have made like 5 of these already
  * this covers all things (which interact with each other)
  * maybe this is everything
  */
 export class Thing {
+
+  static time: number = 0;
 
   static things: Thing[] = [];
   static things_lookup: { [key: string]: Thing } = {};
@@ -21,6 +22,7 @@ export class Thing {
   static cumulative_id = 0;
 
   static tick_things = () => {
+    Thing.time++;
     for (const thing of Thing.things) {
       thing.tick();
     }
@@ -170,7 +172,7 @@ export class Thing {
     }
     this.body = body;
     (this.body as any).thing = this;
-    if (s.z === 0 && add_body) Composite.add(world, this.body); // todo handle other z?
+    if (/*s.z === 0 &&*/ add_body) Composite.add(world, this.body); // todo handle other z?
     Body.setVelocity(body, this.target.velocity);
   }
 

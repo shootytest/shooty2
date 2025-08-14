@@ -50,8 +50,23 @@ export class Shape {
     return s;
   };
 
-  static circle(thing: Thing, radius: number, z: number = 0, x_offset: number = 0, y_offset: number = 0): Polygon {
-    return Polygon.make(thing, radius, 0, 0, z, x_offset, y_offset);
+  static polygon(thing: Thing, radius: number, sides: number, angle: number = 0, z: number = 0, offset?: vector): Polygon {
+    return Polygon.make(thing, radius, sides, angle, z, offset);
+  };
+
+  static circle(thing: Thing, radius: number, z: number = 0, offset?: vector): Polygon {
+    return Polygon.make(thing, radius, 0, 0, z, offset);
+  };
+
+  static line(thing: Thing, v1: vector, v2: vector = vector.create(), z: number = 0): Shape {
+    console.log(thing);
+    const s = new Shape(thing);
+    s.closed_loop = false;
+    s.vertices = vector3.create_many([v1, v2], z);
+    s.z = z;
+    s.calculate();
+    s.init_computed();
+    return s;
   };
 
   static filter(aabb: AABB3): Shape[] {
@@ -68,7 +83,6 @@ export class Shape {
   };
 
   static compute() {
-    const cam = vector3.create2(camera.location, camera.z);
     const screen_topleft = camera.screen2world({ x: 0, y: 0 });
     const screen_bottomright = camera.screen2world({ x: ctx.canvas.width, y: ctx.canvas.height });
     const screen_aabb: AABB3 = {
@@ -82,20 +96,6 @@ export class Shape {
         s.init_computed();
       }
       if (s.computed != undefined) { // always true at this point
-        // compute vertices
-        s.computed.vertices = vector3.clone_list(s.vertices);
-        // rotate by thing angle
-        if (s.thing.angle) {
-          for (const v of s.computed.vertices) {
-            const rotated = vector.rotate(vector.create(), v, s.thing.angle);
-            v.x = rotated.x;
-            v.y = rotated.y;
-          }
-        }
-        // translate by thing position
-        vector3.add_to_list(s.computed.vertices, vector3.flatten(s.thing.position));
-        // compute distance (whatever for? i forgot)
-        s.computed.distance2 = vector.length2(vector.sub(s.computed.mean, cam));
         // compute location on screen using camera transformation
         s.compute_screen();
       }
@@ -141,7 +141,7 @@ export class Shape {
   z: number = 0;
 
   vertices: vector3[] = [];
-  offset: vector3 = vector3.create();
+  offset: vector = vector3.create();
   closed_loop = true;
   seethrough = false;
 
@@ -183,9 +183,7 @@ export class Shape {
   draw() {
     if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0) return;
     const style = this.style;
-    // ctx.save("draw_shape");
-    // if (this.thing) ctx.rotate(this.thing?.angle);
-    ctx.begin();
+    ctx.beginPath();
     this.draw_path();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -193,7 +191,7 @@ export class Shape {
     if (style.stroke) {
       ctx.strokeStyle = style.stroke;
       ctx.globalAlpha = style.stroke_opacity ?? 1;
-      ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * config.graphics.linewidth_mult;
+      ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * config.graphics.linewidth_mult * (this.seethrough ? 1 : 1.8);
       ctx.stroke();
     }
     if (style.fill && this.closed_loop) {
@@ -201,7 +199,6 @@ export class Shape {
       ctx.globalAlpha = style.fill_opacity ?? 1;
       ctx.fill();
     }
-    // ctx.restore("draw_shape");
   }
 
   draw_path() {
@@ -211,6 +208,20 @@ export class Shape {
 
   compute_screen() {
     if (this.computed?.vertices == undefined) return;
+    // compute vertices and offset by shape offset
+    this.computed.vertices = vector3.add_list(this.vertices, vector3.create2(this.offset));
+    // rotate by thing angle
+    if (this.thing.angle) {
+      for (const v of this.computed.vertices) {
+        const rotated = vector.rotate(vector.create(), v, this.thing.angle);
+        v.x = rotated.x;
+        v.y = rotated.y;
+      }
+    }
+    // translate by thing position
+    vector3.add_to_list(this.computed.vertices, vector3.clone(this.thing.position));
+    // no need to compute distance to camera centre... maybe next time for optimisation?
+    // this.computed.distance2 = vector.length2(vector.sub(this.computed.mean, camera.location3));
     const vs: vector3[] = [];
     for (const world_v of this.computed.vertices) {
       const v = camera.world3screen(world_v, player);
@@ -224,14 +235,14 @@ export class Shape {
 export class Polygon extends Shape {
   static type: string = "polygon";
 
-  static make(thing: Thing, radius: number, sides: number, angle: number, z: number = 0, x_offset: number = 0, y_offset: number = 0): Polygon {
+  static make(thing: Thing, radius: number, sides: number, angle: number, z: number = 0, offset: vector = vector.create()): Polygon {
     const s = new Polygon(thing);
     s.radius = radius;
     s.sides = sides;
     s.angle = angle;
     s.z = z;
-    s.offset.x = x_offset;
-    s.offset.y = y_offset;
+    s.offset.x = offset.x;
+    s.offset.y = offset.y;
     s.calculate();
     s.init_computed();
     return s;
@@ -267,15 +278,19 @@ export class Polygon extends Shape {
   compute_screen() {
     if (this.sides === 0) {
       if (this.computed?.mean == undefined) return;
-      let c = this.computed.mean;
-      if (this.thing) c = vector3.add(c, vector3.flatten(this.thing.position));
+      let c = vector3.add(this.computed.mean, vector3.create2(this.offset));
+      const rotated = vector.rotate(vector.create(), c, this.thing.angle);
+      c.x = rotated.x;
+      c.y = rotated.y;
+      if (this.thing) c = vector3.add(c, vector3.clone(this.thing.position));
       let r = vector3.create(this.radius, 0, this.z);
-      r = vector3.add(r, vector3.create2(camera.position));
+      r = vector3.add(r, vector3.create2(this.thing.position));
       const vs: vector3[] = [];
       for (const world_v of [c, r]) {
         const v = camera.world3screen(world_v, player);
         vs.push(vector3.create2(v, world_v.z - camera.look_z));
       }
+      vs[1] = vector3.sub(vs[1], vs[0]);
       this.computed.screen_vertices = vs;
     } else {
       super.compute_screen();

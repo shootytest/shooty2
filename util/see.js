@@ -111,7 +111,7 @@ const calc_visibility_path_2 = (v) => {
     start.y = Math.round(v.y);
     start.r = Math.max(w, h);
     const viewport_1 = camera.screen2world(vector.create());
-    const viewport_2 = camera.screen2world(vector.create(w, h));
+    const viewport_2 = camera.screen2world(vector.create(Math.round(w), Math.round(h)));
     const result = collide.get_visibility_polygon(start, Shape.get_vertices(), viewport_1, viewport_2);
     // clip
     const s = camera.world2screen(start);
@@ -434,7 +434,7 @@ export const collide = {
         let segments = Common.visibilityPolygon.convertToSegments([[[-BIG_NUMBER, -BIG_NUMBER], [BIG_NUMBER, -BIG_NUMBER], [BIG_NUMBER, BIG_NUMBER], [-BIG_NUMBER, BIG_NUMBER]]]);
         for (const vs of vertices) {
             for (let i = 0; i < vs.length - 1; i++) {
-                segments.push([[vs[i].x, vs[i].y], [vs[i + 1].x, vs[i + 1].y]]);
+                segments.push([[Math.round(vs[i].x), Math.round(vs[i].y)], [Math.round(vs[i + 1].x), Math.round(vs[i + 1].y)]]);
             }
         }
         segments = Common.visibilityPolygon.breakIntersections(segments);

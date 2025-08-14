@@ -426,7 +426,7 @@ export const STYLES: styles_type = {
     stroke: "#7f77ea",
     stroke_opacity: 0,
     fill: "#4e47af",
-    fill_opacity: 0.2,
+    fill_opacity: 0.3,
   },
   start: {
     stroke: "#00ddff99",

@@ -22,7 +22,7 @@ export const camera = {
     return this.position.y;
   },
   get mouse_v(): vector {
-    return vector.create(mouse.x, mouse.y);
+    return mouse.position;
   },
   get halfscreen(): vector {
     return vector.create(canvas.width / 2, canvas.height / 2);
@@ -36,6 +36,9 @@ export const camera = {
   },
   get location(): vector { // zero position on screen in world coords
     return vector.add(this.position, this.halfworld);
+  },
+  get location3(): vector3 {
+    return vector3.create2(camera.location, camera.z)
   },
   set location(loc: vector) {
     this.position = vector.sub(loc, this.halfworld);

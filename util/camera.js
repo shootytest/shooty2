@@ -1,5 +1,5 @@
 import { math } from "./math.js";
-import { vector } from "./vector.js";
+import { vector, vector3 } from "./vector.js";
 import { mouse } from "./key.js";
 import { canvas } from "./canvas.js";
 export const ZEPSILON = 0.0001;
@@ -20,7 +20,7 @@ export const camera = {
         return this.position.y;
     },
     get mouse_v() {
-        return vector.create(mouse.x, mouse.y);
+        return mouse.position;
     },
     get halfscreen() {
         return vector.create(canvas.width / 2, canvas.height / 2);
@@ -34,6 +34,9 @@ export const camera = {
     },
     get location() {
         return vector.add(this.position, this.halfworld);
+    },
+    get location3() {
+        return vector3.create2(camera.location, camera.z);
     },
     set location(loc) {
         this.position = vector.sub(loc, this.halfworld);

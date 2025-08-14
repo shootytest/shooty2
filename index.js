@@ -46,7 +46,7 @@ window.addEventListener("load", init_all);
 Events.on(runner, "tick", tick_all);*/
 const tick_all = (timestamp_unused) => {
     camera.tick();
-    camera.location_target = player.position;
+    camera.location_target = player.camera_position();
     camera.scale_target = player.camera_scale();
     mouse.tick();
     Thing.tick_things();
