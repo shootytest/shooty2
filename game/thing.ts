@@ -186,12 +186,12 @@ export class Thing {
     return Thing.things_lookup[id];
   }
 
-  translate(vector: vector) {
+  translate_wall(vector: vector) {
     if (!this.body) return;
     const walls = (this.body as any).walls as Matter.Body[] ?? [];
-    Body.setPosition(this.body, Vector.add(this.body.position, vector), true);
+    Body.setPosition(this.body, Vector.add(this.body.position, vector));
     if (walls) for (const wall of walls) {
-      Body.setPosition(wall, Vector.add(wall.position, vector), true);
+      Body.setPosition(wall, Vector.add(wall.position, vector));
     }
   }
 

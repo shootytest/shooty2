@@ -420,8 +420,13 @@ export const STYLES: styles_type = {
     fill_opacity: 0.7,
   },
   tutorial_door: {
+    stroke: "#4e47af",
+  },
+  tutorial_floor: {
     stroke: "#7f77ea",
-    stroke_opacity: 0.5,
+    stroke_opacity: 0,
+    fill: "#4e47af",
+    fill_opacity: 0.2,
   },
   start: {
     stroke: "#00ddff99",

@@ -62,14 +62,24 @@ export const detector = {
   
 
   tick_fns: {
-    ["tutorial door 1"]: (door) => {
-      const vs = door.shapes[0].vertices;
-      const diff = vector.sub(vs[1], vs[0]);
-      const triggered = Boolean(door.lookup("tutorial door 1 sensor")?.is_touching_player);
-      let exceeded = true;
-      if (triggered) exceeded = door.position.y - door.target.position.y > diff.y;
-      else exceeded = door.position.y <= door.target.position.y;
-      if (!exceeded) door.translate(vector.normalise(diff, triggered ? 5 : -5));
+    ["tutorial room 1 door 1"]: (door) => {
+      do_door(door, "tutorial room 1 door sensor");
+    },
+    ["tutorial room 1 door 2"]: (door) => {
+      do_door(door, "tutorial room 1 door sensor");
     },
   } as { [key: string]: (thing: Thing) => void },
+
+};
+
+const do_door = (door: Thing, sensor_id: string, speed = 5, invert = false) => {
+  const vs = door.shapes[0].vertices;
+  const dir = vector.sub(vs[1], vs[0]);
+  const offset = vector.sub(door.position, door.target.position);
+  let triggered = Boolean(door.lookup(sensor_id)?.is_touching_player);
+  if (invert) triggered = !triggered;
+  let exceeded = true;
+  if (triggered) exceeded = vector.length2(offset) > vector.length2(dir);
+  else exceeded = vector.dot(offset, dir) < 0;
+  if (!exceeded) door.translate_wall(vector.normalise(dir, triggered ? speed : -speed));
 };

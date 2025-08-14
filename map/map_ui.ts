@@ -676,6 +676,8 @@ export const ui = {
       }
       if (shape.options == undefined) shape.options = {};
       if (shape.options.parent == undefined) shape.options.parent = "all";
+      const parent = shape.options.parent;
+      const shortened_id = (shape.id.startsWith(parent) && shape.id !== parent) ? shape.id.substring(parent.length) : shape.id;
       const li = document.createElement("li");
       let clickable: HTMLElement = li;
       if (id === "all" || (shape.options.contains?.length ?? 0) > 0) {
@@ -684,7 +686,7 @@ export const ui = {
         details.classList.add("folder");
         details.setAttribute("open", "");
         const summary = document.createElement("summary");
-        summary.innerHTML = `<span>${id}</span>`;
+        summary.innerHTML = `<span title="${id}">${shortened_id}</span>`;
         details.appendChild(summary);
         const ul = document.createElement("ul");
         details.appendChild(ul);
@@ -693,8 +695,8 @@ export const ui = {
           aside.appendChild(details);
         } else {
           li.appendChild(details);
-          if (!ui.directory_elements[shape.options.parent]) console.error("[ui/update_directory] parent folder (" + shape.options.parent + ") not found for folder (" + id + ")");
-          else ui.directory_elements[shape.options.parent].querySelector("ul")!.appendChild(li);
+          if (!ui.directory_elements[parent]) console.error("[ui/update_directory] parent folder (" + parent + ") not found for folder (" + id + ")");
+          else ui.directory_elements[parent].querySelector("ul")!.appendChild(li);
         }
         ui.directory_elements[id] = details;
         clickable = summary;
@@ -703,10 +705,10 @@ export const ui = {
         const span = document.createElement("span");
         span.classList.add("file");
         span.style.backgroundImage = `url("/shape.svg")`;
-        span.innerHTML = `<span>${id}</span>`;
+        span.innerHTML = `<span title="${id}">${shortened_id}</span>`;
         li.appendChild(span);
-        if (!ui.directory_elements[shape.options.parent]) console.error("[ui/update_directory] parent folder (" + shape.options.parent + ") not found for leaf (" + id + ")");
-        else ui.directory_elements[shape.options.parent].querySelector("ul")!.appendChild(li);
+        if (!ui.directory_elements[parent]) console.error("[ui/update_directory] parent folder (" + parent + ") not found for leaf (" + id + ")");
+        else ui.directory_elements[parent].querySelector("ul")!.appendChild(li);
         ui.directory_elements[id] = span;
         clickable = li;
       }
@@ -721,7 +723,7 @@ export const ui = {
         const view_v = vector.aabb2v(ui.viewport);
         const size_v = vector.aabb2v(aabb);
         if (size_v.x <= 0 && size_v.y <= 0) size = camera.scale;
-        else size = Math.min(view_v.x / size_v.x, view_v.y / size_v.y) / 1.5;
+        else size = Math.min(view_v.x / size_v.x, view_v.y / size_v.y) / 1.3;
         camera.jump_to(vector.aabb_centre(aabb), size, vector.aabb_centre(ui.viewport));
       };
       clickable.addEventListener("click", function(event) {
