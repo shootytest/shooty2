@@ -6,6 +6,7 @@ import { math } from "../util/math.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { detector } from "./detector.js";
 import { Polygon, Shape } from "./shape.js";
+import { Shoot, shoot_stats } from "./shoot.js";
 
 /**
  * the thing class... i probably have made like 5 of these already
@@ -35,6 +36,7 @@ export class Thing {
   options: map_shape_options_type = {};
   object: { [key: string]: any } = {};
   shapes: Shape[] = [];
+  shoots: Shoot[] = [];
   
   target: {
     position: vector3,
@@ -50,6 +52,10 @@ export class Thing {
 
   is_player: boolean = false;
   is_touching_player: boolean = false;
+
+  is_bullet: boolean = false;
+  bullet_shoot?: Shoot;
+  bullet_time: number = -1;
 
   constructor() {
     Thing.things.push(this);
@@ -140,7 +146,7 @@ export class Thing {
       } else {
         // console.log(s.vertices);
         // console.log(math.expand_lines(s.vertices, 1));
-        const composite = Composite.create();
+        // const composite = Composite.create();
         const sm = vector.mean(s.vertices);
         const b = Bodies.fromVertices(sm.x, sm.y, math.expand_lines(s.vertices, config.physics.wall_width), options);
         const walls: Matter.Body[] = [];
@@ -176,10 +182,67 @@ export class Thing {
     Body.setVelocity(body, this.target.velocity);
   }
 
+  remove() {
+    this.remove_list();
+    this.remove_body();
+    this.remove_children();
+    this.remove_shapes();
+    this.remove_shoots();
+  }
+
+  remove_list() {
+    for (const array of [Thing.things, this.bullet_shoot?.bullets]) {
+      // remove this from array
+      const index = array?.indexOf(this);
+      if (index != undefined && index > -1) {
+        array?.splice(index, 1);
+      }
+    }
+    delete Thing.things_lookup[this.id];
+  }
+
+  remove_body() {
+    if (this.body != undefined) {
+      // remove from world
+      Composite.remove(world, this.body);
+      this.body = undefined;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  remove_children() {
+    for (const shoot of this.shoots) {
+      // if (this.keep_children) return;
+      for (const c of shoot.bullets) {
+        // if (c.keep_this) continue;
+        c.remove();
+      }
+    }
+  }
+
+  remove_shapes() {
+    for (const shape of this.shapes) {
+      shape.remove();
+    }
+    this.shapes = [];
+  }
+
+  remove_shoots() {
+    this.shoots = [];
+  }
+
   tick() {
     detector.tick_fns[this.id]?.(this);
     if (this.is_touching_player && !this.is_player) {
       detector.collision_during_fns[this.id]?.(this);
+    }
+    for (const shoot of this.shoots) {
+      shoot.tick();
+    }
+    if (this.bullet_time >= 0 && this.bullet_time <= Thing.time) {
+      this.remove();
     }
   }
 
@@ -188,6 +251,8 @@ export class Thing {
     return Thing.things_lookup[id];
   }
 
+  // physics body functions
+  
   translate_wall(vector: vector) {
     if (!this.body) return;
     const walls = (this.body as any).walls as Matter.Body[] ?? [];
@@ -195,6 +260,30 @@ export class Thing {
     if (walls) for (const wall of walls) {
       Body.setPosition(wall, Vector.add(wall.position, vector));
     }
+  }
+
+  push_to(target: vector, amount: number) {
+    const push = vector.createpolar(Vector.angle(this.position, target), amount);
+    if (this.body != undefined && this.position != undefined && push.x != undefined && push.y != undefined) {
+      Body.applyForce(this.body, this.position, push);
+    }
+  }
+
+  push_in_direction(angle: number, amount: number) {
+    const push = vector.createpolar(angle, amount);
+    if (this.body != undefined && this.position != undefined && push.x != undefined && push.y != undefined) {
+      Body.applyForce(this.body, this.position, push);
+    }
+  }
+
+  push_by(amount: vector) {
+    if (this.body != undefined && this.position != undefined && amount.x != undefined && amount.y != undefined) {
+      Body.applyForce(this.body, this.position, amount);
+    }
+  }
+
+  add_shoot(stats: shoot_stats, shape?: Shape) {
+    this.shoots.push(new Shoot(this, stats, shape));
   }
 
 }

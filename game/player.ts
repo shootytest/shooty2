@@ -5,6 +5,7 @@ import { keys } from "../util/key.js";
 import { vector, vector3 } from "../util/vector.js";
 import { filters } from "./detector.js";
 import { Shape } from "./shape.js";
+// import { Shoot } from "./shoot.js";
 import { Thing } from "./thing.js";
 
 export class Player extends Thing {
@@ -29,6 +30,14 @@ export class Player extends Thing {
 
     this.is_player = true;
     this.position = vector3.create();
+
+    this.add_shoot({
+      size: 8,
+      reload: 30,
+      speed: 5,
+      friction: 0.003,
+    }, s2);
+
   }
 
   create_player() {
@@ -60,6 +69,11 @@ export class Player extends Thing {
     if (this.body) {
       Body.applyForce(this.body, this.position, vector.mult(move_v, 10 * this.body.mass * config.physics.force_factor));
       Body.setAngle(this.body, vector.direction(vector.sub(this.target.facing, camera.world2screen(this.position) ?? this.target.position)));
+    }
+    if (controls.shoot) {
+      for (const shoot of this.shoots) {
+        shoot.shoot();
+      }
     }
   }
 

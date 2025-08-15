@@ -141,7 +141,10 @@ export class Shape {
   z: number = 0;
 
   vertices: vector3[] = [];
-  offset: vector = vector3.create();
+  offset: vector = vector.create();
+  scale: vector = vector.create(1, 1);
+  opacity: number = 1;
+  activate_scale = false;
   closed_loop = true;
   seethrough = false;
 
@@ -209,7 +212,8 @@ export class Shape {
   compute_screen() {
     if (this.computed?.vertices == undefined) return;
     // compute vertices and offset by shape offset
-    this.computed.vertices = vector3.add_list(this.vertices, vector3.create2(this.offset));
+    this.computed.vertices = vector3.add_list(this.vertices, this.offset);
+    if (this.activate_scale) vector3.scale_to_list(this.computed.vertices, this.scale);
     // rotate by thing angle
     if (this.thing.angle) {
       for (const v of this.computed.vertices) {
@@ -228,6 +232,16 @@ export class Shape {
       vs.push(vector3.create2(v, world_v.z - camera.look_z));
     }
     this.computed.screen_vertices = vs;
+  }
+
+  remove() {
+    for (const array of [Shape.shapes, this.thing.shapes]) {
+      // remove this from array
+      const index = array?.indexOf(this);
+      if (index != undefined && index > -1) {
+        array?.splice(index, 1);
+      }
+    }
   }
 
 }

@@ -94,6 +94,11 @@ export const detector = {
                 b.is_touching_player = true;
             }
         }
+        if (a.is_bullet) {
+            if (!b.options.sensor && !b.options.keep_bullets) {
+                a.remove();
+            }
+        }
     },
     collision_end: (pair, ba, bb, flipped) => {
         const a = ba.parent.thing, b = bb.parent.thing;

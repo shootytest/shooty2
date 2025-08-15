@@ -5,6 +5,7 @@ import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { detector } from "./detector.js";
 import { Polygon, Shape } from "./shape.js";
+import { Shoot } from "./shoot.js";
 /**
  * the thing class... i probably have made like 5 of these already
  * this covers all things (which interact with each other)
@@ -27,6 +28,7 @@ export class Thing {
     options = {};
     object = {};
     shapes = [];
+    shoots = [];
     target = {
         position: vector3.create(),
         angle: 0,
@@ -35,6 +37,9 @@ export class Thing {
     };
     is_player = false;
     is_touching_player = false;
+    is_bullet = false;
+    bullet_shoot;
+    bullet_time = -1;
     constructor() {
         Thing.things.push(this);
     }
@@ -123,7 +128,7 @@ export class Thing {
             else {
                 // console.log(s.vertices);
                 // console.log(math.expand_lines(s.vertices, 1));
-                const composite = Composite.create();
+                // const composite = Composite.create();
                 const sm = vector.mean(s.vertices);
                 const b = Bodies.fromVertices(sm.x, sm.y, math.expand_lines(s.vertices, config.physics.wall_width), options);
                 const walls = [];
@@ -161,16 +166,69 @@ export class Thing {
             Composite.add(world, this.body); // todo handle other z?
         Body.setVelocity(body, this.target.velocity);
     }
+    remove() {
+        this.remove_list();
+        this.remove_body();
+        this.remove_children();
+        this.remove_shapes();
+        this.remove_shoots();
+    }
+    remove_list() {
+        for (const array of [Thing.things, this.bullet_shoot?.bullets]) {
+            // remove this from array
+            const index = array?.indexOf(this);
+            if (index != undefined && index > -1) {
+                array?.splice(index, 1);
+            }
+        }
+        delete Thing.things_lookup[this.id];
+    }
+    remove_body() {
+        if (this.body != undefined) {
+            // remove from world
+            Composite.remove(world, this.body);
+            this.body = undefined;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    remove_children() {
+        for (const shoot of this.shoots) {
+            // if (this.keep_children) return;
+            for (const c of shoot.bullets) {
+                // if (c.keep_this) continue;
+                c.remove();
+            }
+        }
+    }
+    remove_shapes() {
+        for (const shape of this.shapes) {
+            shape.remove();
+        }
+        this.shapes = [];
+    }
+    remove_shoots() {
+        this.shoots = [];
+    }
     tick() {
         detector.tick_fns[this.id]?.(this);
         if (this.is_touching_player && !this.is_player) {
             detector.collision_during_fns[this.id]?.(this);
+        }
+        for (const shoot of this.shoots) {
+            shoot.tick();
+        }
+        if (this.bullet_time >= 0 && this.bullet_time <= Thing.time) {
+            this.remove();
         }
     }
     // useful
     lookup(id) {
         return Thing.things_lookup[id];
     }
+    // physics body functions
     translate_wall(vector) {
         if (!this.body)
             return;
@@ -180,5 +238,25 @@ export class Thing {
             for (const wall of walls) {
                 Body.setPosition(wall, Vector.add(wall.position, vector));
             }
+    }
+    push_to(target, amount) {
+        const push = vector.createpolar(Vector.angle(this.position, target), amount);
+        if (this.body != undefined && this.position != undefined && push.x != undefined && push.y != undefined) {
+            Body.applyForce(this.body, this.position, push);
+        }
+    }
+    push_in_direction(angle, amount) {
+        const push = vector.createpolar(angle, amount);
+        if (this.body != undefined && this.position != undefined && push.x != undefined && push.y != undefined) {
+            Body.applyForce(this.body, this.position, push);
+        }
+    }
+    push_by(amount) {
+        if (this.body != undefined && this.position != undefined && amount.x != undefined && amount.y != undefined) {
+            Body.applyForce(this.body, this.position, amount);
+        }
+    }
+    add_shoot(stats, shape) {
+        this.shoots.push(new Shoot(this, stats, shape));
     }
 }

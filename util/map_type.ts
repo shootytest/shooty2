@@ -41,6 +41,7 @@ export type map_shape_options_type = {
   invisible?: boolean, // invisible shape
   movable?: boolean, // dynamic physics object
   seethrough?: boolean, // visibility
+  keep_bullets?: boolean, // don't delete bullets if they collide
 
 };
 

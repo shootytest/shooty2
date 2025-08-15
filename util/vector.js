@@ -298,18 +298,37 @@ export const vector3 = {
             z: v1.z + v2.z
         };
     },
-    add_list: (vs, v1) => {
+    add_list: (vs, v_add) => {
         const result = [];
-        for (const v of vs) {
-            result.push(vector3.add(v, v1));
+        const v2 = vector3.create_(v_add);
+        for (const v1 of vs) {
+            result.push(vector3.add(v1, v2));
         }
         return result;
     },
-    add_to_list: (vs, v1) => {
+    add_to_list: (vs, v_add) => {
         for (const v of vs) {
-            v.x += v1.x;
-            v.y += v1.y;
-            v.z += v1.z;
+            v.x += v_add.x;
+            v.y += v_add.y;
+            if (v_add.z !== undefined)
+                v.z += v_add.z;
+        }
+        return;
+    },
+    scale_to_list: (vs, v_scale) => {
+        for (const v of vs) {
+            v.x *= v_scale.x;
+            v.y *= v_scale.y;
+            if (v_scale.z !== undefined)
+                v.z *= v_scale.z;
+        }
+        return;
+    },
+    mult_to_list: (vs, mult) => {
+        for (const v of vs) {
+            v.x *= mult;
+            v.y *= mult;
+            v.z *= mult;
         }
         return;
     },

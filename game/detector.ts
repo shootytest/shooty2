@@ -105,6 +105,11 @@ export const detector = {
         b.is_touching_player = true;
       }
     }
+    if (a.is_bullet) {
+      if (!b.options.sensor && !b.options.keep_bullets) {
+        a.remove();
+      }
+    }
   },
   collision_end: (pair: Matter.Pair, ba: Matter.Body, bb: Matter.Body, flipped: boolean) => {
     const a = ((ba.parent as any).thing as Thing), b = ((bb.parent as any).thing as Thing);
