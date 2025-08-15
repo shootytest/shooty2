@@ -116,6 +116,8 @@ export const ui = {
             }
         });
         ui.map = map_serialiser.load("auto");
+        if (ui.map.shapes.length <= 0)
+            ui.map = TEST_MAP;
         ui.init_map();
         // focus on the all shape
         ui.directory_jump_fns.all();

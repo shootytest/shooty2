@@ -26,9 +26,10 @@ export const resize_canvas = () => {
     const h = window.innerHeight;
     view.width = w;
     view.height = h;
-    canvas.width = w * pixel_ratio * 1;
-    canvas.height = h * pixel_ratio * 1;
-    window.canvas_ratio = pixel_ratio * 1;
+    const resolution_mult = 1;
+    canvas.width = w * pixel_ratio * resolution_mult;
+    canvas.height = h * pixel_ratio * resolution_mult;
+    window.canvas_ratio = pixel_ratio * resolution_mult;
     // canvas.style.width = w + "";
     // canvas.style.height = h + "";
     ctx.resetTransform();

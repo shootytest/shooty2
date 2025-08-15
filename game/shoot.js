@@ -59,10 +59,7 @@ export class Shoot {
         const bullet = new Bullet();
         bullet.position = position;
         bullet.is_bullet = true;
-        bullet.options = {
-            seethrough: true,
-            movable: true,
-        };
+        bullet.make(S.make ?? "bullet", true);
         const angle = math.randgauss(this.thing.angle + (vector.deg_to_rad(S.angle ?? 0)), S.spread ?? 0);
         const spreadv = S.spread_speed ?? 0;
         let speed = spreadv === 0 ? (S.speed ?? 0) : math.randgauss(S.speed ?? 0, spreadv);
@@ -78,7 +75,6 @@ export class Shoot {
         s.thing = bullet;
         s.seethrough = true;
         s.style = clone_object(this.thing.shapes[0].style);
-        bullet.shapes.push(s);
         bullet.create_body({
             isStatic: false,
             frictionAir: S.friction ?? 0,
@@ -95,6 +91,15 @@ export class Shoot {
         const index = this.bullets.indexOf(bullet);
         if (index >= 0) {
             this.bullets.splice(index, 1);
+        }
+    }
+    remove() {
+        for (const b of this.bullets) {
+            this.remove_bullet(b);
+        }
+        const index = this.thing.shoots.indexOf(this);
+        if (index >= 0) {
+            this.thing.shoots.splice(index, 1);
         }
     }
 }

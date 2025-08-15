@@ -173,7 +173,7 @@ export const map_serialiser = {
 
   load: (slot: string): map_type => {
     const raw_string = localStorage.getItem("map_" + slot);
-    if (raw_string == null) {
+    if (raw_string == null || !raw_string) {
       console.error("map slot \"" + slot + "\" doesn't exist!");
       return { shapes: [] };
     } else {
@@ -209,8 +209,8 @@ export const map_serialiser = {
   },
 
   copy: (map: map_type): void => {
-    navigator.clipboard.writeText(map_serialiser.special_stringify(map_serialiser.stringify_(map)));
-    // map_serialiser.compute(map);
+    const s = `zipson.parse("${map_serialiser.stringify(map)}");`; // map_serialiser.special_stringify(map_serialiser.stringify_(map));
+    navigator.clipboard.writeText(s);
   },
 
   save_undo_state: (raw_string: string) => {
@@ -230,7 +230,7 @@ export const map_serialiser = {
 
 
 // just realised it's possible to paste the zipped JSON
-export const TEST_MAP: map_type = {shapes:[{id:"start",z:0,vertices:[{x:-120,y:110}],options:{open_loop:false,style:"start"}},{id:"test group",z:0,vertices:[{x:420,y:-270}],options:{contains:["test 1"],open_loop:false,style:"test"}},{id:"tutorial",z:0,vertices:[{x:-510,y:-360}],options:{style:"tutorial",contains:["tutorial room 1","tutorial room 1.1"]}},{id:"tutorial room 1.1",z:0,vertices:[{x:-720,y:320}],options:{style:"tutorial",contains:["tutorial wall 2"],parent:"tutorial"}},{id:"tutorial room 1",z:0,vertices:[{x:-380,y:-300}],options:{style:"tutorial",contains:["tutorial wall 1","tutorial room 1 rocks","tutorial wall 3","tutorial room 1 deco","tutorial door 1","tutorial room 1 sensor"],parent:"tutorial"}},{id:"test 1",z:0,vertices:[{x:420,y:-500},{x:500,y:-250}],options:{open_loop:true,style:"test",parent:"test group"}},{id:"tutorial wall 2",z:0,vertices:[{x:-420,y:250},{x:-610,y:310},{x:-730,y:500},{x:-720,y:700},{x:-460,y:810},{x:-220,y:690},{x:-199,y:440}],options:{open_loop:true,style:"tutorial",parent:"tutorial room 1.1"}},{id:"tutorial room 1 rocks",z:0,vertices:[{x:-120,y:-140}],options:{contains:["tutorial rock 1","tutorial rock 2","tutorial rock 3","tutorial rock 4","tutorial rock 5"],open_loop:false,style:"tutorial",parent:"tutorial room 1"}},{id:"tutorial room 1 deco",z:0,vertices:[{x:-340,y:-260}],options:{open_loop:false,style:"tutorial",parent:"tutorial room 1",contains:["tutorial room 1 arrow"]}},{id:"tutorial door 1",z:0,vertices:[{x:550,y:-200},{x:610,y:40}],options:{open_loop:true,style:"tutorial_door",parent:"tutorial room 1",contains:["tutorial door 1 sensor"]}},{id:"tutorial room 1 sensor",z:0,vertices:[{x:350,y:-150},{x:-100,y:-310},{x:-390,y:-100},{x:-420,y:250},{x:-130,y:500},{x:260,y:430},{x:410,y:90}],options:{style:"sensor",parent:"tutorial room 1",sensor:true,invisible:true}},{id:"tutorial wall 1",z:0,vertices:[{x:750,y:-250},{x:350,y:-150},{x:-100,y:-310},{x:-390,y:-100},{x:-420,y:250},{x:-259,y:388}],options:{open_loop:true,style:"tutorial",parent:"tutorial room 1"}},{id:"tutorial wall 3",z:0,vertices:[{x:-199,y:440},{x:-130,y:500},{x:260,y:430},{x:410,y:90},{x:810,y:-10}],options:{open_loop:true,style:"tutorial",parent:"tutorial room 1"}},{id:"tutorial door 1 sensor",z:0,vertices:[{x:391.017,y:-159.879},{x:451.017,y:80.121},{x:771.017,y:0.121},{x:711.017,y:-239.879}],options:{style:"sensor",parent:"tutorial door 1",sensor:true,invisible:true}},{id:"tutorial rock 4",z:0,vertices:[{x:-230.59,y:329.527},{x:-190.59,y:309.527},{x:-140.59,y:309.527},{x:-110.59,y:349.527},{x:-120.59,y:409.527},{x:-150.59,y:369.527},{x:-259,y:388}],options:{style:"tutorial",parent:"tutorial room 1 rocks"}},{id:"tutorial rock 3",z:0,vertices:[{x:-360.59,y:-70.473},{x:-350.59,y:-100.473},{x:-300.59,y:-120.473},{x:-270.59,y:-90.473},{x:-270.59,y:-50.473},{x:-310.59,y:-30.473},{x:-340.59,y:-40.473}],options:{style:"tutorial",parent:"tutorial room 1 rocks"}},{id:"tutorial rock 2",z:0,vertices:[{x:139.41,y:319.527},{x:159.41,y:279.527},{x:209.41,y:259.527},{x:249.41,y:299.527},{x:249.41,y:359.527},{x:199.41,y:379.527},{x:149.41,y:369.527}],options:{style:"tutorial",parent:"tutorial room 1 rocks"}},{id:"tutorial rock 1",z:0,vertices:[{x:-20.59,y:-210.473},{x:9.41,y:-230.473},{x:59.41,y:-220.473},{x:79.41,y:-180.473},{x:58.174,y:-149.02},{x:18.174,y:-139.02},{x:-21.826,y:-159.02}],options:{style:"tutorial",parent:"tutorial room 1 rocks"}},{id:"tutorial room 1 arrow",z:0,vertices:[{x:270,y:-40},{x:310,y:-20},{x:285,y:17},{x:310,y:-20},{x:150,y:20}],options:{style:"tutorial",parent:"tutorial room 1 deco",open_loop:true,decoration:true,seethrough:true}}],icons:[]};
+export const TEST_MAP: map_type = zipson.parse("{¨shapes¨|{¨id¨¨start¨´z´É¨vertices¨|{´x´¢-1w´y´¢1m}÷¨options¨{¨open_loop¨«¨style¨ß2}}{ß1¨test group¨´z´Éß3|{´x´¢6m´y´¢-4M}÷ß4{¨contains¨|¨test 1¨÷ß5«ß6¨test¨}}{ß1¨tutorial¨´z´Éß3|{´x´¢-8E´y´¢-5o}÷ß4{ß6ßBß8|¨tutorial room 1¨¨tutorial room 1.1¨÷}}{ß1ßD´z´Éß3|{´x´¢-Bc´y´¢5A}÷ß4{ß6ßBß8|¨tutorial wall 2¨÷¨parent¨ßB}}{ß1ßC´z´Éß3|{´x´¢-68´y´¢-4q}÷ß4{ß8|¨tutorial wall 1¨¨tutorial room 1 rocks¨¨tutorial wall 3¨¨tutorial room 1 deco¨¨tutorial room 1 sensor¨¨tutorial room 1 door sensor¨÷ßFßBß6ßB}}{ß1ß9´z´Éß3|¦´x´´y´‡º2¢-84¢84¢-42—÷ß4{ßFß7ß5»¨make_id¨¨wall¨ß6ßA}}{ß1ßE´z´Éß3|¦´x´´y´‡¢-6m¢42¢-9q¢50¢-BmºBº6¢BI¢-7Q¢D4¢-3Y¢B8¢-38¢7A—÷ß4{ß5»ßFßDßM¨wall_tutorial¨}}{ß1ßH´z´Éß3|{´x´º0´y´¢-2G}÷ß4{ß8|¨tutorial rock 1¨¨tutorial rock 2¨¨tutorial rock 3¨¨tutorial rock 4¨¨tutorial rock 5¨÷ßFßCß6ßB}}{ß1ßJ´z´Éß3|{´x´¢-5U´y´¢-4C}÷ß4{ß5«ß6ßBßFßCß8|¨tutorial room 1 arrow¨÷}}{ß1ßK´z´Éß3|¦´x´´y´‡¢5e¢-2Q¢-1c¢-50¢-6IºUºDºE¢-26ºB¢4C¢6w¢6c¢1S—÷ß4{ßFßCßM¨sensor¨}}{ß1ßG´z´Éß3|¦´x´´y´‡¢C6ºCºSºTºUºVºWºUºDºE¢-4B¢6G—÷ß4{ßFßCßMßOß5»}}{ß1ßI´z´Éß3|¦´x´´y´‡ºNºOºXºBºYºZºaºbºK¢-A—÷ß4{ß5»ßFßCßMßO}}{ß1ßL´z´Éß3|¦´x´´y´‡¢6I¢-2a£7H.H£1I.1x£CR.H£0.1x£BT.H£-3r.-EB—÷ß4{ßFßCß8|¨tutorial room 1 door 1¨¨tutorial room 1 door 2¨¨tutorial room 1 door floor¨÷ßMßV}}{ß1ßY´z´Éß3|¦´x´´y´‡¢8E¢-34¢9C¤o¢AU¤U¢9W¢-3O—÷ß4{ßFßLßM¨floor_tutorial¨}}{ß1ßW´z´Éß3|¦´x´´y´‡¢9M¢-1I¢9s¤m—÷ß4{ß5»ß6¨tutorial_door¨ßFßL}}{ß1ßX´z´Éß3|¦´x´´y´‡ºoºp¢8q¢-3M—÷ß4{ß5»ß6ßaßFßL}}{ß1ßS´z´Éß3|¦´x´´y´‡£-3i.-9W£5J.8V£-34.-9W£4z.8V£-2G.-9WÝ9£-1m.-9W£5d.8V£-1w.-9W£6b.8V£-2Q.-9W£5x.8Vºdºe—÷ß4{ßFßHßM¨wall_tutorial_rock¨}}{ß1ßR´z´Éß3|¦´x´´y´‡£-5o.-9W£-18.-7d£-5e.-9W£-1c.-7d£-4q.-9W£-1w.-7d£-4M.-9W£-1S.-7dÝN£-o.-7d£-50.-9W£-U.-7d£-5U.-9W£-e.-7d—÷ß4{ßFßHßMßb}}{ß1ßQ´z´Éß3|¦´x´´y´‡£2F.6c£59.8V£2Z.6c£4V.8V£3N.6c£4B.8V£41.6c£4p.8VÝa£5n.8V£3D.6c£67.8V£2P.6cÝG—÷ß4{ßFßHßMßb}}{ß1ßP´z´Éß3|¦´x´´y´‡£-K.-9W£-3O.-7d£9.6c£-3i.-7d£x.6c£-3Y.-7d£1H.6c£-2u.-7d£w.2o£-2P.-K£I.2o£-2F.-K£-L.-DK£-2Z.-K—÷ß4{ßFßHßMßb}}{ß1ßU´z´£0.-1cß3|¦´x´´y´‡¢4M¢-eºG¢-K¢4b¤HºGºv¢2Q¤K—÷ß4{ßFßJßM¨icon_tutorial¨ß5»}}÷¨icons¨|÷}");
 
 const TEST_MAP_: map_type = {
   shapes: [
@@ -393,6 +393,10 @@ export const STYLES: styles_type = {
     stroke: "#abcdef99",
     fill: "#abcdef99",
     fill_opacity: 0.8,
+  },
+  player: {
+    stroke: "#eeeeee",
+    stroke_opacity: 1,
   },
   tutorial: {
     stroke: "#7f77ea",

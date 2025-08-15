@@ -5,7 +5,7 @@ import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { detector } from "./detector.js";
 import { Health } from "./health.js";
-import { make, override_object } from "./make.js";
+import { make, make_shapes, override_object, make_shoot } from "./make.js";
 import { Polygon, Shape } from "./shape.js";
 import { Shoot } from "./shoot.js";
 /**
@@ -88,10 +88,8 @@ export class Thing {
             override_object(this.options, make_options);
         override_object(this.options, o.options);
         const s = Shape.from_map(this, o);
-        s.thing = this;
-        if (this.shapes.length <= 0)
+        if (this.shapes.length <= 1)
             this.position = /*(o.vertices.length >= 3 && !o.options.open_loop) ? Vertices.centre(o.computed.vertices) :*/ vector3.mean(o.computed.vertices);
-        this.shapes.push(s);
         this.create_id(o.id);
         if (!this.body && !this.options.decoration)
             this.create_body({
@@ -100,6 +98,33 @@ export class Thing {
             });
         if (this.body)
             this.body.label = o.id;
+    }
+    make(key, reset = false) {
+        const o = make[key];
+        if (reset) {
+            this.options = {};
+            for (const shoot of this.shoots)
+                shoot.remove();
+        }
+        override_object(this.options, o);
+        this.make_shape(key, reset);
+        for (const shoot_key of o.shoots ?? []) {
+            const S = make_shoot[shoot_key];
+            if (S) {
+                this.add_shoot(S);
+            }
+            else
+                console.error(`[thing/make] thing id '${this.id}': make_shoot '${shoot_key}' doesn't exist!`);
+        }
+    }
+    make_shape(key, reset = false) {
+        if (reset)
+            for (const shape of this.shapes)
+                shape.remove();
+        const shapes = make_shapes[key];
+        for (const o of shapes ?? []) {
+            Shape.from_make(this, o);
+        }
     }
     create_id(id) {
         this.id = id;

@@ -4,6 +4,7 @@ import { ctx } from "../util/canvas.js";
 import { config } from "../util/config.js";
 import { map_serialiser, map_shape_compute_type, map_shape_type, style_type, STYLES } from "../util/map_type.js";
 import { AABB3, vector, vector3 } from "../util/vector.js";
+import { make_shoot, maketype_shape } from "./make.js";
 import { player } from "./player.js";
 import { Thing } from "./thing.js";
 
@@ -33,7 +34,7 @@ export class Shape {
     // handle vertices
     s.vertices = vector3.create_many(o.vertices, o.z);
     if (o.computed == undefined) throw "map shape not computed yet!";
-    const dv = (thing.shapes.length >= 1) ? thing.position : o.computed.mean;
+    const dv = (thing.shapes.length >= 2) ? thing.position : o.computed.mean;
     for (const v of s.vertices) {
       v.x -= dv.x;
       v.y -= dv.y;
@@ -42,13 +43,35 @@ export class Shape {
     s.style = map_serialiser.clone_style(thing.options.style == undefined ? STYLES.error : (STYLES[thing.options.style] ?? STYLES.error));
     s.init_computed();
 
-    if (thing.shapes.length >= 1) { // runs for merged shapes
+    if (thing.shapes.length >= 2) { // runs for merged shapes
       s.offset.x = thing.position.x - o.computed.mean.x;
       s.offset.y = thing.position.y - o.computed.mean.y;
     }
 
     return s;
   };
+
+  static from_make(thing: Thing, o: maketype_shape): Shape {
+    let s: Shape;
+    if (o.type === "polygon") {
+      s = Shape.polygon(thing, o.radius ?? 0, o.sides ?? 0, o.angle ?? 0, o.z, o.offset);
+    } else if (o.type === "circle") {
+      s = Shape.circle(thing, o.radius ?? 0, o.z, o.offset);
+    } else if (o.type === "line") {
+      s = Shape.line(thing, o.v1 ?? vector.create(), o.v2 ?? vector.create(), o.z);
+    } else {
+      s = new Shape(thing);
+    }
+    s.seethrough = Boolean(thing.options.seethrough);
+    s.style = map_serialiser.clone_style(thing.options.style == undefined ? STYLES.error : (STYLES[thing.options.style] ?? STYLES.error));
+    if (o.shoot) {
+      const S = make_shoot[o.shoot];
+      if (S) {
+        thing.add_shoot(S, s);
+      } else console.error(`[shape/from_make] make_shoot '${o.shoot}' doesn't exist!`);
+    }
+    return s;
+  }
 
   static polygon(thing: Thing, radius: number, sides: number, angle: number = 0, z: number = 0, offset?: vector): Polygon {
     return Polygon.make(thing, radius, sides, angle, z, offset);
@@ -156,7 +179,7 @@ export class Shape {
 
   constructor(thing: Thing) {
     this.thing = thing;
-    Shape.shapes.push(this);
+    this.add(thing);
   }
 
   get is_added(): boolean {
@@ -173,8 +196,9 @@ export class Shape {
   }
 
   add(thing: Thing) {
-    thing.shapes.push(this);
     this.thing = thing;
+    this.thing.shapes.push(this);
+    Shape.shapes.push(this);
   }
 
   calculate() {
@@ -250,6 +274,7 @@ export class Polygon extends Shape {
 
   static make(thing: Thing, radius: number, sides: number, angle: number, z: number = 0, offset: vector = vector.create()): Polygon {
     const s = new Polygon(thing);
+    s.closed_loop = true;
     s.radius = radius;
     s.sides = sides;
     s.angle = angle;
@@ -264,6 +289,10 @@ export class Polygon extends Shape {
   radius: number = 0;
   sides: number = 3;
   angle: number = 0;
+
+  constructor(thing: Thing) {
+    super(thing);
+  }
 
   calculate() {
     this.vertices = [];

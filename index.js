@@ -6,7 +6,7 @@ import { camera } from "./util/camera.js";
 import { ctx, init_canvas } from "./util/canvas.js";
 import { color } from "./util/color.js";
 import { key, mouse } from "./util/key.js";
-import { map_serialiser } from "./util/map_type.js";
+import { map_serialiser, TEST_MAP } from "./util/map_type.js";
 import { do_visibility } from "./util/see.js";
 import { vector, vector3 } from "./util/vector.js";
 export const engine = Engine.create();
@@ -18,7 +18,9 @@ engine.gravity.y = 0;
 // camera.position_jump();
 export const runner = Runner.create();
 Runner.run(runner, engine);
-export const MAP = map_serialiser.load("auto");
+export let MAP = map_serialiser.load("auto");
+if (MAP.shapes.length <= 0)
+    MAP = TEST_MAP;
 const init_all = () => {
     init_canvas();
     // ui.init();

@@ -98,7 +98,7 @@ aside {
   display: block;
   right: 0;
   top: calc(6.5% + 1px);
-  height: 100%;
+  height: calc(100% - 6.5% - 1px - 1em);
   width: min(300px, 23%);
   z-index: 2;
   background-color: #eeeeeebe;
@@ -106,6 +106,7 @@ aside {
   text-align: left;
   color: #111111;
   padding: 0.5em;
+  overflow: auto;
 }
 
 /* folder style */

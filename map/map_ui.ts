@@ -7,7 +7,7 @@ import { key, keys, mouse } from "../util/key.js";
 import { map_draw } from "../util/map_draw.js";
 import { TEST_MAP, map_serialiser, map_shape_options_type, map_shape_type, map_type, map_vertex_type } from "../util/map_type.js";
 import { settings_default } from "./settings.js";
-import { SVG, svg_paths } from "../util/svg.js";
+import { SVG } from "../util/svg.js";
 import { make, override_object } from "../game/make.js";
 
 // globals, why not?
@@ -125,6 +125,7 @@ export const ui = {
     });
 
     ui.map = map_serialiser.load("auto");
+    if (ui.map.shapes.length <= 0) ui.map = TEST_MAP;
 
     ui.init_map();
 

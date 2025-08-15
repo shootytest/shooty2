@@ -4,40 +4,20 @@ import { config } from "../util/config.js";
 import { keys } from "../util/key.js";
 import { vector, vector3 } from "../util/vector.js";
 import { filters } from "./detector.js";
-import { Shape } from "./shape.js";
 import { Thing } from "./thing.js";
 
 export class Player extends Thing {
 
+  autoshoot = false;
+
   constructor() {
     super();
-    
-    const s = Shape.circle(this, 31);
-    s.thing = this;
-    s.seethrough = true;
-    s.style.stroke = "#eeeeee";
-    // s.style.fill = "#1aa5ab"; color.neon_blue + "99";
-    this.shapes.push(s);
-
-    const s2 = Shape.line(this, vector.createpolar_deg(0, 30));
-    s2.thing = this;
-    s2.seethrough = true;
-    s2.style.stroke = "#eeeeee"; // color.neon_blue + "99";
-    this.shapes.push(s2);
-
-    this.create_id("player"); // hmmm
 
     this.is_player = true;
+    this.make("player");
+
+    this.create_id("player");
     this.position = vector3.create();
-
-    this.add_shoot({
-      size: 8,
-      reload: 30,
-      speed: 5,
-      friction: 0.003,
-      restitution: 1,
-    }, s2);
-
   }
 
   create_player() {
@@ -56,6 +36,7 @@ export class Player extends Thing {
       down: keys["ArrowDown"] === true || (keys["KeyS"] === true),
       left: keys["ArrowLeft"] === true || (keys["KeyA"] === true),
       right: keys["ArrowRight"] === true || (keys["KeyD"] === true),
+      toggle_autoshoot: keys["KeyF"] === true,
       shoot: keys["Mouse"] === true || (keys["Space"] === true),
       rshoot: keys["MouseRight"] === true || ((keys["ShiftLeft"] === true || keys["ShiftRight"] === true)),
       facingx: Math.floor(camera.mouse_v.x),
@@ -70,7 +51,10 @@ export class Player extends Thing {
       Body.applyForce(this.body, this.position, vector.mult(move_v, 10 * this.body.mass * config.physics.force_factor));
       Body.setAngle(this.body, vector.direction(vector.sub(this.target.facing, camera.world2screen(this.position) ?? this.target.position)));
     }
-    if (controls.shoot) {
+    if (controls.toggle_autoshoot) {
+      this.autoshoot = !this.autoshoot;
+    }
+    if (controls.shoot || this.autoshoot) {
       for (const shoot of this.shoots) {
         shoot.shoot();
       }

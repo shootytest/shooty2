@@ -3,7 +3,7 @@ import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3_ } from "../util/vector.js";
 import { filters } from "./detector.js";
-import { clone_object } from "./make.js";
+import { clone_object, make, make_shapes, shoot_stats } from "./make.js";
 import { Shape } from "./shape.js";
 import { Bullet, Thing } from "./thing.js";
 
@@ -70,10 +70,7 @@ export class Shoot {
     const bullet = new Bullet();
     bullet.position = position;
     bullet.is_bullet = true;
-    bullet.options = {
-      seethrough: true,
-      movable: true,
-    };
+    bullet.make(S.make ?? "bullet", true);
 
     const angle = math.randgauss(this.thing.angle + (vector.deg_to_rad(S.angle ?? 0)), S.spread ?? 0);
     const spreadv = S.spread_speed ?? 0;
@@ -90,7 +87,6 @@ export class Shoot {
     s.thing = bullet;
     s.seethrough = true;
     s.style = clone_object(this.thing.shapes[0].style);
-    bullet.shapes.push(s);
 
     bullet.create_body({
       isStatic: false,
@@ -104,6 +100,7 @@ export class Shoot {
       recoil *= speed * (bullet.body?.mass || 0) * config.physics.force_factor * config.physics.recoil_factor;
       this.thing.push_in_direction(angle, -recoil);
     }
+
   }
 
   remove_bullet(bullet: Bullet) {
@@ -113,30 +110,14 @@ export class Shoot {
     }
   }
 
-};
+  remove() {
+    for (const b of this.bullets) {
+      this.remove_bullet(b);
+    }
+    const index = this.thing.shoots.indexOf(this);
+    if (index >= 0) {
+      this.thing.shoots.splice(index, 1);
+    }
+  }
 
-
-export type shoot_stats = {
-  parent?: string[];
-  type?: string;
-  size?: number;
-  reload?: number;
-  duration_reload?: number;
-  speed?: number;
-  angle?: number;
-  spread?: number;
-  spread_size?: number;
-  spread_speed?: number;
-  damage?: number;
-  health?: number;
-  time?: number;
-  friction?: number;
-  restitution?: number;
-  recoil?: number;
-  delay?: number;
-  offset?: vector3_;
-  target_type?: string;
-  boost_mult?: number;
-  move?: boolean;
-  always_shoot?: boolean;
 };
