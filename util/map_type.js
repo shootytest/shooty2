@@ -1,4 +1,13 @@
+import { clone_object } from "../game/make.js";
 import { vector, vector3 } from "./vector.js";
+;
+;
+;
+;
+;
+;
+;
+;
 export const map_serialiser = {
     initial_state: "",
     undo_states: [],
@@ -52,21 +61,11 @@ export const map_serialiser = {
             id: shape.id,
             z: shape.z,
             vertices: vector3.clone_list_(shape.vertices),
-            options: map_serialiser.clone_object(shape.options),
+            options: clone_object(shape.options),
         };
     },
     clone_style: (style) => {
-        return map_serialiser.clone_object(style);
-    },
-    clone_object: (o) => {
-        const result = {};
-        for (const k in o) {
-            if (typeof o[k] === "object")
-                result[k] = map_serialiser.clone_object(o[k]);
-            else
-                result[k] = o[k];
-        }
-        return result;
+        return clone_object(style);
     },
     stringify_: (map) => {
         const m = {

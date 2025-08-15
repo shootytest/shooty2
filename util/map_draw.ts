@@ -1,3 +1,4 @@
+import { make } from "../game/make.js";
 import { ui } from "../map/map_ui.js";
 import { camera } from "./camera.js";
 import { color } from "./color.js";
@@ -274,7 +275,8 @@ export const map_draw = {
   },
 
   get_style: (shape: map_shape_type) => {
-    return STYLES[shape.options.style ?? "test"] ?? STYLES.error;
+    const style_maybe = shape.options.make_id != undefined ? make[shape.options.make_id].style : undefined;
+    return STYLES[shape.options.style ?? style_maybe ?? "test"] ?? STYLES.error;
   },
 
   change: (type: string, shapes: map_shape_type | map_shape_type[]) => {

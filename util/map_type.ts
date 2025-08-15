@@ -1,6 +1,7 @@
+import { clone_object, maketype } from "../game/make.js";
 import { vector, vector3, vector3_, AABB, AABB3 } from "./vector.js";
 
-export type map_shape_type = {
+export interface map_shape_type {
   id: string,
   z: number,
   vertices: vector3_[],
@@ -11,7 +12,7 @@ export type map_shape_type = {
   computed?: map_shape_compute_type,
 };
 
-export type map_shape_compute_type = {
+export interface map_shape_compute_type {
   aabb: AABB,
   aabb3: AABB3,
   mean: vector3,
@@ -22,39 +23,26 @@ export type map_shape_compute_type = {
   depth?: number,
 };
 
-export type map_shape_options_type = {  
+export interface map_shape_options_type extends maketype {  
   // important options
   parent?: string,
   contains?: string[],
+  make_id?: string,
   
   // actual shape options
   open_loop?: boolean, // is the shape loop not closed? (e.g. this is true if the vertices are actually a list of 1d walls instead of a 2d shape)
-  
-  // display options
-  style?: string,
-  style_?: style_type, // consider renaming to style_override (not really)
-  
-  // game options
-  merge?: boolean, // use the same thing object as its parent?
-  decoration?: boolean, // this won't add a physics object
-  sensor?: boolean, // invisible physics sensor
-  invisible?: boolean, // invisible shape
-  movable?: boolean, // dynamic physics object
-  seethrough?: boolean, // visibility
-  keep_bullets?: boolean, // don't delete bullets if they collide
-
 };
 
-export type map_icon_type = {
+export interface map_icon_type {
   icon: string,
   color: string,
 };
 
-export type map_computed_type = {
+export interface map_computed_type {
   shape_map: { [key: string]: map_shape_type },
 };
 
-export type map_type = {
+export interface map_type {
 
   shapes: map_shape_type[],
   icons?: map_icon_type[],
@@ -62,7 +50,7 @@ export type map_type = {
 
 };
 
-export type map_vertex_type = {
+export interface map_vertex_type {
   // for map maker ui
   shape: map_shape_type,
   vertex: vector3,
@@ -72,7 +60,7 @@ export type map_vertex_type = {
   new: boolean,
 };
 
-export type style_type = {
+export interface style_type {
   stroke?: string,
   fill?: string,
   width?: number,
@@ -139,21 +127,12 @@ export const map_serialiser = {
       id: shape.id,
       z: shape.z,
       vertices: vector3.clone_list_(shape.vertices),
-      options: map_serialiser.clone_object(shape.options),
+      options: clone_object(shape.options),
     };
   },
 
   clone_style: (style: style_type): style_type => {
-    return map_serialiser.clone_object(style);
-  },
-
-  clone_object: (o: any): any => {
-    const result: any = {};
-    for (const k in o) {
-      if (typeof o[k] === "object") (result as any)[k] = map_serialiser.clone_object((o as any)[k]);
-      else (result as any)[k] = (o as any)[k];
-    }
-    return result;
+    return clone_object(style);
   },
 
   stringify_: (map: map_type): object => {

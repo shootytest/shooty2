@@ -5,6 +5,8 @@ import { map_shape_options_type, map_shape_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { detector } from "./detector.js";
+import { Health } from "./health.js";
+import { make, maketype, override_object } from "./make.js";
 import { Polygon, Shape } from "./shape.js";
 import { Shoot, shoot_stats } from "./shoot.js";
 
@@ -37,6 +39,8 @@ export class Thing {
   object: { [key: string]: any } = {};
   shapes: Shape[] = [];
   shoots: Shoot[] = [];
+  health: Health;
+  ability: Health;
   
   target: {
     position: vector3,
@@ -54,11 +58,11 @@ export class Thing {
   is_touching_player: boolean = false;
 
   is_bullet: boolean = false;
-  bullet_shoot?: Shoot;
-  bullet_time: number = -1;
 
   constructor() {
     Thing.things.push(this);
+    this.health = new Health(this);
+    this.ability = new Health(this);
   }
   
   get position(): vector3 {
@@ -99,16 +103,18 @@ export class Thing {
     if (o.computed == undefined) {
       throw "map shape not computed yet!";
     }
+    this.options = {};
+    const make_options = make[o.options.make_id ?? "default"] ?? make.default;
+    if (o.options.make_id) override_object(this.options, make_options);
+    override_object(this.options, o.options);
     const s = Shape.from_map(this, o);
     s.thing = this;
     if (this.shapes.length <= 0) this.position = /*(o.vertices.length >= 3 && !o.options.open_loop) ? Vertices.centre(o.computed.vertices) :*/ vector3.mean(o.computed.vertices);
     this.shapes.push(s);
-    this.options = o.options;
-    // if (this.id.startsWith("generic thing #"))
     this.create_id(o.id);
-    if (!this.body && !o.options.decoration) this.create_body({
-      isStatic: !o.options.movable,
-      isSensor: Boolean(o.options.sensor),
+    if (!this.body && !this.options.decoration) this.create_body({
+      isStatic: !this.options.movable,
+      isSensor: Boolean(this.options.sensor),
     });
     if (this.body) this.body.label = o.id;
   }
@@ -191,7 +197,7 @@ export class Thing {
   }
 
   remove_list() {
-    for (const array of [Thing.things, this.bullet_shoot?.bullets]) {
+    for (const array of [Thing.things, (this as any).bullet_shoot?.bullets]) {
       // remove this from array
       const index = array?.indexOf(this);
       if (index != undefined && index > -1) {
@@ -241,9 +247,6 @@ export class Thing {
     for (const shoot of this.shoots) {
       shoot.tick();
     }
-    if (this.bullet_time >= 0 && this.bullet_time <= Thing.time) {
-      this.remove();
-    }
   }
 
   // useful
@@ -286,4 +289,19 @@ export class Thing {
     this.shoots.push(new Shoot(this, stats, shape));
   }
 
+}
+
+export class Bullet extends Thing {
+
+  is_bullet: boolean = true;
+  bullet_shoot?: Shoot;
+  bullet_time: number = -1;
+
+  tick() {
+    super.tick();
+    if (this.bullet_time >= 0 && this.bullet_time <= Thing.time) {
+      this.remove();
+    }
+  }
+  
 }

@@ -5,7 +5,6 @@ import { keys } from "../util/key.js";
 import { vector, vector3 } from "../util/vector.js";
 import { filters } from "./detector.js";
 import { Shape } from "./shape.js";
-// import { Shoot } from "./shoot.js";
 import { Thing } from "./thing.js";
 
 export class Player extends Thing {
@@ -36,6 +35,7 @@ export class Player extends Thing {
       reload: 30,
       speed: 5,
       friction: 0.003,
+      restitution: 1,
     }, s2);
 
   }

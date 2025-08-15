@@ -3,8 +3,9 @@ import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3_ } from "../util/vector.js";
 import { filters } from "./detector.js";
+import { clone_object } from "./make.js";
 import { Shape } from "./shape.js";
-import { Thing } from "./thing.js";
+import { Bullet, Thing } from "./thing.js";
 
 
 export class Shoot {
@@ -14,13 +15,14 @@ export class Shoot {
   index: number = -1;
 
   active = false;
+  is_player = false;
   time = 0;
   duration = 0;
   duration_time = 0;
   delay = 0;
   offset: vector3_ = vector.create();
 
-  bullets: Thing[] = [];
+  bullets: Bullet[] = [];
 
   stats: shoot_stats;
 
@@ -29,6 +31,7 @@ export class Shoot {
     this.shape = shape;
     if (this.shape) this.shape.activate_scale = true;
     this.stats = stats;
+    if (thing.is_player || (thing.is_bullet && (thing as Bullet).bullet_shoot?.is_player)) this.is_player = true;
   }
 
   set_stats(new_stats: shoot_stats) {
@@ -56,6 +59,7 @@ export class Shoot {
     }
   }
 
+  // todo make this function faster? perhaps?
   shoot_bullet() {
 
     if (this.thing.body == undefined) return;
@@ -63,7 +67,7 @@ export class Shoot {
     const S = this.stats;
 
     const position: vector = vector.add(this.thing.position, Vector.rotate(vector.create((this.offset.x || 0), (this.offset.y || 0)), this.thing.angle));
-    const bullet = new Thing();
+    const bullet = new Bullet();
     bullet.position = position;
     bullet.is_bullet = true;
     bullet.options = {
@@ -85,14 +89,14 @@ export class Shoot {
     const s = Shape.circle(bullet, S.size ?? 0);
     s.thing = bullet;
     s.seethrough = true;
-    s.style.stroke = "#eeeeee";
+    s.style = clone_object(this.thing.shapes[0].style);
     bullet.shapes.push(s);
 
     bullet.create_body({
       isStatic: false,
       frictionAir: S.friction ?? 0,
-      restitution: 0,
-      collisionFilter: filters.player_bullet,
+      restitution: S.restitution ?? 0,
+      collisionFilter: this.is_player ? filters.player_bullet : filters.enemy_bullet,
     });
 
     if (S.recoil !== 0 && speed && S.speed) {
@@ -102,7 +106,7 @@ export class Shoot {
     }
   }
 
-  remove_bullet(bullet: Thing) {
+  remove_bullet(bullet: Bullet) {
     const index = this.bullets.indexOf(bullet);
     if (index >= 0) {
       this.bullets.splice(index, 1);
@@ -127,6 +131,7 @@ export type shoot_stats = {
   health?: number;
   time?: number;
   friction?: number;
+  restitution?: number;
   recoil?: number;
   delay?: number;
   offset?: vector3_;

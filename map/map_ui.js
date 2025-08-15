@@ -8,6 +8,7 @@ import { map_draw } from "../util/map_draw.js";
 import { TEST_MAP, map_serialiser } from "../util/map_type.js";
 import { settings_default } from "./settings.js";
 import { SVG } from "../util/svg.js";
+import { make, override_object } from "../game/make.js";
 // globals, why not?
 let width = canvas.width;
 let height = canvas.height;
@@ -731,6 +732,10 @@ export const ui = {
                 name: "parent",
                 type: "button",
             },
+            make_id: {
+                name: "make",
+                type: "text",
+            },
             style: {
                 name: "style",
                 type: "text",
@@ -848,6 +853,11 @@ export const ui = {
       `;
         }
         else {
+            const options = {};
+            const make_options = make[shape.options.make_id ?? "default"] ?? make.default;
+            if (shape.options.make_id)
+                override_object(options, make_options);
+            override_object(options, shape.options);
             for (const group_key in ui.properties_options) {
                 const group = ui.properties_options[group_key];
                 // todo: property groups
@@ -856,10 +866,11 @@ export const ui = {
                 // summary.textContent = group_key;
                 for (const option_key in group) {
                     const option = group[option_key];
+                    const exists = option_key === "z" || shape.options[option_key] != undefined;
                     const p = document.createElement("p");
                     p.classList.add(option.type);
                     const label = document.createElement("label");
-                    label.innerHTML = option.name;
+                    label.innerHTML = `<span style="text-decoration: ${exists ? "underline" : "none"};">${option.name}</span>`;
                     label.setAttribute("for", option_key);
                     const input = document.createElement("input");
                     input.setAttribute("type", option.type);
@@ -869,23 +880,26 @@ export const ui = {
                     p.appendChild(label);
                     p.appendChild(input);
                     if (option.type === "checkbox") {
-                        input.checked = shape.options[option_key];
+                        input.checked = options[option_key];
                         input.addEventListener("change", function (event) {
-                            if (input.checked)
-                                shape.options[option_key] = true;
+                            if (input.checked !== Boolean(make_options[option_key]))
+                                shape.options[option_key] = input.checked;
                             else
                                 delete shape.options[option_key];
                             map_draw.change("edit property: " + option_key, shape);
+                            ui.update_properties();
                         });
                     }
                     else if (option.type === "text") {
-                        input.value = shape.options[option_key];
+                        input.value = shape.options[option_key] ?? "";
+                        input.placeholder = make_options[option_key] ?? "";
                         input.addEventListener("change", function (event) {
-                            if (input.value.length)
+                            if (input.value.length && input.value !== make_options[option_key])
                                 shape.options[option_key] = input.value;
                             else
                                 delete shape.options[option_key];
                             map_draw.change("edit property: " + option_key, shape);
+                            ui.update_properties();
                         });
                     }
                     else if (option.type === "number") {
@@ -899,6 +913,7 @@ export const ui = {
               </button>
             `.trim();
                         p.appendChild(span);
+                        input.placeholder = make_options[option_key] ?? 0;
                         input.setAttribute("min", (option.min ?? 0).toString());
                         input.setAttribute("max", (option.max ?? 0).toString());
                         input.setAttribute("step", step);
@@ -909,16 +924,19 @@ export const ui = {
                                 if (input.value.length || input.value !== "0")
                                     shape.z = Number(input.value);
                                 map_draw.change("edit property: " + option_key, shape);
+                                ui.update_properties();
                             };
                         }
                         else {
-                            input.value = shape.options[option_key];
+                            input.value = shape.options[option_key] ?? "";
+                            input.placeholder = make_options[option_key] ?? 0;
                             change_fn = () => {
-                                if (input.value.length || input.value !== "0")
+                                if (input.value.length || input.value.toString() !== make_options[option_key].toString())
                                     shape.options[option_key] = Number(input.value);
                                 else
                                     delete shape.options[option_key];
                                 map_draw.change("edit property: " + option_key, shape);
+                                ui.update_properties();
                             };
                         }
                         // add change listeners

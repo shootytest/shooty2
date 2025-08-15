@@ -27,8 +27,8 @@ export class Shape {
     s.z = o.z;
 
     // booleans
-    s.closed_loop = !(o.options.open_loop);
-    s.seethrough = Boolean(o.options.seethrough);
+    s.closed_loop = !(thing.options.open_loop);
+    s.seethrough = Boolean(thing.options.seethrough);
 
     // handle vertices
     s.vertices = vector3.create_many(o.vertices, o.z);
@@ -39,7 +39,7 @@ export class Shape {
       v.y -= dv.y;
     }
 
-    s.style = map_serialiser.clone_style(STYLES[o.options.style ?? "test"] ?? STYLES.error);
+    s.style = map_serialiser.clone_style(thing.options.style == undefined ? STYLES.error : (STYLES[thing.options.style] ?? STYLES.error));
     s.init_computed();
 
     if (thing.shapes.length >= 1) { // runs for merged shapes
@@ -59,7 +59,6 @@ export class Shape {
   };
 
   static line(thing: Thing, v1: vector, v2: vector = vector.create(), z: number = 0): Shape {
-    console.log(thing);
     const s = new Shape(thing);
     s.closed_loop = false;
     s.vertices = vector3.create_many([v1, v2], z);

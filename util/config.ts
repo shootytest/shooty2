@@ -7,5 +7,6 @@ export const config = {
   },
   graphics: {
     linewidth_mult: 8,
+    health_display_smoothness: 0.1,
   },
 };

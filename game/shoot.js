@@ -3,13 +3,15 @@ import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
 import { filters } from "./detector.js";
+import { clone_object } from "./make.js";
 import { Shape } from "./shape.js";
-import { Thing } from "./thing.js";
+import { Bullet, Thing } from "./thing.js";
 export class Shoot {
     thing;
     shape;
     index = -1;
     active = false;
+    is_player = false;
     time = 0;
     duration = 0;
     duration_time = 0;
@@ -23,6 +25,8 @@ export class Shoot {
         if (this.shape)
             this.shape.activate_scale = true;
         this.stats = stats;
+        if (thing.is_player || (thing.is_bullet && thing.bullet_shoot?.is_player))
+            this.is_player = true;
     }
     set_stats(new_stats) {
         for (const [k, v] of Object.entries(new_stats)) {
@@ -46,12 +50,13 @@ export class Shoot {
             this.time -= reload;
         }
     }
+    // todo make this function faster? perhaps?
     shoot_bullet() {
         if (this.thing.body == undefined)
             return;
         const S = this.stats;
         const position = vector.add(this.thing.position, Vector.rotate(vector.create((this.offset.x || 0), (this.offset.y || 0)), this.thing.angle));
-        const bullet = new Thing();
+        const bullet = new Bullet();
         bullet.position = position;
         bullet.is_bullet = true;
         bullet.options = {
@@ -72,13 +77,13 @@ export class Shoot {
         const s = Shape.circle(bullet, S.size ?? 0);
         s.thing = bullet;
         s.seethrough = true;
-        s.style.stroke = "#eeeeee";
+        s.style = clone_object(this.thing.shapes[0].style);
         bullet.shapes.push(s);
         bullet.create_body({
             isStatic: false,
             frictionAir: S.friction ?? 0,
-            restitution: 0,
-            collisionFilter: filters.player_bullet,
+            restitution: S.restitution ?? 0,
+            collisionFilter: this.is_player ? filters.player_bullet : filters.enemy_bullet,
         });
         if (S.recoil !== 0 && speed && S.speed) {
             let recoil = (S.recoil == undefined) ? 1 : S.recoil;

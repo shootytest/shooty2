@@ -5,9 +5,10 @@ import { canvas, ctx, view } from "../util/canvas.js";
 import { color } from "../util/color.js";
 import { key, keys, mouse } from "../util/key.js";
 import { map_draw } from "../util/map_draw.js";
-import { TEST_MAP, map_serialiser, map_shape_type, map_type, map_vertex_type } from "../util/map_type.js";
+import { TEST_MAP, map_serialiser, map_shape_options_type, map_shape_type, map_type, map_vertex_type } from "../util/map_type.js";
 import { settings_default } from "./settings.js";
 import { SVG, svg_paths } from "../util/svg.js";
+import { make, override_object } from "../game/make.js";
 
 // globals, why not?
 let width = canvas.width;
@@ -753,6 +754,10 @@ export const ui = {
         name: "parent",
         type: "button",
       },
+      make_id: {
+        name: "make",
+        type: "text",
+      },
       style: {
         name: "style",
         type: "text",
@@ -869,6 +874,10 @@ export const ui = {
         <p>Total shapes: <b>${shape.options.contains?.length ?? 0}</b></p>
       `;
     } else {
+      const options: map_shape_options_type = {};
+      const make_options = make[shape.options.make_id ?? "default"] ?? make.default;
+      if (shape.options.make_id) override_object(options, make_options);
+      override_object(options, shape.options);
       for (const group_key in ui.properties_options) {
         const group = ui.properties_options[group_key];
         // todo: property groups
@@ -877,10 +886,11 @@ export const ui = {
         // summary.textContent = group_key;
         for (const option_key in group) {
           const option = group[option_key];
+          const exists = option_key === "z" || (shape.options as any)[option_key] != undefined;
           const p = document.createElement("p");
           p.classList.add(option.type);
           const label = document.createElement("label");
-          label.innerHTML = option.name;
+          label.innerHTML = `<span style="text-decoration: ${exists ? "underline" : "none"};">${option.name}</span>`;
           label.setAttribute("for", option_key);
           const input = document.createElement("input");
           input.setAttribute("type", option.type);
@@ -890,18 +900,21 @@ export const ui = {
           p.appendChild(label);
           p.appendChild(input);
           if (option.type === "checkbox") {
-            input.checked = (shape.options as any)[option_key];
+            input.checked = (options as any)[option_key];
             input.addEventListener("change", function(event) {
-              if (input.checked) (shape.options as any)[option_key] = true;
+              if (input.checked !== Boolean((make_options as any)[option_key])) (shape.options as any)[option_key] = input.checked;
               else delete (shape.options as any)[option_key];
               map_draw.change("edit property: " + option_key, shape);
+              ui.update_properties();
             });
           } else if (option.type === "text") {
-            input.value = (shape.options as any)[option_key];
+            input.value = (shape.options as any)[option_key] ?? "";
+            input.placeholder = (make_options as any)[option_key] ?? "";
             input.addEventListener("change", function(event) {
-              if (input.value.length) (shape.options as any)[option_key] = input.value;
+              if (input.value.length && input.value !== (make_options as any)[option_key]) (shape.options as any)[option_key] = input.value;
               else delete (shape.options as any)[option_key];
               map_draw.change("edit property: " + option_key, shape);
+              ui.update_properties();
             });
           } else if (option.type === "number") {
             const span = document.createElement("span");
@@ -914,6 +927,7 @@ export const ui = {
               </button>
             `.trim();
             p.appendChild(span);
+            input.placeholder = (make_options as any)[option_key] ?? 0;
             input.setAttribute("min", (option.min ?? 0).toString());
             input.setAttribute("max", (option.max ?? 0).toString());
             input.setAttribute("step", step);
@@ -923,13 +937,16 @@ export const ui = {
               change_fn = () => {
                 if (input.value.length || input.value !== "0") shape.z = Number(input.value);
                 map_draw.change("edit property: " + option_key, shape);
+                ui.update_properties();
               };
             } else {
-              input.value = (shape.options as any)[option_key];
+              input.value = (shape.options as any)[option_key] ?? "";
+              input.placeholder = (make_options as any)[option_key] ?? 0;
               change_fn = () => {
-                if (input.value.length || input.value !== "0") (shape.options as any)[option_key] = Number(input.value);
+                if (input.value.length || input.value.toString() !== (make_options as any)[option_key].toString()) (shape.options as any)[option_key] = Number(input.value);
                 else delete (shape.options as any)[option_key];
                 map_draw.change("edit property: " + option_key, shape);
+                ui.update_properties();
               };
             }
             // add change listeners

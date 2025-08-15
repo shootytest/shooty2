@@ -67,6 +67,11 @@ export const filters = {
     category: filter_groups.bullet,
     mask: filter_groups.all,
   },
+  enemy_bullet: {
+    group: -2,
+    category: filter_groups.bullet,
+    mask: filter_groups.all,
+  },
   wall: {
     group: 0,
     category: filter_groups.wall,

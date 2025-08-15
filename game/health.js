@@ -1,0 +1,89 @@
+import { config } from "../util/config.js";
+import { math } from "../util/math.js";
+import { Thing } from "./thing.js";
+export class Health {
+    thing;
+    value = 0;
+    capacity = 0;
+    regen = 0;
+    display = 0;
+    invincible = false;
+    hit_tick = 0; // e.g. poison damage
+    hit_time = -1234567890; // time last hit
+    hit_clear = 0; // time from last hit to regen
+    constructor(thing) {
+        this.thing = thing;
+    }
+    get ratio() {
+        return this.value / this.capacity;
+    }
+    get percentage() {
+        return this.ratio * 100;
+    }
+    get is_zero() {
+        return this.capacity > 0 && this.value <= 0;
+    }
+    tick() {
+        this.display = math.lerp(this.display, this.value, config.graphics.health_display_smoothness);
+        const time = Thing.time;
+        if (this.hit_tick > math.epsilon) {
+            this.hit(this.hit_tick);
+        }
+        if ((time - this.hit_time) > this.hit_clear && this.regen !== 0 && this.value < this.capacity) {
+            // can regenerate
+            this.value += this.regen;
+        }
+        if (this.value > this.capacity) {
+            this.value = this.capacity;
+        }
+    }
+    hit(amount) {
+        if (this.invincible)
+            return 0;
+        const old_health = this.value;
+        this.value -= amount;
+        this.bound();
+        this.hit_time = Thing.time;
+        const real_damage = old_health - this.value;
+        return real_damage;
+    }
+    hit_all() {
+        this.hit(this.capacity);
+    }
+    heal(amount) {
+        const old_health = this.value;
+        this.value += amount;
+        this.bound();
+        if (this.thing.is_player) {
+            const player = this.thing;
+            /*ui.damage_numbers.push({
+              x: player.x,
+              y: player.y,
+              d: old_health - this.value, // negative
+            });*/
+        }
+    }
+    heal_percent(health_percent) {
+        this.heal(this.capacity * health_percent);
+    }
+    heal_all() {
+        this.heal(this.capacity);
+    }
+    bound() {
+        this.value = math.bound(this.value, 0, this.capacity);
+    }
+    restore_all() {
+        this.value = this.capacity;
+    }
+    set_capacity(capacity) {
+        this.capacity = capacity;
+        this.value = capacity;
+    }
+    use(amount) {
+        if (this.value < amount) {
+            return false;
+        }
+        this.value -= amount;
+        return true;
+    }
+}
