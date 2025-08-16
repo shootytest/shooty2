@@ -3555,6 +3555,8 @@ declare namespace Matter {
             convertToSegments: (polygons: vp_Polygon[]) => vp_Segments;
             breakIntersections: (segments: vp_Segments) => vp_Segments;
         };
+
+        static earcut(polygon: number[], holes?: number[], dimensions?: number): number[];
     }
     
     export declare type vp_Vector2D = [number, number];

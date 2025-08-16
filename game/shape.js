@@ -53,6 +53,7 @@ export class Shape {
             s = Shape.line(thing, o.v1 ?? vector.create(), o.v2 ?? vector.create(), o.z);
         }
         else {
+            console.error(`[shape/from_make] shape type '${o.type}' doesn't exist!`);
             s = new Shape(thing);
         }
         s.seethrough = Boolean(thing.options.seethrough);

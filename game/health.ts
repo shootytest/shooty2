@@ -1,5 +1,6 @@
 import { config } from "../util/config.js";
 import { math } from "../util/math.js";
+import { maketype_health } from "./make.js";
 import type { Player } from "./player.js";
 import { Thing } from "./thing.js";
 
@@ -31,7 +32,18 @@ export class Health {
   }
 
   get is_zero() {
-    return this.capacity > 0 && this.value <= 0;
+    return this.capacity > math.epsilon_smaller && this.value <= math.epsilon_smaller;
+  }
+
+  make(o: maketype_health) {
+    if (o.capacity != undefined) {
+      this.capacity = o.capacity;
+      this.value = this.capacity;
+    }
+    if (o.value != undefined) this.value = o.value;
+    if (o.regen != undefined) this.regen = o.regen;
+    if (o.regen_time != undefined) this.hit_clear = o.regen_time;
+    if (o.invincible != undefined) this.invincible = o.invincible;
   }
 
   tick() {

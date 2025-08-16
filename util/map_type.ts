@@ -31,6 +31,12 @@ export interface map_shape_options_type extends maketype {
   
   // actual shape options
   open_loop?: boolean, // is the shape loop not closed? (e.g. this is true if the vertices are actually a list of 1d walls instead of a 2d shape)
+  merge?: boolean, // merge shape with its parent? (use the same thing object)
+  
+  // spawner options
+  is_spawner?: boolean,
+  spawn_enemy?: string,
+  spawn_delay?: number,
 };
 
 export interface map_icon_type {
@@ -400,8 +406,13 @@ export const STYLES: styles_type = {
   },
   tutorial: {
     stroke: "#7f77ea",
+    stroke_opacity: 1,
     fill: "#544bdb",
     fill_opacity: 0.7,
+  },
+  tutorial_enemy: {
+    stroke: "#7f77ea",
+    stroke_opacity: 1,
   },
   tutorial_door: {
     stroke: "#4e47af",

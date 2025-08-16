@@ -794,6 +794,14 @@ export const ui = {
         name: "movable object",
         type: "checkbox",
       },
+      is_spawner: {
+        name: "spawner",
+        type: "checkbox",
+      },
+      spawn_enemy: {
+        name: "enemy",
+        type: "text",
+      },
     },
     /*parent: {
       name: "parent",

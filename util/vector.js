@@ -45,6 +45,12 @@ export const vector = {
             y: v1.y + v2.y,
         };
     },
+    add_all: (...vs) => {
+        let result = vector.create();
+        for (const v of vs)
+            result = vector.add(result, v);
+        return result;
+    },
     adds: (vs, v2) => {
         const result = [];
         for (const v1 of vs) {
@@ -297,6 +303,12 @@ export const vector3 = {
             y: v1.y + v2.y,
             z: v1.z + v2.z
         };
+    },
+    add_all: (...vs) => {
+        let result = vector3.create();
+        for (const v of vs)
+            result = vector3.add(result, v);
+        return result;
     },
     add_list: (vs, v_add) => {
         const result = [];

@@ -216,4 +216,50 @@ export const math = {
     return result;
   },
 
+  triangulate_polygon: (vertices: vector[]): vector[][] => {
+    const result: vector[][] = [];
+    const flattened: number[] = [];
+    for (const v of vertices) flattened.push(v.x, v.y);
+    const triangulated = Common.earcut(flattened);
+    for (let i = 0; i < triangulated.length; i += 3) {
+      result.push([
+        vector.clone(vertices[triangulated[i]]),
+        vector.clone(vertices[triangulated[i + 1]]),
+        vector.clone(vertices[triangulated[i + 2]]),
+      ]);
+    }
+    // for (const triangle of triangulated) {
+    //   result.push(triangle.map(coords => (vector.create(coords[0], coords[1]))));
+    // }
+    return result;
+  },
+
+  triangle_area: (triangle: vector[]): number => {
+    const [a, b, c] = triangle;
+    return 0.5 * ( (b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y));
+  },
+
+  rand_point_in_polygon: (vertices: vector[]): vector => {
+    if (vertices.length === 1) return vertices[0];
+    else if (vertices.length === 2) return vector.lerp(vertices[0], vertices[1], math.rand());
+    const triangles = math.triangulate_polygon(vertices);
+    const total_area = triangles.reduce((sum, triangle) => sum + math.triangle_area(triangle), 0);
+    const distribution: number[] = [];
+    for (let i = 0; i < triangles.length; i++) {
+      const last = distribution[i - 1] || 0;
+      const next = last + (math.triangle_area(triangles[i]) / total_area);
+      distribution.push(next);
+    }
+    // choose a triangle
+    const rand = math.rand();
+    const t_index = distribution.findIndex(v => v > rand);
+    const [a, b, c] = triangles[t_index];
+    let r1 = math.rand(), r2 = math.rand();
+    if (r1 + r2 > 1) {
+      r1 = 1 - r1;
+      r2 = 1 - r2;
+    }
+    return vector.add_all(a, vector.mult(vector.sub(b, a), r1), vector.mult(vector.sub(c, a), r2));
+  },
+
 };

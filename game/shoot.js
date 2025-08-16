@@ -59,6 +59,8 @@ export class Shoot {
         const bullet = new Bullet();
         bullet.position = position;
         bullet.is_bullet = true;
+        bullet.team = this.thing.team;
+        bullet.damage = S.damage ?? 0;
         bullet.make(S.make ?? "bullet", true);
         const angle = math.randgauss(this.thing.angle + (vector.deg_to_rad(S.angle ?? 0)), S.spread ?? 0);
         const spreadv = S.spread_speed ?? 0;
@@ -79,7 +81,7 @@ export class Shoot {
             isStatic: false,
             frictionAir: S.friction ?? 0,
             restitution: S.restitution ?? 0,
-            collisionFilter: this.is_player ? filters.player_bullet : filters.enemy_bullet,
+            collisionFilter: filters.bullet(bullet.team),
         });
         if (S.recoil !== 0 && speed && S.speed) {
             let recoil = (S.recoil == undefined) ? 1 : S.recoil;

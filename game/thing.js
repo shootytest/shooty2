@@ -5,7 +5,7 @@ import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { detector } from "./detector.js";
 import { Health } from "./health.js";
-import { make, make_shapes, override_object, make_shoot } from "./make.js";
+import { make, make_shapes, override_object, make_shoot, clone_array } from "./make.js";
 import { Polygon, Shape } from "./shape.js";
 import { Shoot } from "./shoot.js";
 /**
@@ -28,9 +28,11 @@ export class Thing {
     id = "generic thing #" + this.uid;
     body = undefined; // physics body
     options = {};
-    object = {};
+    object = {}; // for any random things
     shapes = [];
     shoots = [];
+    team = 0;
+    damage = 0;
     health;
     ability;
     target = {
@@ -42,6 +44,7 @@ export class Thing {
     is_player = false;
     is_touching_player = false;
     is_bullet = false;
+    is_enemy = false;
     constructor() {
         Thing.things.push(this);
         this.health = new Health(this);
@@ -116,11 +119,20 @@ export class Thing {
             else
                 console.error(`[thing/make] thing id '${this.id}': make_shoot '${shoot_key}' doesn't exist!`);
         }
+        if (this.options.damage != undefined)
+            this.damage = this.options.damage;
+        if (this.options.team != undefined)
+            this.team = this.options.team;
+        if (this.options.health != undefined)
+            this.health.make(this.options.health);
+        if (this.options.ability != undefined)
+            this.ability.make(this.options.ability);
     }
     make_shape(key, reset = false) {
-        if (reset)
+        if (reset) {
             for (const shape of this.shapes)
                 shape.remove();
+        }
         const shapes = make_shapes[key];
         for (const o of shapes ?? []) {
             Shape.from_make(this, o);
@@ -229,14 +241,14 @@ export class Thing {
     remove_children() {
         for (const shoot of this.shoots) {
             // if (this.keep_children) return;
-            for (const c of shoot.bullets) {
+            for (const c of clone_array(shoot.bullets)) {
                 // if (c.keep_this) continue;
                 c.remove();
             }
         }
     }
     remove_shapes() {
-        for (const shape of this.shapes) {
+        for (const shape of clone_array(this.shapes)) {
             shape.remove();
         }
         this.shapes = [];
@@ -251,6 +263,9 @@ export class Thing {
         }
         for (const shoot of this.shoots) {
             shoot.tick();
+        }
+        if (!this.is_player && this.health.is_zero) {
+            this.remove();
         }
     }
     // useful

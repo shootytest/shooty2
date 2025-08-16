@@ -14,6 +14,7 @@ export class Player extends Thing {
     super();
 
     this.is_player = true;
+    this.team = 1;
     this.make("player");
 
     this.create_id("player");
@@ -24,7 +25,7 @@ export class Player extends Thing {
     this.create_body({
       frictionAir: 0.2,
       restitution: 0.1,
-      collisionFilter: filters.player,
+      collisionFilter: filters.thing(this.team),
     });
     if (this.body) this.body.label = "player";
   }

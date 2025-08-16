@@ -21,7 +21,21 @@ export class Health {
         return this.ratio * 100;
     }
     get is_zero() {
-        return this.capacity > 0 && this.value <= 0;
+        return this.capacity > math.epsilon_smaller && this.value <= math.epsilon_smaller;
+    }
+    make(o) {
+        if (o.capacity != undefined) {
+            this.capacity = o.capacity;
+            this.value = this.capacity;
+        }
+        if (o.value != undefined)
+            this.value = o.value;
+        if (o.regen != undefined)
+            this.regen = o.regen;
+        if (o.regen_time != undefined)
+            this.hit_clear = o.regen_time;
+        if (o.invincible != undefined)
+            this.invincible = o.invincible;
     }
     tick() {
         this.display = math.lerp(this.display, this.value, config.graphics.health_display_smoothness);

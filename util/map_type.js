@@ -325,8 +325,13 @@ export const STYLES = {
     },
     tutorial: {
         stroke: "#7f77ea",
+        stroke_opacity: 1,
         fill: "#544bdb",
         fill_opacity: 0.7,
+    },
+    tutorial_enemy: {
+        stroke: "#7f77ea",
+        stroke_opacity: 1,
     },
     tutorial_door: {
         stroke: "#4e47af",

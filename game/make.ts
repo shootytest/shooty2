@@ -22,6 +22,19 @@ export interface maketype {
 
   shoots?: string[];
 
+  damage?: number,
+  team?: number,
+  health?: maketype_health,
+  ability?: maketype_health,
+
+};
+
+export interface maketype_health {
+  value?: number;
+  capacity?: number;
+  regen?: number;
+  regen_time?: number;
+  invincible?: boolean;
 };
 
 export interface maketype_shape {
@@ -84,6 +97,9 @@ make.default = {
   keep_bullets: false,
 };
 
+
+// walls
+
 make.wall = {
   // nothing different from default yet
 };
@@ -98,6 +114,9 @@ make.wall_tutorial_rock = {
   keep_bullets: true,
 };
 
+
+// floors
+
 make.floor = {
   decoration: true,
   seethrough: true,
@@ -108,6 +127,9 @@ make.floor_tutorial = {
   make_parent: ["floor"],
   style: "tutorial_floor",
 };
+
+
+// sensors
 
 make.sensor = {
   style: "sensor",
@@ -127,20 +149,39 @@ make.icon_tutorial = {
   style: "tutorial",
 };
 
+
+// player
+
 make.player = {
   style: "player",
   movable: true,
   seethrough: true,
+  damage: 0,
+  team: 1,
+  health: {
+    capacity: 10,
+    regen: 0,
+    regen_time: 0,
+  },
 };
+
+
+// enemies
 
 make.enemy = {
   movable: true,
   seethrough: true,
 };
 
-make.enemy_tutorial = {
+make.enemy_tutorial_block = {
   make_parent: ["enemy"],
-  style: "tutorial",
+  style: "tutorial_enemy",
+  team: 7,
+  health: {
+    capacity: 10,
+    regen: 0,
+    regen_time: 0,
+  },
 };
 
 make.bullet = {
@@ -163,13 +204,10 @@ make_shapes.player = [{
   shoot: "player",
 }];
 
-make_shapes.enemy_tutorial = [{
+make_shapes.enemy_tutorial_block = [{
   type: "polygon",
   sides: 7,
   radius: 50,
-}, {
-  type: "line",
-  v2: vector.createpolar_deg(0, 50),
 }];
 
 
@@ -179,12 +217,13 @@ export const make_shoot: { [key: string]: shoot_stats } = {};
 
 make_shoot.player = {
   make: "bullet",
-  size: 80,
+  size: 8,
   reload: 30,
   speed: 5,
   friction: 0.003,
   restitution: 1,
   recoil: 1,
+  damage: 1,
 };
 
 make_shoot.half_reload = {
@@ -205,6 +244,13 @@ for (const m of Object.values(make)) {
   else m.make_parent.unshift("default");
 }
 
+// clone functions
+
+export const clone_array = function(arr: any[]) {
+  const result: any[] = [];
+  for (const a of arr) result.push(a);
+  return result;
+};
 
 export const clone_object = function(obj: dictionary) {
   const result: dictionary = {};
@@ -305,8 +351,7 @@ for (const k of Object.keys(make_shoot)) {
   calculate_make_shoot(k);
 }
 
-
-// todo remove all 3 (debug)
-console.log(make);
-console.log(make_shapes);
-console.log(make_shoot);
+// debug
+// console.log(make);
+// console.log(make_shapes);
+// console.log(make_shoot);

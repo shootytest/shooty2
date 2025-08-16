@@ -65,6 +65,11 @@ export const vector = {
       y: v1.y + v2.y,
     };
   },
+  add_all: (...vs: vector[]): vector => {
+    let result = vector.create();
+    for (const v of vs) result = vector.add(result, v);
+    return result;
+  },
   adds: (vs: vector[], v2: vector): vector[] => {
     const result = [];
     for (const v1 of vs) {
@@ -317,6 +322,11 @@ export const vector3 = {
       y: v1.y + v2.y,
       z: v1.z + v2.z
     };
+  },
+  add_all: (...vs: vector3[]): vector3 => {
+    let result = vector3.create();
+    for (const v of vs) result = vector3.add(result, v);
+    return result;
   },
   add_list: (vs: vector3[], v_add: vector3_): vector3[] => {
     const result: vector3[] = [];

@@ -57,21 +57,16 @@ export const filters = {
     category: filter_groups.thing,
     mask: filter_groups.none,
   },
-  player: {
-    group: -1,
+  thing: (team: number) => { return {
+    group: -team,
     category: filter_groups.thing,
     mask: filter_groups.all,
-  },
-  player_bullet: {
-    group: -1,
+  }},
+  bullet: (team: number) => { return {
+    group: -team,
     category: filter_groups.bullet,
-    mask: filter_groups.all,
-  },
-  enemy_bullet: {
-    group: -2,
-    category: filter_groups.bullet,
-    mask: filter_groups.all,
-  },
+    mask: filter_groups.all - filter_groups.bullet,
+  }},
   wall: {
     group: 0,
     category: filter_groups.wall,
@@ -103,7 +98,7 @@ export const detector = {
   },
   collision_start: (pair: Matter.Pair, ba: Matter.Body, bb: Matter.Body, flipped: boolean) => {
     const a = ((ba.parent as any).thing as Thing), b = ((bb.parent as any).thing as Thing);
-    // console.log(`Collision started betwixt ${ba.label} & ${bb.label}!`);
+    // console.log(`[detector/collision_start] Collision started betwixt ${ba.label} & ${bb.label}!`);
     if (a.is_player) {
       if (b.options.sensor) {
         detector.collision_start_fns[b.id]?.(b);
@@ -115,10 +110,14 @@ export const detector = {
         a.remove();
       }
     }
+    if (a.damage > 0 && b.health.capacity > 0 && a.team !== b.team) {
+      console.log(`[detector/collision_start] ${a.id} hits ${b.id} for ${a.damage} damage!`);
+      b.health.hit(a.damage);
+    }
   },
   collision_end: (pair: Matter.Pair, ba: Matter.Body, bb: Matter.Body, flipped: boolean) => {
     const a = ((ba.parent as any).thing as Thing), b = ((bb.parent as any).thing as Thing);
-    // console.log(`Collision ended betwixt ${ba.label} & ${bb.label}!`);
+    // console.log(`[detector/collision_end] Collision ended betwixt ${ba.label} & ${bb.label}!`);
     if (a.is_player) {
       if (b.options.sensor) {
         detector.collision_end_fns[b.id]?.(b);
