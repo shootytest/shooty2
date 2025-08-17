@@ -22,11 +22,7 @@ export class Player extends Thing {
   }
 
   create_player() {
-    this.create_body({
-      frictionAir: 0.2,
-      restitution: 0.1,
-      collisionFilter: filters.thing(this.team),
-    });
+    this.create_body(this.create_body_options(filters.thing(this.team)));
     if (this.body) this.body.label = "player";
   }
 

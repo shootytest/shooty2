@@ -1,4 +1,4 @@
-import { clone_object } from "../game/make.js";
+import { clone_object, make, override_object } from "../game/make.js";
 import { vector, vector3 } from "./vector.js";
 ;
 ;
@@ -34,6 +34,7 @@ export const map_serialiser = {
                     mean: vector3.mean(world_vertices),
                     vertices: world_vertices,
                 };
+                map_serialiser.compute_options(shape);
             }
             for (const shape of map.shapes) {
                 if (shape.computed == undefined || shape.computed.depth)
@@ -54,7 +55,21 @@ export const map_serialiser = {
                     shape.computed.depth = 1;
                 }
             }
+            // now sort shapes by depth
+            map.shapes.sort((s1, s2) => (s1.computed?.depth ?? 0) - (s2.computed?.depth ?? 0));
         }
+    },
+    compute_options: (shape) => {
+        if (shape.computed == undefined)
+            return undefined;
+        const options = {};
+        const make_options = make[shape.options.make_id ?? "default"] ?? make.default;
+        if (shape.options.make_id)
+            override_object(options, make_options);
+        override_object(options, shape.options);
+        shape.computed.options = options;
+        // console.log("[map_serializer/compute_options] calculating for " + shape.id, options.sensor);
+        return options;
     },
     clone_shape: (shape) => {
         return {
@@ -157,7 +172,7 @@ export const map_serialiser = {
     },
 };
 // just realised it's possible to paste the zipped JSON
-export const TEST_MAP = zipson.parse("{¨shapes¨|{¨id¨¨start¨´z´É¨vertices¨|{´x´¢-1w´y´¢1m}÷¨options¨{¨open_loop¨«¨style¨ß2}}{ß1¨test group¨´z´Éß3|{´x´¢6m´y´¢-4M}÷ß4{¨contains¨|¨test 1¨÷ß5«ß6¨test¨}}{ß1¨tutorial¨´z´Éß3|{´x´¢-8E´y´¢-5o}÷ß4{ß6ßBß8|¨tutorial room 1¨¨tutorial room 1.1¨÷}}{ß1ßD´z´Éß3|{´x´¢-Bc´y´¢5A}÷ß4{ß6ßBß8|¨tutorial wall 2¨÷¨parent¨ßB}}{ß1ßC´z´Éß3|{´x´¢-68´y´¢-4q}÷ß4{ß8|¨tutorial wall 1¨¨tutorial room 1 rocks¨¨tutorial wall 3¨¨tutorial room 1 deco¨¨tutorial room 1 sensor¨¨tutorial room 1 door sensor¨÷ßFßBß6ßB}}{ß1ß9´z´Éß3|¦´x´´y´‡º2¢-84¢84¢-42—÷ß4{ßFß7ß5»¨make_id¨¨wall¨ß6ßA}}{ß1ßE´z´Éß3|¦´x´´y´‡¢-6m¢42¢-9q¢50¢-BmºBº6¢BI¢-7Q¢D4¢-3Y¢B8¢-38¢7A—÷ß4{ß5»ßFßDßM¨wall_tutorial¨}}{ß1ßH´z´Éß3|{´x´º0´y´¢-2G}÷ß4{ß8|¨tutorial rock 1¨¨tutorial rock 2¨¨tutorial rock 3¨¨tutorial rock 4¨¨tutorial rock 5¨÷ßFßCß6ßB}}{ß1ßJ´z´Éß3|{´x´¢-5U´y´¢-4C}÷ß4{ß5«ß6ßBßFßCß8|¨tutorial room 1 arrow¨÷}}{ß1ßK´z´Éß3|¦´x´´y´‡¢5e¢-2Q¢-1c¢-50¢-6IºUºDºE¢-26ºB¢4C¢6w¢6c¢1S—÷ß4{ßFßCßM¨sensor¨}}{ß1ßG´z´Éß3|¦´x´´y´‡¢C6ºCºSºTºUºVºWºUºDºE¢-4B¢6G—÷ß4{ßFßCßMßOß5»}}{ß1ßI´z´Éß3|¦´x´´y´‡ºNºOºXºBºYºZºaºbºK¢-A—÷ß4{ß5»ßFßCßMßO}}{ß1ßL´z´Éß3|¦´x´´y´‡¢6I¢-2a£7H.H£1I.1x£CR.H£0.1x£BT.H£-3r.-EB—÷ß4{ßFßCß8|¨tutorial room 1 door 1¨¨tutorial room 1 door 2¨¨tutorial room 1 door floor¨÷ßMßV}}{ß1ßY´z´Éß3|¦´x´´y´‡¢8E¢-34¢9C¤o¢AU¤U¢9W¢-3O—÷ß4{ßFßLßM¨floor_tutorial¨}}{ß1ßW´z´Éß3|¦´x´´y´‡¢9M¢-1I¢9s¤m—÷ß4{ß5»ß6¨tutorial_door¨ßFßL}}{ß1ßX´z´Éß3|¦´x´´y´‡ºoºp¢8q¢-3M—÷ß4{ß5»ß6ßaßFßL}}{ß1ßS´z´Éß3|¦´x´´y´‡£-3i.-9W£5J.8V£-34.-9W£4z.8V£-2G.-9WÝ9£-1m.-9W£5d.8V£-1w.-9W£6b.8V£-2Q.-9W£5x.8Vºdºe—÷ß4{ßFßHßM¨wall_tutorial_rock¨}}{ß1ßR´z´Éß3|¦´x´´y´‡£-5o.-9W£-18.-7d£-5e.-9W£-1c.-7d£-4q.-9W£-1w.-7d£-4M.-9W£-1S.-7dÝN£-o.-7d£-50.-9W£-U.-7d£-5U.-9W£-e.-7d—÷ß4{ßFßHßMßb}}{ß1ßQ´z´Éß3|¦´x´´y´‡£2F.6c£59.8V£2Z.6c£4V.8V£3N.6c£4B.8V£41.6c£4p.8VÝa£5n.8V£3D.6c£67.8V£2P.6cÝG—÷ß4{ßFßHßMßb}}{ß1ßP´z´Éß3|¦´x´´y´‡£-K.-9W£-3O.-7d£9.6c£-3i.-7d£x.6c£-3Y.-7d£1H.6c£-2u.-7d£w.2o£-2P.-K£I.2o£-2F.-K£-L.-DK£-2Z.-K—÷ß4{ßFßHßMßb}}{ß1ßU´z´£0.-1cß3|¦´x´´y´‡¢4M¢-eºG¢-K¢4b¤HºGºv¢2Q¤K—÷ß4{ßFßJßM¨icon_tutorial¨ß5»}}÷¨icons¨|÷}");
+export const TEST_MAP = zipson.parse("{¨shapes¨|{¨id¨¨start¨´z´É¨vertices¨|{´x´¢-1w´y´¢1m}÷¨options¨{¨open_loop¨«¨style¨ß2}}{ß1¨test group¨´z´Éß3|{´x´¢6m´y´¢-4M}÷ß4{¨contains¨|¨test 1¨÷ß5«ß6¨test¨}}{ß1¨tutorial¨´z´Éß3|{´x´¢-FU´y´¢-AU}÷ß4{ß6ßBß8|¨tutorial room 1¨¨tutorial room 1.1¨÷}}{ß1ßD´z´Éß3|{´x´¢-Bc´y´¢5A}÷ß4{ß6ßBß8|¨tutorial wall 2¨÷¨parent¨ßB}}{ß1ßC´z´Éß3|{´x´¢-68´y´¢-4q}÷ß4{ß8|¨tutorial wall 1¨¨tutorial room 1 rocks¨¨tutorial wall 3¨¨tutorial room 1 deco¨¨tutorial room 1 sensor¨¨tutorial room 1 door sensor¨¨tutorial room 1 enemy¨÷ßFßBß6ßB}}{ß1ß9´z´Éß3|¦´x´´y´‡º2¢-84¢84¢-42—÷ß4{ßFß7ß5»¨make_id¨¨wall¨ß6ßA}}{ß1ßE´z´Éß3|¦´x´´y´‡¢-6m¢42¢-9q¢50¢-BmºBº6¢BI¢-7Q¢D4¢-3Y¢B8¢-38¢7A—÷ß4{ß5»ßFßDßN¨wall_tutorial¨}}{ß1ßH´z´Éß3|{´x´¢-50´y´¢-1I}÷ß4{ß8|¨tutorial rock 1¨¨tutorial rock 2¨¨tutorial rock 3¨¨tutorial rock 4¨¨tutorial rock 5¨÷ßFßCß6ßB}}{ß1ßM´z´Éß3|{´x´¢1c´y´º1}÷ß4{ßFßCß6¨spawner¨¨spawn_enemy¨¨enemy_tutorial_block¨¨is_spawner¨»¨spawn_repeat¨Ë}}{ß1ßJ´z´Éß3|{´x´¢-5U´y´¢-4C}÷ß4{ß5«ß6ßBßFßCß8|¨tutorial room 1 arrow¨¨tutorial room 1 breakables 1¨¨tutorial room 1 breakables 2¨÷¨decoration¨»}}{ß1ßK´z´Éß3|¦´x´´y´‡¢5e¢-2Q¢-1cºP¢-6IºWºDºE¢-26ºB¢4C¢6w¢6c¢1S—÷ß4{ßFßCßN¨sensor¨}}{ß1ßG´z´Éß3|¦´x´´y´‡¢C6ºCºUºVºWºPºXºWºDºE¢-4B¢6G—÷ß4{ßFßCßNßPß5»}}{ß1ßI´z´Éß3|¦´x´´y´‡ºNºOºYºBºZºaºbºcºK¢-A—÷ß4{ß5»ßFßCßNßP}}{ß1ßL´z´Éß3|¦´x´´y´‡¢6I¢-2a£7H.H£1I.1x£CR.H£0.1x£BT.H£-3r.-EB—÷ß4{ßFßCß8|¨tutorial room 1 door 1¨¨tutorial room 1 door 2¨¨tutorial room 1 door floor¨÷ßNße}}{ß1ßb´z´Éß3|¦´x´´y´‡¢-3s¢-oºCºi¢-1S¢-4gºgºY£1M.9T£-2L.-2bºcºL¢5K¢-2G—÷ß4{ßFßJß6ßVßW¨enemy_tutorial_bit¨ßY»ßZ¤A}}{ß1ßc´z´Éß3|¦´x´´y´‡¢-4WºUºX¢3sº8¢-y¢-5KºgºCºkºp¢3E¢-3E¢4g—÷ß4{ßFßJß6ßVßWßißY»ßZ¤A}}{ß1ßh´z´Éß3|¦´x´´y´‡¢8E¢-34¢9C¤o¢AU¤U¤9W¢-3O—÷ß4{ßFßLßN¨floor_tutorial¨}}{ß1ßf´z´Éß3|¦´x´´y´‡¤9MºQ¤9s¤m—÷ß4{ß5»ß6¨tutorial_door¨ßFßL}}{ß1ßg´z´Éß3|¦´x´´y´‡¤9MºQ¤8q¢-3M—÷ß4{ß5»ß6ßkßFßL}}{ß1ßT´z´Éß3|¦´x´´y´‡£-3i.-9W£5J.8V£-34.-9W£4z.8V£-2G.-9WÝB£-1m.-9W£5d.8V£-1w.-9W£6b.8V£-2Q.-9W£5x.8Vºeºf—÷ß4{ßFßHßN¨wall_tutorial_rock¨}}{ß1ßS´z´Éß3|¦´x´´y´‡£-5o.-9W£-18.-7d£-5e.-9W£-1c.-7d£-4q.-9W£-1w.-7d£-4M.-9W£-1S.-7dÝP£-o.-7d£-50.-9W£-U.-7d£-5U.-9W£-e.-7d—÷ß4{ßFßHßNßl}}{ß1ßR´z´Éß3|¦´x´´y´‡£2F.6c£59.8V£2Z.6c£4V.8V£3N.6c£4B.8V£41.6c£4p.8VÝc£5n.8V£3D.6c£67.8V£2P.6cÝI—÷ß4{ßFßHßNßl}}{ß1ßQ´z´Éß3|¦´x´´y´‡£-K.-9W£-3O.-7d£9.6c£-3i.-7d£x.6c£-3Y.-7d£1H.6c£-2u.-7d£w.2o£-2P.-K£I.2o£-2F.-K£-L.-DK£-2Z.-K—÷ß4{ßFßHßNßl}}{ß1ßa´z´£0.-1cß3|¦´x´´y´‡¤4M¤-eºG¤-K¤4b¤HºG¤-K¤2Q¤K—÷ß4{ßFßJßN¨icon_tutorial¨ß5»}}÷¨icons¨|÷}");
 const TEST_MAP_ = {
     shapes: [
         /*
@@ -350,5 +365,10 @@ export const STYLES = {
         stroke_opacity: 0,
         fill: "#00ddff",
         fill_opacity: 0.2,
+    },
+    spawner: {
+        stroke_opacity: 0,
+        fill: "#af4747",
+        fill_opacity: 0.3,
     },
 };

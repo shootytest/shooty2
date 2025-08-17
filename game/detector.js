@@ -31,8 +31,10 @@ import { player } from "./player.js";
 export const filter_groups = {
     none: 0x0000,
     thing: 0x0001,
-    bullet: 0x0002,
-    wall: 0x0004,
+    player_thing: 0x0002,
+    enemy_thing: 0x0004,
+    bullet: 0x0008,
+    wall: 0x0010,
     all: 0xFFFF,
 };
 export const filters = {
@@ -50,7 +52,7 @@ export const filters = {
     thing: (team) => {
         return {
             group: -team,
-            category: filter_groups.thing,
+            category: filter_groups.player_thing,
             mask: filter_groups.all,
         };
     },
@@ -91,6 +93,7 @@ export const detector = {
     },
     collision_start: (pair, ba, bb, flipped) => {
         const a = ba.parent.thing, b = bb.parent.thing;
+        const b_rittle = b.health.capacity > 0 && b.health.capacity < 1 - math.epsilon;
         // console.log(`[detector/collision_start] Collision started betwixt ${ba.label} & ${bb.label}!`);
         if (a.is_player) {
             if (b.options.sensor) {
@@ -99,13 +102,20 @@ export const detector = {
             }
         }
         if (a.is_bullet) {
-            if (!b.options.sensor && !b.options.keep_bullets) {
+            if (!b.options.sensor && !b.options.keep_bullets && !b_rittle) {
                 a.remove();
+            }
+            else if (b_rittle) {
+                pair.isSensor = true;
+                ba.temporarySensor = true;
             }
         }
         if (a.damage > 0 && b.health.capacity > 0 && a.team !== b.team) {
             console.log(`[detector/collision_start] ${a.id} hits ${b.id} for ${a.damage} damage!`);
             b.health.hit(a.damage);
+        }
+        if (a.is_player && b_rittle && a.team !== b.team) {
+            b.health.hit_all();
         }
     },
     collision_end: (pair, ba, bb, flipped) => {
@@ -116,6 +126,9 @@ export const detector = {
                 detector.collision_end_fns[b.id]?.(b);
                 b.is_touching_player = false;
             }
+        }
+        if (ba.temporarySensor) {
+            pair.isSensor = false;
         }
     },
     collision_during_fns: {

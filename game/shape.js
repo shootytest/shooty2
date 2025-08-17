@@ -4,7 +4,7 @@ import { ctx } from "../util/canvas.js";
 import { config } from "../util/config.js";
 import { map_serialiser, STYLES } from "../util/map_type.js";
 import { vector, vector3 } from "../util/vector.js";
-import { make_shoot } from "./make.js";
+import { make_shoot, override_object } from "./make.js";
 import { player } from "./player.js";
 /**
  * the Shape class holds shape data only
@@ -33,6 +33,8 @@ export class Shape {
             v.y -= dv.y;
         }
         s.style = map_serialiser.clone_style(thing.options.style == undefined ? STYLES.error : (STYLES[thing.options.style] ?? STYLES.error));
+        if (thing.options.style_ != undefined)
+            override_object(s.style, thing.options.style_);
         s.init_computed();
         if (thing.shapes.length >= 2) { // runs for merged shapes
             s.offset.x = thing.position.x - o.computed.mean.x;
@@ -58,6 +60,8 @@ export class Shape {
         }
         s.seethrough = Boolean(thing.options.seethrough);
         s.style = map_serialiser.clone_style(thing.options.style == undefined ? STYLES.error : (STYLES[thing.options.style] ?? STYLES.error));
+        if (thing.options.style_ != undefined)
+            override_object(s.style, thing.options.style_);
         if (o.shoot) {
             const S = make_shoot[o.shoot];
             if (S) {
@@ -86,13 +90,18 @@ export class Shape {
         return s;
     }
     ;
-    static filter(aabb) {
+    static filter(screen_aabb) {
         const result = [];
+        const memo_aabb3 = {};
         for (const s of Shape.shapes) {
             if (s.computed == undefined || s.thing == undefined || s.thing.options.invisible)
                 continue;
             s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position);
-            const inside = vector3.aabb_intersect(s.computed_aabb, aabb);
+            if (memo_aabb3[s.z] == undefined) {
+                const z_scale = camera.zscale_inverse(s.z ?? 0);
+                memo_aabb3[s.z] = vector3.aabb_scale(screen_aabb, vector3.create(z_scale, z_scale, 1));
+            }
+            const inside = vector3.aabb_intersect(s.computed_aabb, memo_aabb3[s.z]);
             if (inside) {
                 result.push(s);
             }
@@ -104,7 +113,7 @@ export class Shape {
         const screen_topleft = camera.screen2world({ x: 0, y: 0 });
         const screen_bottomright = camera.screen2world({ x: ctx.canvas.width, y: ctx.canvas.height });
         const screen_aabb = {
-            min_x: screen_topleft.x, min_y: screen_topleft.y, max_x: screen_bottomright.x, max_y: screen_bottomright.y, min_z: -Infinity, max_z: Infinity,
+            min_x: screen_topleft.x, min_y: screen_topleft.y, max_x: screen_bottomright.x, max_y: screen_bottomright.y, min_z: -Number.MAX_SAFE_INTEGER, max_z: Number.MAX_SAFE_INTEGER,
         };
         Shape.draw_shapes = Shape.filter(screen_aabb);
         Shape.draw_zs = [0];
@@ -209,16 +218,15 @@ export class Shape {
         this.draw_path();
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
-        ctx.globalAlpha = style.opacity ?? 1;
         if (style.stroke) {
             ctx.strokeStyle = style.stroke;
-            ctx.globalAlpha = style.stroke_opacity ?? 1;
+            ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1);
             ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * config.graphics.linewidth_mult * (this.seethrough ? 1 : 1.8);
             ctx.stroke();
         }
         if (style.fill && this.closed_loop) {
             ctx.fillStyle = style.fill;
-            ctx.globalAlpha = style.fill_opacity ?? 1;
+            ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1);
             ctx.fill();
         }
     }

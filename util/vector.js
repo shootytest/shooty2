@@ -221,6 +221,15 @@ export const vector = {
             y: (a.max_y + a.min_y) / 2,
         };
     },
+    aabb_scale: (a, scale) => {
+        const v = vector.aabb_centre(a);
+        return {
+            min_x: v.x + (a.min_x - v.x) * scale.x,
+            max_x: v.x + (a.max_x - v.x) * scale.x,
+            min_y: v.y + (a.min_y - v.y) * scale.y,
+            max_y: v.y + (a.max_y - v.y) * scale.y,
+        };
+    },
 };
 export const vector3 = {
     create: (x = 0, y = 0, z = 0) => {
@@ -477,6 +486,17 @@ export const vector3 = {
             x: (a.max_x + a.min_x) / 2,
             y: (a.max_y + a.min_y) / 2,
             z: (a.max_z + a.min_z) / 2,
+        };
+    },
+    aabb_scale: (a, scale) => {
+        const v = vector3.aabb_centre(a);
+        return {
+            min_x: v.x + (a.min_x - v.x) * scale.x,
+            max_x: v.x + (a.max_x - v.x) * scale.x,
+            min_y: v.y + (a.min_y - v.y) * scale.y,
+            max_y: v.y + (a.max_y - v.y) * scale.y,
+            min_z: v.z + (a.min_z - v.z) * scale.z,
+            max_z: v.z + (a.max_z - v.z) * scale.z,
         };
     },
 };

@@ -29,6 +29,7 @@ export const map_draw = {
     const world_vertices = vector3.create_many(shape.vertices, shape.z);
     const screen_vertices = shape.computed?.screen_vertices ?? [];
     const depth = shape.computed?.depth ?? 0;
+    const options = shape.computed?.options;
     shape.computed = {
       aabb: vector.make_aabb(world_vertices),
       aabb3: vector3.make_aabb(world_vertices),
@@ -36,6 +37,7 @@ export const map_draw = {
       vertices: world_vertices,
       screen_vertices: screen_vertices,
       depth: depth,
+      options: options,
     };
     ui.all_aabb = vector.aabb_combine(ui.all_aabb, shape.computed.aabb);
   },
@@ -77,8 +79,9 @@ export const map_draw = {
       const screen_topleft = camera.screen2world({ x: 0, y: 0 });
       const screen_bottomright = camera.screen2world({ x: ctx.canvas.width, y: ctx.canvas.height });
       const screen_aabb3: AABB3 = {
-        min_x: screen_topleft.x, min_y: screen_topleft.y, max_x: screen_bottomright.x, max_y: screen_bottomright.y, min_z: -Infinity, max_z: Infinity, // todo z culling (first pass)?
+        min_x: screen_topleft.x, min_y: screen_topleft.y, max_x: screen_bottomright.x, max_y: screen_bottomright.y, min_z: -999, max_z: 999, // todo z culling (first pass)?
       };
+      const memo_aabb3: { [key: string]: AABB3 } = {};
       // loop: compute shape stuff
       for (const shape of map.shapes) {
         if (shape.computed == undefined) {
@@ -92,7 +95,16 @@ export const map_draw = {
           // compute location on screen
           const vs: vector3[] = [];
           let i = 0;
-          shape.computed.on_screen = vector3.aabb_intersect(shape.computed.aabb3, screen_aabb3) && shape.z <= camera.z / camera.scale;
+          if (memo_aabb3[shape.z] == undefined) {
+            const z_scale = camera.zscale_inverse(shape.z);
+            memo_aabb3[shape.z] = vector3.aabb_scale(screen_aabb3, vector3.create(z_scale, z_scale, 1));
+          }
+          shape.computed.on_screen = vector3.aabb_intersect(shape.computed.aabb3, memo_aabb3[shape.z]) && shape.z <= camera.z / camera.scale;
+          if (!ui.editor.layers.sensors && shape.computed.options?.sensor) shape.computed.on_screen = false;
+          if (!ui.editor.layers.spawners && shape.computed.options?.is_spawner) shape.computed.on_screen = false;
+          if (!ui.editor.layers.decoration && shape.computed.options?.decoration) shape.computed.on_screen = false;
+          ui.directory_spans[shape.id].style.color = shape.computed.on_screen ? "black" : "#999999";
+          if (!shape.computed.on_screen) continue; // hmmm can i get away with doing this
           for (const world_v of shape.computed.vertices) {
             const v = camera.world3screen(world_v);
             vs.push(vector3.create2(v, world_v.z - camera.look_z));
@@ -106,6 +118,7 @@ export const map_draw = {
       //   so that static objects (which should be the majority?) don't always recompute world AABB
       //   and only calculate screen position for all objects on screen
       //   hopefully this is fast enough? although i'll probably make a chunk-like system too?
+      // ok why was i sorting by distance?
       map_draw.shapes_on_screen = map.shapes.filter((s) => s.computed?.on_screen).sort((a, b) => b.computed?.distance2! - a.computed?.distance2!);
       let i = 0;
       for (const shape of map_draw.shapes_on_screen) {

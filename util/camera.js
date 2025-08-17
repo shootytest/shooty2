@@ -72,6 +72,12 @@ export const camera = {
             z = 1 / ZEPSILON;
         return z_;
     },
+    zscale_inverse: function (z) {
+        let z_ = (this.z / this.scale - z) / (this.z / this.scale - this.look_z + ZEPSILON);
+        if (z_ <= 0)
+            z = 1 / ZEPSILON;
+        return z_;
+    },
     init: function () {
         // initial camera properties here?
         this.location = vector.create();

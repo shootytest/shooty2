@@ -3,7 +3,7 @@ import { Bodies, Body, Composite, Vector } from "../matter.js";
 import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
-import { detector } from "./detector.js";
+import { detector, filters } from "./detector.js";
 import { Health } from "./health.js";
 import { make, make_shapes, override_object, make_shoot, clone_array } from "./make.js";
 import { Polygon, Shape } from "./shape.js";
@@ -94,11 +94,10 @@ export class Thing {
         if (this.shapes.length <= 1)
             this.position = /*(o.vertices.length >= 3 && !o.options.open_loop) ? Vertices.centre(o.computed.vertices) :*/ vector3.mean(o.computed.vertices);
         this.create_id(o.id);
-        if (!this.body && !this.options.decoration)
-            this.create_body({
-                isStatic: !this.options.movable,
-                isSensor: Boolean(this.options.sensor),
-            });
+        if (!this.body && !this.options.decoration) {
+            const body_options = this.create_body_options(filters.wall);
+            this.create_body(body_options);
+        }
         if (this.body)
             this.body.label = o.id;
     }
@@ -142,6 +141,19 @@ export class Thing {
         this.id = id;
         Thing.things_lookup[id] = this;
         return;
+    }
+    create_body_options(filter) {
+        const result = {
+            isStatic: !this.options.movable,
+            isSensor: this.options.sensor,
+            friction: this.options.friction_contact ?? 0.1,
+            frictionAir: this.options.friction ?? 0.01,
+            restitution: this.options.restitution ?? 0,
+            density: this.options.density ?? 1,
+        };
+        if (filter)
+            result.collisionFilter = filter;
+        return result;
     }
     create_body(options = {}, shape_index = 0) {
         if (this.shapes.length <= shape_index) {

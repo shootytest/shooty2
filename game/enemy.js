@@ -5,6 +5,7 @@ import { make } from "./make.js";
 import { Thing } from "./thing.js";
 export class Enemy extends Thing {
     static cumulative_ids = {};
+    static cumulative_team_ids = {};
     spawner;
     wave_number = -1;
     constructor(spawner) {
@@ -23,13 +24,12 @@ export class Enemy extends Thing {
                 Enemy.cumulative_ids[key] = 1;
             id = key + " #" + Enemy.cumulative_ids[key]++;
             this.create_id(id);
+            if (Enemy.cumulative_team_ids[this.team] == undefined)
+                Enemy.cumulative_team_ids[this.team] = 1;
+            this.team += (Enemy.cumulative_team_ids[this.team]++) * 0.000000000001; // a trillion possible enemies per team
         }
         this.position = position;
-        this.create_body({
-            frictionAir: 0.2,
-            restitution: 0.1,
-            collisionFilter: filters.thing(this.team),
-        });
+        this.create_body(this.create_body_options(filters.thing(this.team)));
         if (this.body)
             this.body.label = id;
         else
@@ -75,6 +75,9 @@ export class Spawner {
         this.create_id(o.id);
         this.spawn = {
             enemy: o.options.spawn_enemy ?? "enemy",
+            delay: o.options.spawn_delay,
+            repeat: o.options.spawn_repeat,
+            repeat_delay: o.options.spawn_repeat_delay,
         };
     }
     create_id(id) {
@@ -83,10 +86,9 @@ export class Spawner {
     }
     tick() {
         if (this.spawn && this.wave_progress < 0 && this.enemies.length <= 0) {
-            if (this.spawn.delay)
-                this.delays.push({ enemy: this.spawn.enemy, time: Thing.time + this.spawn.delay });
-            else
-                this.spawn_enemy(this.spawn.enemy, this.spawn.position);
+            for (let i = 0; i < (this.spawn.repeat ?? 1); i++) {
+                this.delays.push({ enemy: this.spawn.enemy, time: Thing.time + (this.spawn.delay ?? 0) + i * (this.spawn.repeat_delay ?? 0) });
+            }
         }
         else if (this.waves.length >= 1 && this.wave_progress < this.waves.length) {
             // todo waves

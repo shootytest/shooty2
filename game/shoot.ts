@@ -90,12 +90,10 @@ export class Shoot {
     s.seethrough = true;
     s.style = clone_object(this.thing.shapes[0].style);
 
-    bullet.create_body({
-      isStatic: false,
-      frictionAir: S.friction ?? 0,
-      restitution: S.restitution ?? 0,
-      collisionFilter: filters.bullet(bullet.team),
-    });
+    const body_options = bullet.create_body_options(filters.bullet(bullet.team));
+    body_options.frictionAir = S.friction ?? body_options.frictionAir ?? 0;
+    body_options.restitution = S.restitution ?? body_options.restitution ?? 0;
+    bullet.create_body(body_options);
 
     if (S.recoil !== 0 && speed && S.speed) {
       let recoil = (S.recoil == undefined) ? 1 : S.recoil;

@@ -197,6 +197,13 @@ export const ui = {
 
   editor: {
     mode: "none",
+    layers: {
+      walls: true,
+      spawners: true,
+      sensors: true,
+      rooms: true,
+      decoration: true,
+    },
     settings: false,
   },
 
@@ -204,32 +211,50 @@ export const ui = {
     {
       name: "clear",
       icon: "x",
-      action: () => { ui.editor.mode = "none"; }
+      action: () => {
+        ui.editor.layers.walls = true;
+        ui.editor.layers.spawners = true;
+        ui.editor.layers.sensors = true;
+        ui.editor.layers.rooms = true;
+        ui.editor.layers.decoration = true;
+      },
+      color: (): string => color.black,
     },
     {
-      name: "add",
-      icon: "add",
-      action: () => { ui.editor.mode = "add"; }
+      name: "wall",
+      icon: "wall",
+      action: () => { ui.editor.layers.walls = !ui.editor.layers.walls; },
+      color: (): string => ui.editor.layers.walls ? "#bc4a3c" : color.black,
     },
     {
-      name: "edit",
-      icon: "edit",
-      action: () => { ui.editor.mode = "edit"; }
+      name: "spawner",
+      icon: "spawner",
+      action: () => { ui.editor.layers.spawners = !ui.editor.layers.spawners; },
+      color: (): string => ui.editor.layers.spawners ? "#6958ed" : color.black,
     },
     {
-      name: "select",
-      icon: "select",
-      action: () => { ui.editor.mode = "select"; }
+      name: "sensor",
+      icon: "sensor",
+      action: () => { ui.editor.layers.sensors = !ui.editor.layers.sensors; },
+      color: (): string => ui.editor.layers.sensors ? "#009bb3" : color.black,
     },
     {
-      name: "delete",
-      icon: "delete",
-      action: () => { ui.editor.mode = "delete"; }
+      name: "room",
+      icon: "room",
+      action: () => { ui.editor.layers.rooms = !ui.editor.layers.rooms; },
+      color: (): string => ui.editor.layers.rooms ? "#e00b6f" : color.black,
+    },
+    {
+      name: "decoration",
+      icon: "decoration",
+      action: () => { ui.editor.layers.decoration = !ui.editor.layers.decoration; },
+      color: (): string => ui.editor.layers.decoration ? "#ad8118" : color.black,
     },
     {
       name: "settings",
       icon: "settings",
-      action: () => { ui.editor.settings = true; }
+      action: () => { ui.editor.settings = true; },
+      color: (): string => color.black,
     },
   ],
 
@@ -240,6 +265,7 @@ export const ui = {
       action: () => {
         map_serialiser.save(ui.settings.slot, ui.map);
       },
+      color: (): string => color.black,
     },
     {
       name: "load",
@@ -248,6 +274,7 @@ export const ui = {
         ui.map = map_serialiser.load(ui.settings.slot);
         map_draw.compute_map(ui.map);
       },
+      color: (): string => color.black,
     },
     {
       name: "copy",
@@ -256,11 +283,13 @@ export const ui = {
         map_draw.compute_map(ui.map);
         map_serialiser.copy(ui.map);
       },
+      color: (): string => color.black,
     },
     {
       name: "back",
       icon: "start_left",
-      action: () => { ui.editor.settings = false; }
+      action: () => { ui.editor.settings = false; },
+      color: (): string => color.black,
     },
   ],
 
@@ -402,13 +431,17 @@ export const ui = {
       ctx.beginPath();
       ctx.rectangle(x, y, w, size);
       hovering = ctx.point_in_path_v(mouse.position);
-      ctx.fillStyle = hovering ? color.red_dark : color.black;
+      const button_color = button.color();
+      ctx.fillStyle = hovering ? color.red_dark : button_color;
       ctx.svg(button.icon, x, y, size * 0.8);
       if (button.name === ui.editor.mode) {
         ctx.strokeStyle = color.blue;
         ctx.line(x - w / 2, size, x + w / 2, size);
       } else if (hovering) {
         ctx.strokeStyle = color.red_dark;
+        ctx.line(x - w / 2, size, x + w / 2, size);
+      } else if (button_color !== color.black) {
+        ctx.strokeStyle = button_color;
         ctx.line(x - w / 2, size, x + w / 2, size);
       }
       x += w;
@@ -625,6 +658,7 @@ export const ui = {
 
   right_sidebar_mode: "directory",
   directory_elements: {} as { [ key: string ]: HTMLElement },
+  directory_spans: {} as { [ key: string ]: HTMLSpanElement },
   directory_jump_fns: {} as { [ key: string ]: () => void },
   all_aabb: vector.make_aabb(),
   all_shape: {
@@ -688,7 +722,7 @@ export const ui = {
         details.classList.add("folder");
         details.setAttribute("open", "");
         const summary = document.createElement("summary");
-        summary.innerHTML = `<span title="${id}">${shortened_id}</span>`;
+        summary.innerHTML = `<span title="${id}: #${ui.map.shapes.indexOf(shape)}">${shortened_id}</span>`;
         details.appendChild(summary);
         const ul = document.createElement("ul");
         details.appendChild(ul);
@@ -701,17 +735,19 @@ export const ui = {
           else ui.directory_elements[parent].querySelector("ul")!.appendChild(li);
         }
         ui.directory_elements[id] = details;
+        ui.directory_spans[id] = summary.querySelector("span")!;
         clickable = summary;
       } else {
         // is a leaf
         const span = document.createElement("span");
         span.classList.add("file");
         span.style.backgroundImage = `url("/shape.svg")`;
-        span.innerHTML = `<span title="${id}">${shortened_id}</span>`;
+        span.innerHTML = `<span title="${id}: #${ui.map.shapes.indexOf(shape)}">${shortened_id}</span>`;
         li.appendChild(span);
         if (!ui.directory_elements[parent]) console.error("[ui/update_directory] parent folder (" + parent + ") not found for leaf (" + id + ")");
         else ui.directory_elements[parent].querySelector("ul")!.appendChild(li);
         ui.directory_elements[id] = span;
+        ui.directory_spans[id] = span.querySelector("span") ?? span;
         clickable = li;
       }
       ui.directory_jump_fns[id] = function() {
@@ -799,8 +835,15 @@ export const ui = {
         type: "checkbox",
       },
       spawn_enemy: {
-        name: "enemy",
+        name: "enemy name",
         type: "text",
+      },
+      spawn_repeat: {
+        name: "enemy repeat",
+        type: "number",
+        min: 0,
+        max: 100,
+        step: 1,
       },
     },
     /*parent: {
@@ -887,6 +930,7 @@ export const ui = {
       const make_options = make[shape.options.make_id ?? "default"] ?? make.default;
       if (shape.options.make_id) override_object(options, make_options);
       override_object(options, shape.options);
+      if (shape.computed != undefined) shape.computed.options = options;
       for (const group_key in ui.properties_options) {
         const group = ui.properties_options[group_key];
         // todo: property groups
@@ -944,7 +988,7 @@ export const ui = {
             if (option_key === "z") {
               input.value = shape.z.toString();
               change_fn = () => {
-                if (input.value.length || input.value !== "0") shape.z = Number(input.value);
+                if (input.value.length) shape.z = Number(input.value);
                 map_draw.change("edit property: " + option_key, shape);
                 ui.update_properties();
               };
@@ -952,7 +996,7 @@ export const ui = {
               input.value = (shape.options as any)[option_key] ?? "";
               input.placeholder = (make_options as any)[option_key] ?? 0;
               change_fn = () => {
-                if (input.value.length || input.value.toString() !== (make_options as any)[option_key].toString()) (shape.options as any)[option_key] = Number(input.value);
+                if (input.value.length && input.value.toString() !== ((make_options as any)[option_key] ?? 0).toString()) (shape.options as any)[option_key] = Number(input.value);
                 else delete (shape.options as any)[option_key];
                 map_draw.change("edit property: " + option_key, shape);
                 ui.update_properties();

@@ -27,6 +27,12 @@ export interface maketype {
   health?: maketype_health,
   ability?: maketype_health,
 
+  // physics stuff
+  friction?: number,
+  friction_contact?: number,
+  restitution?: number,
+  density?: number,
+
 };
 
 export interface maketype_health {
@@ -158,6 +164,10 @@ make.player = {
   seethrough: true,
   damage: 0,
   team: 1,
+  friction: 0.2,
+  friction_contact: 0,
+  restitution: 0.1,
+  // density: 1,
   health: {
     capacity: 10,
     regen: 0,
@@ -171,6 +181,8 @@ make.player = {
 make.enemy = {
   movable: true,
   seethrough: true,
+  friction: 0.1,
+  restitution: 0,
 };
 
 make.enemy_tutorial_block = {
@@ -178,13 +190,25 @@ make.enemy_tutorial_block = {
   style: "tutorial_enemy",
   team: 7,
   health: {
-    capacity: 10,
-    regen: 0,
-    regen_time: 0,
+    capacity: 150,
+  },
+};
+
+make.enemy_tutorial_bit = {
+  make_parent: ["enemy"],
+  style: "tutorial_enemy",
+  style_: {
+    opacity: 0.4,
+  },
+  team: 7,
+  density: 1000,
+  health: {
+    capacity: 0.1,
   },
 };
 
 make.bullet = {
+  // sensor: true,
   movable: true,
   seethrough: true,
   keep_bullets: true,
@@ -210,6 +234,12 @@ make_shapes.enemy_tutorial_block = [{
   radius: 50,
 }];
 
+make_shapes.enemy_tutorial_bit = [{
+  type: "polygon",
+  sides: 7,
+  radius: 10,
+}];
+
 
 // make_shoot
 
@@ -223,7 +253,7 @@ make_shoot.player = {
   friction: 0.003,
   restitution: 1,
   recoil: 1,
-  damage: 1,
+  damage: 100,
 };
 
 make_shoot.half_reload = {
