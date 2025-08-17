@@ -3,8 +3,10 @@ import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
 import { config } from "../util/config.js";
 import { map_serialiser, map_shape_compute_type, map_shape_type, style_type, STYLES } from "../util/map_type.js";
+import { math } from "../util/math.js";
 import { AABB3, vector, vector3 } from "../util/vector.js";
-import { make_shoot, maketype_shape, override_object } from "./make.js";
+import { clone_object, make_shoot, maketype_shape, override_object } from "./make.js";
+import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { Thing } from "./thing.js";
 
@@ -105,6 +107,7 @@ export class Shape {
         memo_aabb3[s.z] = vector3.aabb_scale(screen_aabb, vector3.create(z_scale, z_scale, 1));
       }
       const inside = vector3.aabb_intersect(s.computed_aabb, memo_aabb3[s.z]);
+      s.computed.on_screen = inside;
       if (inside) {
         result.push(s);
       }
@@ -274,6 +277,35 @@ export class Shape {
     }
   }
 
+  break(o: {
+    type?: "fade" | "triangulate",
+    speed?: number,
+    velocity?: vector,
+    time?: number,
+    opacity_mult?: number,
+  } = {}) {
+    if (this.computed?.screen_vertices == undefined || !this.computed.on_screen) return;
+    const style: style_type = clone_object(this.style);
+    style.opacity = (style.opacity ?? 1) * (o.opacity_mult ?? 0.4);
+    const time = (o.time ?? 20);
+    const p = new Particle();
+    p.style = style;
+    p.time = Thing.time + time;
+    if (o.type === "triangulate") {
+      const mean = vector.mean(this.computed.screen_vertices);
+      for (const triangle of math.triangulate_polygon(this.computed.screen_vertices)) {
+        const c = vector.sub(vector.mean(triangle), mean);
+        p.vertices = triangle;
+        p.velocity = vector.mult(c, o.speed ?? 0.1);
+      }
+    } else if (o.type === "fade") {
+      p.vertices = this.computed.screen_vertices;
+      p.fade = time;
+    }
+    if (o.velocity) p.velocity = o.velocity;
+    return p;
+  }
+
 }
 
 export class Polygon extends Shape {
@@ -340,6 +372,7 @@ export class Polygon extends Shape {
         vs.push(vector3.create2(v, world_v.z - camera.look_z));
       }
       vs[1] = vector3.sub(vs[1], vs[0]);
+      vs.push(vector3.create(-123, -123, -123));
       this.computed.screen_vertices = vs;
     } else {
       super.compute_screen();

@@ -47,6 +47,14 @@ export const math = {
   lerp: (a: number, b: number, t: number) => {
     return a * (1 - t) + b * t;
   },
+  lerp_angle: (a: number, b: number, t: number) => {
+    return vector.direction(vector.add(vector.mult(vector.rad_to_vector(a), (1 - t)), vector.mult(vector.rad_to_vector(b), t)));
+  },
+  lerp_circle: (a: number, b: number, mod: number, t: number) => {
+    if (Math.abs(b - a) - mod / 2 < mod * 0.1) return math.lerp(a, b, t);
+    const m = Math.PI * 2 / mod;
+    return math.lerp_angle(a * m, b * m, t) / m;
+  },
   lerp_color: (ca: string, cb: string, t: number) => {
     const [rA, gA, bA] = ca.match(/\w\w/g)?.map((c: string) => parseInt(c, 16)) || [0, 0, 0];
     const [rB, gB, bB] = cb.match(/\w\w/g)?.map((c: string) => parseInt(c, 16)) || [0, 0, 0];

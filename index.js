@@ -1,5 +1,6 @@
 import { detector } from "./game/detector.js";
 import { Spawner } from "./game/enemy.js";
+import { Particle } from "./game/particle.js";
 import { player } from "./game/player.js";
 import { Thing } from "./game/thing.js";
 import { Engine, Runner } from "./matter.js";
@@ -58,10 +59,12 @@ const tick_all = (timestamp_unused) => {
     mouse.tick();
     Thing.tick_things();
     Spawner.tick_spawners();
+    Particle.tick_particles();
     Engine.update(engine);
     ctx.clear();
     ctx.fill_screen(color.blackground);
     do_visibility(); // draw all shapes
+    Particle.draw_particles();
     requestAnimationFrame(tick_all);
 };
 requestAnimationFrame(tick_all);

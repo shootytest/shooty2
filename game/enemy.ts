@@ -3,6 +3,7 @@ import { math } from "../util/math.js";
 import { vector, vector3_ } from "../util/vector.js";
 import { filters } from "./detector.js";
 import { make } from "./make.js";
+import { player } from "./player.js";
 import { Thing } from "./thing.js";
 
 
@@ -39,6 +40,30 @@ export class Enemy extends Thing {
 
   tick() {
     super.tick();
+    this.tick_enemy();
+  }
+
+  tick_enemy() {
+    this.shoot();
+    this.face_enemy();
+    this.move_enemy();
+  }
+
+  face_enemy() {
+    if (1) {
+      this.target.facing = vector.add(player.position, vector.mult(player.velocity, (vector.length(vector.sub(this.position, player.position)) ** 0.5) * 3));
+      this.update_angle(0.3);
+    } else if (1) {
+      this.target.facing = vector.add(player.position, vector.mult(player.velocity, vector.length(vector.sub(this.position, player.position)) * 0.3));
+      this.update_angle(0.3);
+    } else if (1) {
+      this.target.facing = player.position;
+      this.update_angle(1);
+    }
+  }
+
+  move_enemy() {
+
   }
 
   remove() {

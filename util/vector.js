@@ -51,12 +51,19 @@ export const vector = {
             result = vector.add(result, v);
         return result;
     },
-    adds: (vs, v2) => {
+    add_list: (vs, v2) => {
         const result = [];
         for (const v1 of vs) {
             result.push(vector.add(v1, v2));
         }
         return result;
+    },
+    add_to_list: (vs, v_add) => {
+        for (const v of vs) {
+            v.x += v_add.x;
+            v.y += v_add.y;
+        }
+        return;
     },
     sub: (v1, v2) => {
         return {
@@ -313,6 +320,15 @@ export const vector3 = {
             z: v1.z + v2.z
         };
     },
+    add_: (v1, v2) => {
+        if (v1.z === undefined && v2.z === undefined)
+            return vector.add(v1, v2);
+        return {
+            x: v1.x + v2.x,
+            y: v1.y + v2.y,
+            z: (v1.z ?? 0) + (v2.z ?? 0),
+        };
+    },
     add_all: (...vs) => {
         let result = vector3.create();
         for (const v of vs)
@@ -331,7 +347,7 @@ export const vector3 = {
         for (const v of vs) {
             v.x += v_add.x;
             v.y += v_add.y;
-            if (v_add.z !== undefined)
+            if (v_add.z !== undefined && v.z !== undefined)
                 v.z += v_add.z;
         }
         return;

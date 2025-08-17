@@ -185,22 +185,31 @@ make.enemy = {
   restitution: 0,
 };
 
-make.enemy_tutorial_block = {
+make.enemy_tutorial = {
   make_parent: ["enemy"],
   style: "tutorial_enemy",
   team: 7,
+};
+
+make.enemy_tutorial_block = {
+  make_parent: ["enemy_tutorial"],
   health: {
     capacity: 150,
   },
 };
 
+make.enemy_tutorial_basic = {
+  make_parent: ["enemy_tutorial"],
+  health: {
+    capacity: 250,
+  },
+};
+
 make.enemy_tutorial_bit = {
-  make_parent: ["enemy"],
-  style: "tutorial_enemy",
+  make_parent: ["enemy_tutorial"],
   style_: {
     opacity: 0.4,
   },
-  team: 7,
   density: 1000,
   health: {
     capacity: 0.1,
@@ -234,6 +243,16 @@ make_shapes.enemy_tutorial_block = [{
   radius: 50,
 }];
 
+make_shapes.enemy_tutorial_basic = [{
+  type: "polygon",
+  sides: 7,
+  radius: 35,
+}, {
+  type: "line",
+  v2: vector.createpolar_deg(0, 35),
+  shoot: "enemy_basic",
+}];
+
 make_shapes.enemy_tutorial_bit = [{
   type: "polygon",
   sides: 7,
@@ -262,6 +281,21 @@ make_shoot.half_reload = {
 
 make_shoot.player_basic = {
   parent: ["player"],
+};
+
+make_shoot.enemy = {
+  make: "bullet",
+  size: 10,
+  reload: 25,
+  speed: 4,
+  friction: 0,
+  restitution: 1,
+  recoil: 1,
+  damage: 100,
+};
+
+make_shoot.enemy_basic = {
+  parent: ["enemy"],
 };
 
 

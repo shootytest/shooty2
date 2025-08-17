@@ -34,21 +34,19 @@ export class Player extends Thing {
             facingy: Math.floor(camera.mouse_v.y),
             exit: (keys["KeyP"] === true),
         };
-        this.target.facing = vector.clone(camera.mouse_v);
+        this.target.facing = vector.add(vector.sub(camera.mouse_v, camera.world2screen(this.position) ?? this.target.position), this.position);
         const move_x = (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
         const move_y = (controls.down ? 1 : 0) - (controls.up ? 1 : 0);
         const move_v = vector.normalise(vector.create(move_x, move_y));
         if (this.body) {
-            Body.applyForce(this.body, this.position, vector.mult(move_v, 10 * this.body.mass * config.physics.force_factor));
-            Body.setAngle(this.body, vector.direction(vector.sub(this.target.facing, camera.world2screen(this.position) ?? this.target.position)));
+            Body.applyForce(this.body, this.position, vector.mult(move_v, config.physics.player_speed * this.body.mass * config.physics.force_factor));
+            this.update_angle();
         }
         if (controls.toggle_autoshoot) {
             this.autoshoot = !this.autoshoot;
         }
         if (controls.shoot || this.autoshoot) {
-            for (const shoot of this.shoots) {
-                shoot.shoot();
-            }
+            this.shoot();
         }
     }
     camera_position() {

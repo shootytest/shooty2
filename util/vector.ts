@@ -70,12 +70,19 @@ export const vector = {
     for (const v of vs) result = vector.add(result, v);
     return result;
   },
-  adds: (vs: vector[], v2: vector): vector[] => {
-    const result = [];
+  add_list: (vs: vector[], v2: vector): vector[] => {
+    const result: vector[] = [];
     for (const v1 of vs) {
       result.push(vector.add(v1, v2));
     }
     return result;
+  },
+  add_to_list: (vs: vector[], v_add: vector): void => {
+    for (const v of vs) {
+      v.x += v_add.x;
+      v.y += v_add.y;
+    }
+    return;
   },
   sub: (v1: vector, v2: vector): vector => {
     return {
@@ -332,6 +339,14 @@ export const vector3 = {
       z: v1.z + v2.z
     };
   },
+  add_: (v1: vector3_, v2: vector3_): vector3_ => {
+    if (v1.z === undefined && v2.z === undefined) return vector.add(v1, v2);
+    return {
+      x: v1.x + v2.x,
+      y: v1.y + v2.y,
+      z: (v1.z ?? 0) + (v2.z ?? 0),
+    };
+  },
   add_all: (...vs: vector3[]): vector3 => {
     let result = vector3.create();
     for (const v of vs) result = vector3.add(result, v);
@@ -345,11 +360,11 @@ export const vector3 = {
     }
     return result;
   },
-  add_to_list: (vs: vector3[], v_add: vector3_): void => {
+  add_to_list: (vs: vector3_[], v_add: vector3_): void => {
     for (const v of vs) {
       v.x += v_add.x;
       v.y += v_add.y;
-      if (v_add.z !== undefined) v.z += v_add.z;
+      if (v_add.z !== undefined && v.z !== undefined) v.z += v_add.z;
     }
     return;
   },

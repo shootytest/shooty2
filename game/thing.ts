@@ -1,5 +1,6 @@
 import { world } from "../index.js";
 import { Bodies, Body, Composite, IBodyDefinition, ICollisionFilter, Vector } from "../matter.js";
+import { camera } from "../util/camera.js";
 import { config } from "../util/config.js";
 import { map_shape_options_type, map_shape_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
@@ -236,11 +237,16 @@ export class Thing {
   }
 
   remove() {
+    this.remove_break();
     this.remove_list();
     this.remove_body();
     this.remove_children();
     this.remove_shapes();
     this.remove_shoots();
+  }
+
+  remove_break() {
+    this.shapes[0]?.break({ type: "fade", velocity: this.velocity, opacity_mult: 0.5 });
   }
 
   remove_list() {
@@ -297,6 +303,23 @@ export class Thing {
     if (!this.is_player && this.health.is_zero) {
       this.remove();
     }
+  }
+
+  shoot(index = -1) {
+    if (index >= 0) {
+      if (index < this.shoots.length) this.shoots[index].shoot();
+      else console.error(`[thing/shoot] in thing '${this.id}': index ${index} out of range`);
+    } else {
+      for (const shoot of this.shoots) {
+        shoot.shoot();
+      }
+    }
+  }
+
+  update_angle(smoothness = 1) {
+    if (this.body == undefined) return;
+    if (this.target.facing != undefined) this.target.angle = vector.direction(vector.sub(this.target.facing, this.position));
+    Body.setAngle(this.body, math.lerp_angle(this.angle, this.target.angle, smoothness));
   }
 
   // useful
