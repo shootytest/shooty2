@@ -1,9 +1,10 @@
 import { Vector } from "../matter.js";
+import { STYLES } from "../util/color.js";
 import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
 import { filters } from "./detector.js";
-import { clone_object } from "./make.js";
+import { clone_object, override_object } from "./make.js";
 import { Shape } from "./shape.js";
 import { Bullet, Thing } from "./thing.js";
 export class Shoot {
@@ -29,9 +30,10 @@ export class Shoot {
             this.is_player = true;
     }
     set_stats(new_stats) {
-        for (const [k, v] of Object.entries(new_stats)) {
-            this.stats[k] = v;
-        }
+        override_object(this.stats, new_stats);
+        // for (const [k, v] of Object.entries(new_stats)) {
+        //   (this.stats as any)[k] = v;
+        // }
     }
     tick() {
         if (this.time < (this.stats.reload ?? 0)) {
@@ -52,8 +54,6 @@ export class Shoot {
     }
     // todo make this function faster? perhaps?
     shoot_bullet() {
-        if (this.thing.body == undefined)
-            return;
         const S = this.stats;
         const position = vector.add(this.thing.position, Vector.rotate(vector.create((this.offset.x || 0), (this.offset.y || 0)), this.thing.angle));
         const bullet = new Bullet();
@@ -73,10 +73,16 @@ export class Shoot {
         bullet.bullet_time = Thing.time + (S.time ?? 200);
         bullet.target.facing = vector.clone(this.thing.target.facing);
         this.bullets.push(bullet);
-        const s = Shape.circle(bullet, S.size ?? 0);
+        const spreadsize = S.spread_size ?? 0;
+        const size = spreadsize === 0 ? (S.size ?? 0) : math.randgauss(S.size ?? 0, spreadsize);
+        const s = Shape.circle(bullet, size);
         s.thing = bullet;
         s.seethrough = true;
         s.style = clone_object(this.thing.shapes[0].style);
+        if (S.style)
+            override_object(s.style, (STYLES[S.style] ?? STYLES.error));
+        if (S.style_)
+            override_object(s.style, S.style_);
         const body_options = bullet.create_body_options(filters.bullet(bullet.team));
         body_options.frictionAir = S.friction ?? body_options.frictionAir ?? 0;
         body_options.restitution = S.restitution ?? body_options.restitution ?? 0;
@@ -87,8 +93,9 @@ export class Shoot {
             this.thing.push_in_direction(angle, -recoil);
         }
         if (S.death != undefined) {
-            bullet.death = clone_object(S.death);
+            bullet.options.death = (clone_object({ a: S.death }).a);
         }
+        return bullet;
     }
     remove_bullet(bullet) {
         const index = this.bullets.indexOf(bullet);

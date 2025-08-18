@@ -45,10 +45,9 @@ export class Thing {
     is_touching_player = false;
     is_bullet = false;
     is_enemy = false;
+    is_removed = false;
     constructor() {
         Thing.things.push(this);
-        this.health = new Health(this);
-        this.ability = new Health(this);
     }
     get position() {
         return (this.body) ? vector3.create2(vector.sub(this.body.position, this.body.offset ?? vector.create()), this.target.position.z) : vector3.clone(this.target.position);
@@ -122,10 +121,16 @@ export class Thing {
             this.damage = this.options.damage;
         if (this.options.team != undefined)
             this.team = this.options.team;
-        if (this.options.health != undefined)
+        if (this.options.health != undefined) {
+            if (this.health == undefined)
+                this.health = new Health(this);
             this.health.make(this.options.health);
-        if (this.options.ability != undefined)
+        }
+        if (this.options.ability != undefined) {
+            if (this.ability == undefined)
+                this.ability = new Health(this);
             this.ability.make(this.options.ability);
+        }
         return this.options;
     }
     make_shape(key, reset = false) {
@@ -187,7 +192,7 @@ export class Thing {
                 // console.log(math.expand_lines(s.vertices, 1));
                 // const composite = Composite.create();
                 const sm = vector.mean(s.vertices);
-                const b = Bodies.fromVertices(sm.x, sm.y, math.expand_lines(s.vertices, config.physics.wall_width), options);
+                const b = Bodies.fromVertices(sm.x, sm.y, math.expand_lines(s.vertices, config.physics.wall_width * 2), options);
                 const walls = [];
                 b.density = 0;
                 b.collisionFilter = { category: 0 };
@@ -198,7 +203,7 @@ export class Thing {
                 let i = 0;
                 b.label = this.id + "_" + i;
                 i++;
-                for (const vs of math.expand_lines(s.vertices, config.physics.wall_width)) {
+                for (const vs of math.expand_lines(s.vertices, config.physics.wall_width * 2)) {
                     const vm = vector.mean(vs);
                     const b_ = Bodies.fromVertices(s.offset.x + vm.x, s.offset.y + vm.y, [vs], options);
                     b_.label = this.id + "_" + i;
@@ -224,15 +229,47 @@ export class Thing {
         Body.setVelocity(body, this.target.velocity);
     }
     remove() {
+        if (this.is_removed)
+            return;
+        this.remove_death();
         this.remove_break();
         this.remove_list();
         this.remove_body();
         this.remove_children();
         this.remove_shapes();
         this.remove_shoots();
+        this.is_removed = true;
+    }
+    remove_death() {
+        if (this.options.death != undefined) {
+            for (const d of this.options.death) {
+                let S = make_shoot[d.type] ?? {};
+                if (d.stats) {
+                    S = clone_object(S);
+                    multiply_and_override_object(S, d.stats);
+                }
+                if (S) {
+                    const shoot = this.add_shoot(S);
+                    shoot.stats.angle = (shoot.stats.angle ?? 0) + (d.angle ?? 0);
+                    shoot.stats.offset = vector.add(shoot.stats.offset ?? vector.create(), d.offset ?? vector.create());
+                    for (let i = 0; i < (d.repeat ?? 1); i++) {
+                        const b = shoot.shoot_bullet();
+                        b.bullet_keep = true;
+                        if (d.angle_increment)
+                            shoot.stats.angle = (shoot.stats.angle ?? 0) + d.angle_increment;
+                        if (d.offset_increment)
+                            shoot.stats.offset = vector.add(shoot.stats.offset ?? vector.create(), d.offset_increment);
+                    }
+                }
+                else
+                    console.error(`[thing/bullet/remove] thing id '${this.id}': make_shoot '${d.type}' doesn't exist!`);
+            }
+        }
     }
     remove_break() {
-        this.shapes[0]?.break({ type: "fade", velocity: this.velocity, opacity_mult: 0.5 });
+        const v = this.options.breakable ? this.target.velocity : this.velocity;
+        // v.z = 0.025;
+        this.shapes[0]?.break({ type: "fade", velocity: v, opacity_mult: 0.5 });
     }
     remove_list() {
         for (const array of [Thing.things, this.bullet_shoot?.bullets]) {
@@ -259,7 +296,8 @@ export class Thing {
         for (const shoot of this.shoots) {
             // if (this.keep_children) return;
             for (const c of clone_array(shoot.bullets)) {
-                // if (c.keep_this) continue;
+                if (c.bullet_keep)
+                    continue;
                 c.remove();
             }
         }
@@ -281,8 +319,12 @@ export class Thing {
         for (const shoot of this.shoots) {
             shoot.tick();
         }
-        if (this.health.is_zero) {
+        if (this.health?.is_zero) {
             this.remove();
+        }
+        else {
+            this.health?.tick();
+            this.ability?.tick();
         }
     }
     shoot(index = -1) {
@@ -347,7 +389,7 @@ export class Bullet extends Thing {
     is_bullet = true;
     bullet_shoot;
     bullet_time = -1;
-    death;
+    bullet_keep = false;
     tick() {
         super.tick();
         if (this.bullet_time >= 0 && this.bullet_time <= Thing.time) {
@@ -355,22 +397,6 @@ export class Bullet extends Thing {
         }
     }
     remove() {
-        if (this.death != undefined) {
-            for (const d of this.death) {
-                let S = make_shoot[d.type] ?? {};
-                if (d.stats) {
-                    S = clone_object(S);
-                    multiply_and_override_object(S, d.stats);
-                }
-                if (S) {
-                    const shoot = this.add_shoot(S);
-                    shoot.shoot_bullet();
-                    shoot.remove();
-                }
-                else
-                    console.error(`[thing/bullet/remove] thing id '${this.id}': make_shoot '${d.type}' doesn't exist!`);
-            }
-        }
         super.remove();
     }
 }

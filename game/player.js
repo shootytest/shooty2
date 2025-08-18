@@ -38,7 +38,7 @@ export class Player extends Thing {
         const move_y = (controls.down ? 1 : 0) - (controls.up ? 1 : 0);
         const move_v = vector.normalise(vector.create(move_x, move_y));
         if (this.body) {
-            this.push_by(vector.mult(move_v, config.physics.player_speed));
+            this.push_by(vector.mult(move_v, this.options.move_speed ?? config.physics.player_speed));
             this.update_angle();
         }
         if (controls.toggle_autoshoot) {

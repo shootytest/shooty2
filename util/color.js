@@ -49,3 +49,54 @@ export const color /*: { [key: string]: `#${string}` }*/ = {
     joystick_right: "#ff9999",
     transparent: "#00000000",
 };
+export const STYLES = {
+    error: {
+        stroke: "#ff0000",
+        fill: "#ff0000",
+    },
+    test: {
+        stroke: "#abcdef99",
+        fill: "#abcdef99",
+        fill_opacity: 0.8,
+    },
+    player: {
+        stroke: "#eeeeee",
+        stroke_opacity: 1,
+    },
+    tutorial: {
+        stroke: "#7f77ea",
+        stroke_opacity: 1,
+        fill: "#544bdb",
+        fill_opacity: 0.7,
+    },
+    tutorial_enemy: {
+        stroke: "#7f77ea",
+    },
+    tutorial_enemy_filled: {
+        stroke: "#7f77ea",
+        fill: "#7f77ea",
+    },
+    tutorial_door: {
+        stroke: "#4e47af",
+    },
+    tutorial_floor: {
+        stroke: "#7f77ea",
+        stroke_opacity: 0,
+        fill: "#4e47af",
+        fill_opacity: 0.3,
+    },
+    start: {
+        stroke: "#00ddff99",
+    },
+    sensor: {
+        stroke: "#00ddff",
+        stroke_opacity: 0,
+        fill: "#00ddff",
+        fill_opacity: 0.2,
+    },
+    spawner: {
+        stroke_opacity: 0,
+        fill: "#af4747",
+        fill_opacity: 0.3,
+    },
+};

@@ -4,6 +4,7 @@ import { ctx } from "../util/canvas.js";
 import { config } from "../util/config.js";
 import { style_type } from "../util/map_type.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
+import { player } from "./player.js";
 import { Thing } from "./thing.js";
 
 
@@ -44,6 +45,9 @@ export class Particle {
 
 
   vertices: vector3_[] = [];
+  is_screen = false; // indicates if the particle's vertices are in screen coordinates
+  z: number = 0;
+  screen_vertices: vector[] = [];
   offset: vector3_ = vector.create();
   velocity: vector3_ = vector.create();
   acceleration: vector3_ = vector.create();
@@ -58,6 +62,10 @@ export class Particle {
 
   constructor() {
     Particle.particles.push(this);
+  }
+
+  get is_circle() {
+    return this.vertices[2]?.x === -123 && this.vertices[2]?.y === -123 && this.vertices[2]?.z === -123;
   }
 
   centralise() {
@@ -103,11 +111,28 @@ export class Particle {
   }
 
   draw_path() {
-    if (this.vertices[2].x === -123 && this.vertices[2].y === -123 && this.vertices[2].z === -123) {
-      const [c, r] = this.vertices;
+    this.compute_screen();
+    if (this.is_circle) {
+      const [c, r] = this.screen_vertices;
       ctx.circle(Math.round(c.x + this.offset.x), Math.round(c.y + this.offset.y), r.x);
     } else {
-      ctx.lines_v(vector.add_list(this.vertices, this.offset), true);
+      ctx.lines_v(this.screen_vertices, true);
+    }
+  }
+
+  compute_screen() {
+    if (this.is_screen) this.screen_vertices = this.vertices;
+    else {
+      const vs: vector3[] = [];
+      for (const vertex of this.vertices) {
+        const world_v = vector3.create2(vector.add(vertex, this.offset), this.z + (this.offset.z ?? 0));
+        const v = camera.world3screen(world_v, player);
+        vs.push(vector3.create2(v, world_v.z - camera.look_z));
+      }
+      if (this.is_circle) {
+        vs[1] = vector3.sub(vs[1], vs[0]);
+      }
+      this.screen_vertices = vs;
     }
   }
 

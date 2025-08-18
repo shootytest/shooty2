@@ -12,8 +12,8 @@ const update_mouse = (buttons) => {
     keys["MouseWheel"] = (buttons & 4) !== 0;
 };
 export const mouse = {
-    x: 0,
-    y: 0,
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
     scroll: 0,
     double_click: false,
     old: vector.create(),

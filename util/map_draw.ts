@@ -1,10 +1,10 @@
 import { make } from "../game/make.js";
 import { m_ui } from "../map/map_ui.js";
 import { camera } from "./camera.js";
-import { color } from "./color.js";
+import { color, STYLES } from "./color.js";
 import { Context } from "./draw.js";
 import { key, mouse } from "./key.js";
-import { map_serialiser, map_shape_type, map_type, map_vertex_type, STYLES } from "./map_type.js";
+import { map_serialiser, map_shape_type, map_type, map_vertex_type } from "./map_type.js";
 import { AABB3, vector, vector3 } from "./vector.js";
 
 export const map_draw = {

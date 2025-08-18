@@ -30,6 +30,9 @@ export class Health {
   get percentage() {
     return this.ratio * 100;
   }
+  get display_ratio() {
+    return this.display / this.capacity;
+  }
 
   get is_zero() {
     return this.capacity > math.epsilon_smaller && this.value <= math.epsilon_smaller;
@@ -39,6 +42,7 @@ export class Health {
     if (o.capacity != undefined) {
       this.capacity = o.capacity;
       this.value = this.capacity;
+      this.display = this.value;
     }
     if (o.value != undefined) this.value = o.value;
     if (o.regen != undefined) this.regen = o.regen;

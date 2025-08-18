@@ -60,6 +60,7 @@ export class Enemy extends Thing {
       this.team += (Enemy.cumulative_team_ids[this.team]++) * 0.000000000001; // a trillion possible enemies per team
     }
     this.position = position;
+    this.angle = math.rand(0, Math.PI * 2);
     this.create_body(this.create_body_options(filters.thing(this.team)));
     if (this.body) this.body.label = id;
     else console.error("[enemy/make_enemy] no body?");
@@ -116,7 +117,12 @@ export class Enemy extends Thing {
 
     } else if (move_type === "hover") {
       const dist2 = vector.length2(vector.sub(this.position, this.player_position));
-      this.push_to(this.target.facing, (dist2 < (this.options.move_hover_distance ?? 300) ** 2) ? -1 : 1);
+      this.push_to(this.target.facing, (this.options.move_speed ?? 1) * ((dist2 < (this.options.move_hover_distance ?? 300) ** 2) ? -1 : 1));
+    } else if (move_type === "direct") {
+      this.push_to(this.target.facing, (this.options.move_speed ?? 1));
+    } else if (move_type === "spiral") {
+      const v = vector.rotate(vector.create(), vector.sub(this.position, this.player_position), vector.deg_to_rad(80));
+      this.push_to(vector.add(this.target.facing, vector.mult(v, 0.5)), (this.options.move_speed ?? 1));
     }
   }
 

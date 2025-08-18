@@ -1,9 +1,8 @@
 import { Vertices } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
-import { color } from "../util/color.js";
+import { color, STYLES } from "../util/color.js";
 import { config } from "../util/config.js";
-import { map_serialiser, STYLES } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { clone_object, make_shoot, multiply_and_override_object, override_object } from "./make.js";
@@ -36,7 +35,7 @@ export class Shape {
             v.x -= dv.x;
             v.y -= dv.y;
         }
-        s.style = map_serialiser.clone_style(thing.options.style == undefined ? STYLES.error : (STYLES[thing.options.style] ?? STYLES.error));
+        s.style = clone_object(STYLES[thing.options.style ?? "error"] ?? STYLES.error);
         if (thing.options.style_ != undefined)
             override_object(s.style, thing.options.style_);
         s.init_computed();
@@ -63,9 +62,11 @@ export class Shape {
             s = new Shape(thing);
         }
         s.seethrough = Boolean(thing.options.seethrough);
-        s.style = map_serialiser.clone_style(thing.options.style == undefined ? STYLES.error : (STYLES[thing.options.style] ?? STYLES.error));
+        s.style = clone_object(STYLES[o.style ?? thing.options.style ?? "error"] ?? STYLES.error);
         if (thing.options.style_ != undefined)
             override_object(s.style, thing.options.style_);
+        if (o.style_ != undefined)
+            override_object(s.style, o.style_);
         if (o.shoot) {
             const S = make_shoot[o.shoot];
             if (S) {
@@ -249,21 +250,28 @@ export class Shape {
         ctx.lines_v(this.computed.screen_vertices, this.closed_loop);
     }
     draw_health() {
-        const ratio = this.thing.health.ratio;
-        if (this.computed?.screen_vertices == undefined || ratio === 1 || this.index >= 1)
+        if (this.thing.health == undefined)
+            return;
+        const ratio = this.thing.health.display_ratio;
+        if (this.computed?.screen_vertices == undefined || !this.computed.on_screen || Math.abs(ratio - 1) < math.epsilon || this.index >= 1)
             return;
         ctx.ctx.save();
         const c = vector.aabb_centre(vector.make_aabb(this.computed.screen_vertices));
         ctx.beginPath();
         ctx.moveTo(c.x, c.y);
-        ctx.arc_v(c, 99, 0, Math.PI * 2 * ratio);
+        const angle = -Thing.time / 10 * config.graphics.health_rotate_speed;
+        ctx.arc_v(c, 123456, angle % (Math.PI * 2), (angle + Math.PI * 2 * ratio) % (Math.PI * 2));
         ctx.lineTo(c.x, c.y);
         ctx.clip();
-        this.draw({
+        const style_mult = {
             stroke_opacity: 0.2,
             fill_opacity: 0.2,
-            stroke: color.red,
-        });
+        };
+        if (this.style.fill)
+            style_mult.fill = color.red;
+        else if (this.style.stroke)
+            style_mult.stroke = color.red;
+        this.draw(style_mult);
         ctx.ctx.restore();
     }
     compute_screen() {
@@ -302,7 +310,7 @@ export class Shape {
         }
     }
     break(o = {}) {
-        if (this.computed?.screen_vertices == undefined || !this.computed.on_screen)
+        if (this.computed?.vertices == undefined || !this.computed.on_screen)
             return;
         const style = clone_object(this.style);
         style.opacity = (style.opacity ?? 1) * (o.opacity_mult ?? 0.4);
@@ -310,16 +318,20 @@ export class Shape {
         const p = new Particle();
         p.style = style;
         p.time = Thing.time + time;
+        if (o.type === "triangulate" && this.computed.vertices.length <= 2) {
+            console.error(`[shape/break] can't triangulate less than 2 vertices!`);
+            o.type = "fade";
+        }
         if (o.type === "triangulate") {
-            const mean = vector.mean(this.computed.screen_vertices);
-            for (const triangle of math.triangulate_polygon(this.computed.screen_vertices)) {
+            const mean = vector.mean(this.computed.vertices);
+            for (const triangle of math.triangulate_polygon(this.computed.vertices)) {
                 const c = vector.sub(vector.mean(triangle), mean);
                 p.vertices = triangle;
                 p.velocity = vector.mult(c, o.speed ?? 0.1);
             }
         }
         else if (o.type === "fade") {
-            p.vertices = this.computed.screen_vertices;
+            p.vertices = this.computed.vertices;
             p.fade = time;
         }
         if (o.velocity)
@@ -343,7 +355,7 @@ export class Polygon extends Shape {
         return s;
     }
     radius = 0;
-    sides = 3;
+    sides = 0;
     angle = 0;
     constructor(thing) {
         super(thing);
@@ -389,14 +401,13 @@ export class Polygon extends Shape {
                 vs.push(vector3.create2(v, world_v.z - camera.look_z));
             }
             vs[1] = vector3.sub(vs[1], vs[0]);
-            vs.push(vector3.create(-123, -123, -123));
+            const shhh = vector3.create(-123, -123, -123);
+            vs.push(shhh);
             this.computed.screen_vertices = vs;
+            this.computed.vertices = [c, r, shhh];
         }
         else {
             super.compute_screen();
         }
     }
-}
-export class Line extends Shape {
-    static type = "line";
 }

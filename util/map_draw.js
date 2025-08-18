@@ -1,9 +1,9 @@
 import { make } from "../game/make.js";
 import { m_ui } from "../map/map_ui.js";
 import { camera } from "./camera.js";
-import { color } from "./color.js";
+import { color, STYLES } from "./color.js";
 import { key, mouse } from "./key.js";
-import { map_serialiser, STYLES } from "./map_type.js";
+import { map_serialiser } from "./map_type.js";
 import { vector, vector3 } from "./vector.js";
 export const map_draw = {
     shapes_on_screen: [],

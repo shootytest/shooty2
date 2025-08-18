@@ -100,7 +100,7 @@ export const detector = {
   },
   collision_start: (pair: Matter.Pair, ba: Matter.Body, bb: Matter.Body, flipped: boolean) => {
     const a = ((ba.parent as any).thing as Thing), b = ((bb.parent as any).thing as Thing);
-    const b_rittle = b.health.capacity > 0 && b.health.capacity < 1 - math.epsilon;
+    const b_rittle = b.health && b.health.capacity > 0 && b.health.capacity < 1 - math.epsilon;
     const different_team = Math.floor(a.team) !== Math.floor(b.team);
     // console.log(`[detector/collision_start] Collision started betwixt ${ba.label} & ${bb.label}!`);
     if (a.is_player) {
@@ -111,19 +111,21 @@ export const detector = {
     }
     if (a.is_bullet) {
       if (!b.options.sensor && !b.options.keep_bullets && !b_rittle && different_team) {
+        if (b.is_player) a.options.death = [];
         a.remove();
       } else if (b_rittle || (!different_team)) {
         pair.isSensor = true;
         (ba as any).temporarySensor = true;
       }
     }
-    if (a.damage > 0 && b.health.capacity > 0 && different_team) {
+    if (a.damage > 0 && b.health && b.health.capacity > 0 && different_team) {
       // console.log(`[detector/collision_start] ${a.id} hits ${b.id} for ${a.damage} damage!`);
-      b.health.hit(a.damage);
+      b.health?.hit(a.damage);
     }
-    if (a.is_player && b_rittle && different_team) {
-      b.health.hit_all();
+    if (a.is_player && b.health && b_rittle && different_team) {
+      b.health?.hit_all();
     }
+    if (b.options.breakable) b.velocity = vector.mult(a.velocity, 0.5);
   },
   collision_end: (pair: Matter.Pair, ba: Matter.Body, bb: Matter.Body, flipped: boolean) => {
     const a = ((ba.parent as any).thing as Thing), b = ((bb.parent as any).thing as Thing);

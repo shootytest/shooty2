@@ -22,26 +22,29 @@ export interface maketype {
 
   shoots?: string[];
 
-  damage?: number,
-  team?: number,
-  health?: maketype_health,
-  ability?: maketype_health,
+  damage?: number;
+  team?: number;
+  health?: maketype_health;
+  ability?: maketype_health;
 
   // physics stuff
-  friction?: number,
-  friction_contact?: number,
-  restitution?: number,
-  density?: number,
+  friction?: number;
+  friction_contact?: number;
+  restitution?: number;
+  density?: number;
 
   // enemy stuff
-  move_type?: move_type,
-  face_type?: face_type,
-  move_hover_distance?: number,
-  face_smoothness?: number,
+  breakable?: boolean;
+  move_type?: move_type;
+  face_type?: face_type;
+  move_hover_distance?: number;
+  move_speed?: number;
+  face_smoothness?: number;
+  death?: bullet_death_type[];
 
 };
 
-export type move_type = "none" | "static" | "hover";
+export type move_type = "none" | "static" | "hover" | "direct" | "spiral";
 export type face_type = "none" | "static" | "predict" | "predict2" | "direct";
 // not to be confused with typeface
 
@@ -56,6 +59,8 @@ export interface maketype_health {
 export interface maketype_shape {
 
   type: "circle" | "polygon" | "line";
+  style?: string;
+  style_?: style_type;
   z?: number;
   sides?: number;
   radius?: number;
@@ -93,15 +98,18 @@ export interface shoot_stats {
   move?: boolean;
   always_shoot?: boolean;
   death?: bullet_death_type[];
+  style?: string;
+  style_?: style_type;
 };
 
 export interface bullet_death_type {
   type: string;
   stats?: shoot_stats;
+  angle?: number;
+  offset?: vector;
   repeat?: number;
-  angle_offset?: number;
-  offset?: number;
-  delay?: number;
+  angle_increment?: number;
+  offset_increment?: vector;
 };
 
 
@@ -111,17 +119,9 @@ export type dictionary = { [key: string]: any };
 // make
 
 export const make: { [key: string]: maketype } = {};
+export const make_: { [key: string]: maketype } = {};
 
-make.default = {
-  make_parent: [],
-  style: "error",
-  decoration: false,
-  sensor: false,
-  invisible: false,
-  movable: false,
-  seethrough: false,
-  keep_bullets: false,
-};
+make.default = { };
 
 
 // walls
@@ -187,7 +187,7 @@ make.player = {
   friction: 0.2,
   friction_contact: 0,
   restitution: 0.1,
-  // density: 1,
+  move_speed: 10,
   health: {
     capacity: 500,
     regen: 0,
@@ -205,6 +205,17 @@ make.enemy = {
   restitution: 0,
 };
 
+make.enemy_breakable = {
+  make_parent: ["enemy"],
+  breakable: true,
+  friction: 1,
+  restitution: 0,
+  density: 1000,
+  health: {
+    capacity: 0.1,
+  },
+};
+
 make.enemy_tutorial = {
   make_parent: ["enemy"],
   style: "tutorial_enemy",
@@ -214,7 +225,7 @@ make.enemy_tutorial = {
 make.enemy_tutorial_block = {
   make_parent: ["enemy_tutorial"],
   health: {
-    capacity: 150,
+    capacity: 500,
   },
 };
 
@@ -222,19 +233,16 @@ make.enemy_tutorial_basic = {
   make_parent: ["enemy_tutorial"],
   face_type: "direct",
   move_type: "hover",
+  move_speed: 2,
   health: {
-    capacity: 600,
+    capacity: 250,
   },
 };
 
 make.enemy_tutorial_bit = {
-  make_parent: ["enemy_tutorial"],
+  make_parent: ["enemy_tutorial", "enemy_breakable"],
   style_: {
     opacity: 0.4,
-  },
-  density: 1000,
-  health: {
-    capacity: 0.1,
   },
 };
 
@@ -261,6 +269,7 @@ make_shapes.player = [{
 
 make_shapes.enemy_tutorial_block = [{
   type: "polygon",
+  // style: "tutorial_enemy_filled",
   sides: 7,
   radius: 50,
 }];
@@ -288,10 +297,11 @@ export const make_shoot: { [key: string]: shoot_stats } = {};
 
 make_shoot.player = {
   make: "bullet",
-  size: 8,
+  size: 9,
   reload: 30,
-  speed: 5,
-  friction: 0.003,
+  speed: 4,
+  spread: 0.03,
+  friction: 0.0025,
   restitution: 1,
   recoil: 1,
   damage: 100,
@@ -325,10 +335,10 @@ make_shoot.enemy_basic = {
 const calculated_keys: string[] = ["default"];
 const calculated_shoot_keys: string[] = [];
 
-for (const m of Object.values(make)) {
-  if (m.make_parent == undefined) m.make_parent = ["default"];
-  else m.make_parent.unshift("default");
-}
+// for (const m of Object.values(make)) {
+//   if (m.make_parent == undefined) m.make_parent = ["default"];
+//   else m.make_parent.unshift("default");
+// }
 
 // clone functions
 
@@ -341,11 +351,11 @@ export const clone_array = function(arr: any[]) {
 export const clone_object = function(obj: dictionary) {
   const result: dictionary = {};
   for (const [k, v] of Object.entries(obj)) {
-    if (typeof v === "object") {
-      result[k] = clone_object(v);
-    } else if (Array.isArray(v)) {
+    if (Array.isArray(v)) {
       result[k] = [];
-      for (const a of v) result[k].push(a);
+      for (const a of v) result[k].push(typeof a === "object" ? clone_object(a) : a);
+    } else if (typeof v === "object") {
+      result[k] = clone_object(v);
     } else {
       result[k] = v;
     }
@@ -355,12 +365,12 @@ export const clone_object = function(obj: dictionary) {
 
 export const override_object = function(m_target: dictionary, m_override: dictionary) {
   for (const [k, v] of Object.entries(m_override)) {
-    if (typeof v === "object") {
+    if (Array.isArray(v)) {
+      if (m_target[k] == undefined) m_target[k] = [];
+      for (const a of v) m_target[k].push(typeof a === "object" ? clone_object(a) : a);
+    } else if (typeof v === "object") {
       if (m_target[k] == undefined) m_target[k] = {};
       override_object(m_target[k], v);
-    } else if (Array.isArray(v)) {
-      if (m_target[k] == undefined) m_target[k] = [];
-      for (const a of v) m_target[k].push(a);
     } else {
       m_target[k] = v;
     }
@@ -378,13 +388,13 @@ export const multiply_object = function(o_target: dictionary, o_multiply: dictio
 export const multiply_and_override_object = function(m_target: dictionary, m_override: dictionary) {
   for (const [k, v] of Object.entries(m_override)) {
     if (typeof v === "number") {
-      m_target[k] *= v;
+      m_target[k] = (m_target[k] ?? 1) * v;
+    } else if (Array.isArray(v)) {
+      if (m_target[k] == undefined) m_target[k] = [];
+      for (const a of v) m_target[k].push(typeof a === "object" ? clone_object(a) : a);
     } else if (typeof v === "object") {
       if (m_target[k] == undefined) m_target[k] = {};
       override_object(m_target[k], v);
-    } else if (Array.isArray(v)) {
-      if (m_target[k] == undefined) m_target[k] = [];
-      for (const a of v) m_target[k].push(a);
     } else {
       m_target[k] = v;
     }
@@ -395,16 +405,24 @@ export const multiply_and_override_object = function(m_target: dictionary, m_ove
 const calculate_make = function(key: string) {
   const m = make[key];
   const result: maketype = {};
+  let first_one = true;
   for (const parent_key of m.make_parent ?? []) {
     if (make[parent_key]) {
       if (!calculated_keys.includes(parent_key)) calculate_make(parent_key);
-      override_object(result, make[parent_key]);
+      override_object(result, first_one ? make[parent_key] : make_[parent_key]);
+      if (parent_key !== "default") first_one = false;
     } else console.error(`[make] while computing '${key}': make_shoot '${parent_key}' doesn't exist!`);
   }
   override_object(result, m);
   make[key] = result;
   calculated_keys.push(key);
 };
+
+// copy make to make_
+for (const k of Object.keys(make)) {
+  make_[k] = {};
+  override_object(make_[k], make[k]);
+}
 
 for (const k of Object.keys(make)) {
   calculate_make(k);
@@ -454,6 +472,6 @@ for (const k of Object.keys(make_shoot)) {
 }
 
 // debug
-// console.log(make);
+console.log(make);
 // console.log(make_shapes);
 // console.log(make_shoot);

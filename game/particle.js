@@ -3,6 +3,7 @@ import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
 import { config } from "../util/config.js";
 import { vector, vector3 } from "../util/vector.js";
+import { player } from "./player.js";
 import { Thing } from "./thing.js";
 export class Particle {
     static particles = [];
@@ -37,6 +38,9 @@ export class Particle {
         return p;
     }
     vertices = [];
+    is_screen = false; // indicates if the particle's vertices are in screen coordinates
+    z = 0;
+    screen_vertices = [];
     offset = vector.create();
     velocity = vector.create();
     acceleration = vector.create();
@@ -49,6 +53,9 @@ export class Particle {
     time = -1;
     constructor() {
         Particle.particles.push(this);
+    }
+    get is_circle() {
+        return this.vertices[2]?.x === -123 && this.vertices[2]?.y === -123 && this.vertices[2]?.z === -123;
     }
     centralise() {
         const c = Vertices.centre(this.vertices);
@@ -92,12 +99,29 @@ export class Particle {
         }
     }
     draw_path() {
-        if (this.vertices[2].x === -123 && this.vertices[2].y === -123 && this.vertices[2].z === -123) {
-            const [c, r] = this.vertices;
+        this.compute_screen();
+        if (this.is_circle) {
+            const [c, r] = this.screen_vertices;
             ctx.circle(Math.round(c.x + this.offset.x), Math.round(c.y + this.offset.y), r.x);
         }
         else {
-            ctx.lines_v(vector.add_list(this.vertices, this.offset), true);
+            ctx.lines_v(this.screen_vertices, true);
+        }
+    }
+    compute_screen() {
+        if (this.is_screen)
+            this.screen_vertices = this.vertices;
+        else {
+            const vs = [];
+            for (const vertex of this.vertices) {
+                const world_v = vector3.create2(vector.add(vertex, this.offset), this.z + (this.offset.z ?? 0));
+                const v = camera.world3screen(world_v, player);
+                vs.push(vector3.create2(v, world_v.z - camera.look_z));
+            }
+            if (this.is_circle) {
+                vs[1] = vector3.sub(vs[1], vs[0]);
+            }
+            this.screen_vertices = vs;
         }
     }
     remove() {

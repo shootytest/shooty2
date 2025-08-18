@@ -6,16 +6,8 @@ import { vector } from "../util/vector.js";
 ;
 // make
 export const make = {};
-make.default = {
-    make_parent: [],
-    style: "error",
-    decoration: false,
-    sensor: false,
-    invisible: false,
-    movable: false,
-    seethrough: false,
-    keep_bullets: false,
-};
+export const make_ = {};
+make.default = {};
 // walls
 make.wall = {
 // nothing different from default yet
@@ -64,7 +56,7 @@ make.player = {
     friction: 0.2,
     friction_contact: 0,
     restitution: 0.1,
-    // density: 1,
+    move_speed: 10,
     health: {
         capacity: 500,
         regen: 0,
@@ -78,6 +70,16 @@ make.enemy = {
     friction: 0.1,
     restitution: 0,
 };
+make.enemy_breakable = {
+    make_parent: ["enemy"],
+    breakable: true,
+    friction: 1,
+    restitution: 0,
+    density: 1000,
+    health: {
+        capacity: 0.1,
+    },
+};
 make.enemy_tutorial = {
     make_parent: ["enemy"],
     style: "tutorial_enemy",
@@ -86,25 +88,22 @@ make.enemy_tutorial = {
 make.enemy_tutorial_block = {
     make_parent: ["enemy_tutorial"],
     health: {
-        capacity: 150,
+        capacity: 500,
     },
 };
 make.enemy_tutorial_basic = {
     make_parent: ["enemy_tutorial"],
     face_type: "direct",
     move_type: "hover",
+    move_speed: 2,
     health: {
-        capacity: 600,
+        capacity: 250,
     },
 };
 make.enemy_tutorial_bit = {
-    make_parent: ["enemy_tutorial"],
+    make_parent: ["enemy_tutorial", "enemy_breakable"],
     style_: {
         opacity: 0.4,
-    },
-    density: 1000,
-    health: {
-        capacity: 0.1,
     },
 };
 make.bullet = {
@@ -125,6 +124,7 @@ make_shapes.player = [{
     }];
 make_shapes.enemy_tutorial_block = [{
         type: "polygon",
+        // style: "tutorial_enemy_filled",
         sides: 7,
         radius: 50,
     }];
@@ -146,10 +146,11 @@ make_shapes.enemy_tutorial_bit = [{
 export const make_shoot = {};
 make_shoot.player = {
     make: "bullet",
-    size: 8,
+    size: 9,
     reload: 30,
-    speed: 5,
-    friction: 0.003,
+    speed: 4,
+    spread: 0.03,
+    friction: 0.0025,
     restitution: 1,
     recoil: 1,
     damage: 100,
@@ -175,12 +176,10 @@ make_shoot.enemy_basic = {
 };
 const calculated_keys = ["default"];
 const calculated_shoot_keys = [];
-for (const m of Object.values(make)) {
-    if (m.make_parent == undefined)
-        m.make_parent = ["default"];
-    else
-        m.make_parent.unshift("default");
-}
+// for (const m of Object.values(make)) {
+//   if (m.make_parent == undefined) m.make_parent = ["default"];
+//   else m.make_parent.unshift("default");
+// }
 // clone functions
 export const clone_array = function (arr) {
     const result = [];
@@ -191,13 +190,13 @@ export const clone_array = function (arr) {
 export const clone_object = function (obj) {
     const result = {};
     for (const [k, v] of Object.entries(obj)) {
-        if (typeof v === "object") {
-            result[k] = clone_object(v);
-        }
-        else if (Array.isArray(v)) {
+        if (Array.isArray(v)) {
             result[k] = [];
             for (const a of v)
-                result[k].push(a);
+                result[k].push(typeof a === "object" ? clone_object(a) : a);
+        }
+        else if (typeof v === "object") {
+            result[k] = clone_object(v);
         }
         else {
             result[k] = v;
@@ -207,16 +206,16 @@ export const clone_object = function (obj) {
 };
 export const override_object = function (m_target, m_override) {
     for (const [k, v] of Object.entries(m_override)) {
-        if (typeof v === "object") {
-            if (m_target[k] == undefined)
-                m_target[k] = {};
-            override_object(m_target[k], v);
-        }
-        else if (Array.isArray(v)) {
+        if (Array.isArray(v)) {
             if (m_target[k] == undefined)
                 m_target[k] = [];
             for (const a of v)
-                m_target[k].push(a);
+                m_target[k].push(typeof a === "object" ? clone_object(a) : a);
+        }
+        else if (typeof v === "object") {
+            if (m_target[k] == undefined)
+                m_target[k] = {};
+            override_object(m_target[k], v);
         }
         else {
             m_target[k] = v;
@@ -235,18 +234,18 @@ export const multiply_object = function (o_target, o_multiply) {
 export const multiply_and_override_object = function (m_target, m_override) {
     for (const [k, v] of Object.entries(m_override)) {
         if (typeof v === "number") {
-            m_target[k] *= v;
-        }
-        else if (typeof v === "object") {
-            if (m_target[k] == undefined)
-                m_target[k] = {};
-            override_object(m_target[k], v);
+            m_target[k] = (m_target[k] ?? 1) * v;
         }
         else if (Array.isArray(v)) {
             if (m_target[k] == undefined)
                 m_target[k] = [];
             for (const a of v)
-                m_target[k].push(a);
+                m_target[k].push(typeof a === "object" ? clone_object(a) : a);
+        }
+        else if (typeof v === "object") {
+            if (m_target[k] == undefined)
+                m_target[k] = {};
+            override_object(m_target[k], v);
         }
         else {
             m_target[k] = v;
@@ -256,11 +255,14 @@ export const multiply_and_override_object = function (m_target, m_override) {
 const calculate_make = function (key) {
     const m = make[key];
     const result = {};
+    let first_one = true;
     for (const parent_key of m.make_parent ?? []) {
         if (make[parent_key]) {
             if (!calculated_keys.includes(parent_key))
                 calculate_make(parent_key);
-            override_object(result, make[parent_key]);
+            override_object(result, first_one ? make[parent_key] : make_[parent_key]);
+            if (parent_key !== "default")
+                first_one = false;
         }
         else
             console.error(`[make] while computing '${key}': make_shoot '${parent_key}' doesn't exist!`);
@@ -269,6 +271,11 @@ const calculate_make = function (key) {
     make[key] = result;
     calculated_keys.push(key);
 };
+// copy make to make_
+for (const k of Object.keys(make)) {
+    make_[k] = {};
+    override_object(make_[k], make[k]);
+}
 for (const k of Object.keys(make)) {
     calculate_make(k);
 }
@@ -318,6 +325,6 @@ for (const k of Object.keys(make_shoot)) {
     calculate_make_shoot(k);
 }
 // debug
-// console.log(make);
+console.log(make);
 // console.log(make_shapes);
 // console.log(make_shoot);
