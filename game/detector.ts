@@ -1,5 +1,5 @@
 import { engine } from "../index.js";
-import { Body, Events } from "../matter.js";
+import { Events } from "../matter.js";
 import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
 import { player } from "./player.js";

@@ -195,8 +195,14 @@ export class Context {
     arc(x, y, r, start, end, clockwise = false) {
         this.ctx.arc(x, y, r, start, end, !clockwise);
     }
+    arc_v(v, r, start, end, clockwise = false) {
+        this.ctx.arc(v.x, v.y, r, start, end, !clockwise);
+    }
     circle(x, y, r, clockwise = false) {
         this.arc(x, y, r, 0, 2 * Math.PI, clockwise);
+    }
+    circle_v(v, r, clockwise = false) {
+        this.arc(v.x, v.y, r, 0, 2 * Math.PI, clockwise);
     }
     // r1 > r2
     donut(x, y, r1, r2) {

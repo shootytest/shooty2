@@ -1,18 +1,46 @@
+import { Query } from "../matter.js";
 import { math } from "../util/math.js";
-import { vector } from "../util/vector.js";
+import { vector, vector3 } from "../util/vector.js";
 import { filters } from "./detector.js";
 import { make } from "./make.js";
 import { player } from "./player.js";
+import { Shape } from "./shape.js";
 import { Thing } from "./thing.js";
 export class Enemy extends Thing {
     static cumulative_ids = {};
     static cumulative_team_ids = {};
     spawner;
     wave_number = -1;
+    player_position = player.position;
     constructor(spawner) {
         super();
         this.spawner = spawner;
         this.is_enemy = true;
+    }
+    static tick() {
+        this.update_body_list();
+    }
+    static body_list = [];
+    static update_body_list() {
+        const result = [];
+        for (const s of Shape.draw_shapes) {
+            if (s.seethrough)
+                continue;
+            const body = s.thing.body;
+            if (body != undefined && !result.includes(body)) {
+                if (body.walls) {
+                    for (const w of body.walls) {
+                        if (!result.includes(w))
+                            result.push(w);
+                    }
+                }
+                else {
+                    result.push(body);
+                }
+            }
+        }
+        Enemy.body_list = result;
+        return result;
     }
     make_enemy(key, position, id) {
         if (make[key] == undefined)
@@ -41,25 +69,53 @@ export class Enemy extends Thing {
         this.tick_enemy();
     }
     tick_enemy() {
-        this.shoot();
+        if (this.can_see_player())
+            this.shoot();
         this.face_enemy();
         this.move_enemy();
     }
+    can_see_player() {
+        const player_size = player.shapes[0]?.radius ?? 0;
+        const checks = [
+            player.position,
+            vector3.add(player.position, vector3.create(player_size, 0, 0)),
+            vector3.add(player.position, vector3.create(0, player_size, 0)),
+            vector3.add(player.position, vector3.create(-player_size, 0, 0)),
+            vector3.add(player.position, vector3.create(0, -player_size, 0)),
+        ];
+        for (const check of checks) {
+            if (Query.ray(Enemy.body_list, this.position, check).length === 0) {
+                this.player_position = check;
+                return check;
+            }
+        }
+        return false;
+    }
     face_enemy() {
-        if (1) {
-            this.target.facing = vector.add(player.position, vector.mult(player.velocity, (vector.length(vector.sub(this.position, player.position)) ** 0.5) * 3));
-            this.update_angle(0.3);
+        const face_type = this.options.face_type ?? "none";
+        if (face_type === "static") {
         }
-        else if (1) {
-            this.target.facing = vector.add(player.position, vector.mult(player.velocity, vector.length(vector.sub(this.position, player.position)) * 0.3));
-            this.update_angle(0.3);
+        else if (face_type === "predict2") {
+            this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, (vector.length(vector.sub(this.position, this.player_position)) ** 0.5) * 3));
+            this.update_angle(this.options.face_smoothness ?? 0.3);
         }
-        else if (1) {
-            this.target.facing = player.position;
-            this.update_angle(1);
+        else if (face_type === "predict") {
+            this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, vector.length(vector.sub(this.position, this.player_position)) * 0.3));
+            this.update_angle(this.options.face_smoothness ?? 0.3);
+        }
+        else if (face_type.startsWith("direct")) {
+            this.target.facing = this.player_position;
+            this.update_angle(this.options.face_smoothness ?? 1);
         }
     }
     move_enemy() {
+        const move_type = this.options.move_type ?? "none";
+        if (move_type === "static") {
+        }
+        else if (move_type === "hover") {
+            const dist2 = vector.length2(vector.sub(this.position, this.player_position));
+            this.push_to(this.target.facing, (dist2 < (this.options.move_hover_distance ?? 300) ** 2) ? -1 : 1);
+        }
     }
     remove() {
         const index = this.spawner.enemies.indexOf(this);

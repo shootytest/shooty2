@@ -33,7 +33,17 @@ export interface maketype {
   restitution?: number,
   density?: number,
 
+  // enemy stuff
+  move_type?: move_type,
+  face_type?: face_type,
+  move_hover_distance?: number,
+  face_smoothness?: number,
+
 };
+
+export type move_type = "none" | "static" | "hover";
+export type face_type = "none" | "static" | "predict" | "predict2" | "direct";
+// not to be confused with typeface
 
 export interface maketype_health {
   value?: number;
@@ -58,7 +68,7 @@ export interface maketype_shape {
 
 };
 
-export type shoot_stats = {
+export interface shoot_stats {
   parent?: string[];
   mult?: string[];
   make?: string;
@@ -82,6 +92,16 @@ export type shoot_stats = {
   boost_mult?: number;
   move?: boolean;
   always_shoot?: boolean;
+  death?: bullet_death_type[];
+};
+
+export interface bullet_death_type {
+  type: string;
+  stats?: shoot_stats;
+  repeat?: number;
+  angle_offset?: number;
+  offset?: number;
+  delay?: number;
 };
 
 
@@ -169,7 +189,7 @@ make.player = {
   restitution: 0.1,
   // density: 1,
   health: {
-    capacity: 10,
+    capacity: 500,
     regen: 0,
     regen_time: 0,
   },
@@ -200,8 +220,10 @@ make.enemy_tutorial_block = {
 
 make.enemy_tutorial_basic = {
   make_parent: ["enemy_tutorial"],
+  face_type: "direct",
+  move_type: "hover",
   health: {
-    capacity: 250,
+    capacity: 600,
   },
 };
 
@@ -350,6 +372,22 @@ export const multiply_object = function(o_target: dictionary, o_multiply: dictio
     if (typeof v !== "number") continue;
     if (o_target[k] == undefined) continue;
     o_target[k] *= v;
+  }
+};
+
+export const multiply_and_override_object = function(m_target: dictionary, m_override: dictionary) {
+  for (const [k, v] of Object.entries(m_override)) {
+    if (typeof v === "number") {
+      m_target[k] *= v;
+    } else if (typeof v === "object") {
+      if (m_target[k] == undefined) m_target[k] = {};
+      override_object(m_target[k], v);
+    } else if (Array.isArray(v)) {
+      if (m_target[k] == undefined) m_target[k] = [];
+      for (const a of v) m_target[k].push(a);
+    } else {
+      m_target[k] = v;
+    }
   }
 };
 

@@ -2,6 +2,8 @@ import { vector } from "../util/vector.js";
 ;
 ;
 ;
+;
+;
 // make
 export const make = {};
 make.default = {
@@ -64,7 +66,7 @@ make.player = {
     restitution: 0.1,
     // density: 1,
     health: {
-        capacity: 10,
+        capacity: 500,
         regen: 0,
         regen_time: 0,
     },
@@ -89,8 +91,10 @@ make.enemy_tutorial_block = {
 };
 make.enemy_tutorial_basic = {
     make_parent: ["enemy_tutorial"],
+    face_type: "direct",
+    move_type: "hover",
     health: {
-        capacity: 250,
+        capacity: 600,
     },
 };
 make.enemy_tutorial_bit = {
@@ -226,6 +230,27 @@ export const multiply_object = function (o_target, o_multiply) {
         if (o_target[k] == undefined)
             continue;
         o_target[k] *= v;
+    }
+};
+export const multiply_and_override_object = function (m_target, m_override) {
+    for (const [k, v] of Object.entries(m_override)) {
+        if (typeof v === "number") {
+            m_target[k] *= v;
+        }
+        else if (typeof v === "object") {
+            if (m_target[k] == undefined)
+                m_target[k] = {};
+            override_object(m_target[k], v);
+        }
+        else if (Array.isArray(v)) {
+            if (m_target[k] == undefined)
+                m_target[k] = [];
+            for (const a of v)
+                m_target[k].push(a);
+        }
+        else {
+            m_target[k] = v;
+        }
     }
 };
 const calculate_make = function (key) {

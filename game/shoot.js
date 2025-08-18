@@ -86,6 +86,9 @@ export class Shoot {
             recoil *= speed * (bullet.body?.mass || 0) * config.physics.force_factor * config.physics.recoil_factor;
             this.thing.push_in_direction(angle, -recoil);
         }
+        if (S.death != undefined) {
+            bullet.death = clone_object(S.death);
+        }
     }
     remove_bullet(bullet) {
         const index = this.bullets.indexOf(bullet);

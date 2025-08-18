@@ -1,13 +1,12 @@
 import { world } from "../index.js";
 import { Bodies, Body, Composite, IBodyDefinition, ICollisionFilter, Vector } from "../matter.js";
-import { camera } from "../util/camera.js";
 import { config } from "../util/config.js";
 import { map_shape_options_type, map_shape_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
 import { Health } from "./health.js";
-import { make, make_shapes, shoot_stats, override_object, make_shoot, clone_array } from "./make.js";
+import { make, make_shapes, shoot_stats, override_object, make_shoot, clone_array, bullet_death_type, multiply_and_override_object, clone_object } from "./make.js";
 import { Polygon, Shape } from "./shape.js";
 import { Shoot } from "./shoot.js";
 
@@ -142,6 +141,7 @@ export class Thing {
     if (this.options.team != undefined) this.team = this.options.team;
     if (this.options.health != undefined) this.health.make(this.options.health);
     if (this.options.ability != undefined) this.ability.make(this.options.ability);
+    return this.options;
   }
 
   make_shape(key: string, reset = false) {
@@ -300,7 +300,7 @@ export class Thing {
     for (const shoot of this.shoots) {
       shoot.tick();
     }
-    if (!this.is_player && this.health.is_zero) {
+    if (this.health.is_zero) {
       this.remove();
     }
   }
@@ -339,14 +339,14 @@ export class Thing {
   }
 
   push_to(target: vector, amount: number) {
-    const push = vector.createpolar(Vector.angle(this.position, target), amount);
+    const push = vector.createpolar(Vector.angle(this.position, target), amount * (this.body?.mass ?? 1) * config.physics.force_factor);
     if (this.body != undefined && this.position != undefined && push.x != undefined && push.y != undefined) {
       Body.applyForce(this.body, this.position, push);
     }
   }
 
   push_in_direction(angle: number, amount: number) {
-    const push = vector.createpolar(angle, amount);
+    const push = vector.createpolar(angle, amount * (this.body?.mass ?? 1) * config.physics.force_factor);
     if (this.body != undefined && this.position != undefined && push.x != undefined && push.y != undefined) {
       Body.applyForce(this.body, this.position, push);
     }
@@ -354,12 +354,14 @@ export class Thing {
 
   push_by(amount: vector) {
     if (this.body != undefined && this.position != undefined && amount.x != undefined && amount.y != undefined) {
-      Body.applyForce(this.body, this.position, amount);
+      Body.applyForce(this.body, this.position, vector.mult(amount, this.body.mass * config.physics.force_factor));
     }
   }
 
   add_shoot(stats: shoot_stats, shape?: Shape) {
-    this.shoots.push(new Shoot(this, stats, shape));
+    const shoot = new Shoot(this, stats, shape);
+    this.shoots.push(shoot);
+    return shoot;
   }
 
 }
@@ -369,12 +371,31 @@ export class Bullet extends Thing {
   is_bullet: boolean = true;
   bullet_shoot?: Shoot;
   bullet_time: number = -1;
+  death?: bullet_death_type[];
 
   tick() {
     super.tick();
     if (this.bullet_time >= 0 && this.bullet_time <= Thing.time) {
       this.remove();
     }
+  }
+
+  remove(): void {
+    if (this.death != undefined) {
+      for (const d of this.death) {
+        let S = make_shoot[d.type] ?? {};
+        if (d.stats) {
+          S = clone_object(S);
+          multiply_and_override_object(S, d.stats);
+        }
+        if (S) {
+          const shoot = this.add_shoot(S);
+          shoot.shoot_bullet();
+          shoot.remove();
+        } else console.error(`[thing/bullet/remove] thing id '${this.id}': make_shoot '${d.type}' doesn't exist!`);
+      }
+    }
+    super.remove();
   }
   
 }

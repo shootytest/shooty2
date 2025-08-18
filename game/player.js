@@ -1,4 +1,3 @@
-import { Body } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { config } from "../util/config.js";
 import { keys } from "../util/key.js";
@@ -39,7 +38,7 @@ export class Player extends Thing {
         const move_y = (controls.down ? 1 : 0) - (controls.up ? 1 : 0);
         const move_v = vector.normalise(vector.create(move_x, move_y));
         if (this.body) {
-            Body.applyForce(this.body, this.position, vector.mult(move_v, config.physics.player_speed * this.body.mass * config.physics.force_factor));
+            this.push_by(vector.mult(move_v, config.physics.player_speed));
             this.update_angle();
         }
         if (controls.toggle_autoshoot) {

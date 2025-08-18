@@ -3,7 +3,7 @@ import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3_ } from "../util/vector.js";
 import { filters } from "./detector.js";
-import { clone_object, make, make_shapes, shoot_stats } from "./make.js";
+import { bullet_death_type, clone_object, make, make_shapes, shoot_stats } from "./make.js";
 import { Shape } from "./shape.js";
 import { Bullet, Thing } from "./thing.js";
 
@@ -99,6 +99,10 @@ export class Shoot {
       let recoil = (S.recoil == undefined) ? 1 : S.recoil;
       recoil *= speed * (bullet.body?.mass || 0) * config.physics.force_factor * config.physics.recoil_factor;
       this.thing.push_in_direction(angle, -recoil);
+    }
+
+    if (S.death != undefined) {
+      bullet.death = clone_object(S.death) as bullet_death_type[];
     }
 
   }

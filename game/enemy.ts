@@ -1,9 +1,11 @@
+import { Query } from "../matter.js";
 import { map_shape_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
-import { vector, vector3_ } from "../util/vector.js";
+import { vector, vector3, vector3_ } from "../util/vector.js";
 import { filters } from "./detector.js";
-import { make } from "./make.js";
+import { face_type, make, move_type } from "./make.js";
 import { player } from "./player.js";
+import { Polygon, Shape } from "./shape.js";
 import { Thing } from "./thing.js";
 
 
@@ -14,11 +16,36 @@ export class Enemy extends Thing {
 
   spawner: Spawner;
   wave_number = -1;
+  player_position: vector3 = player.position;
 
   constructor(spawner: Spawner) {
     super();
     this.spawner = spawner;
     this.is_enemy = true;
+  }
+
+  static tick() {
+    this.update_body_list();
+  }
+
+  static body_list: Matter.Body[] = [];
+  static update_body_list() {
+    const result: Matter.Body[] = [];
+    for (const s of Shape.draw_shapes) {
+      if (s.seethrough) continue;
+      const body = s.thing.body;
+      if (body != undefined && !result.includes(body)) {
+        if ((body as any).walls) {
+          for (const w of (body as any).walls) {
+            if (!result.includes(w)) result.push(w);
+          }
+        } else {
+          result.push(body);
+        }
+      }
+    }
+    Enemy.body_list = result;
+    return result;
   }
 
   make_enemy(key: string, position: vector3_, id?: string) {
@@ -44,26 +71,53 @@ export class Enemy extends Thing {
   }
 
   tick_enemy() {
-    this.shoot();
+    if (this.can_see_player()) this.shoot();
     this.face_enemy();
     this.move_enemy();
   }
 
+  can_see_player() {
+    const player_size = (player.shapes[0] as Polygon)?.radius ?? 0;
+    const checks = [
+      player.position,
+      vector3.add(player.position, vector3.create(player_size, 0, 0)),
+      vector3.add(player.position, vector3.create(0, player_size, 0)),
+      vector3.add(player.position, vector3.create(-player_size, 0, 0)),
+      vector3.add(player.position, vector3.create(0, -player_size, 0)),
+    ];
+    for (const check of checks) {
+      if (Query.ray(Enemy.body_list, this.position, check).length === 0) {
+        this.player_position = check;
+        return check;
+      }
+    }
+    return false;
+  }
+
   face_enemy() {
-    if (1) {
-      this.target.facing = vector.add(player.position, vector.mult(player.velocity, (vector.length(vector.sub(this.position, player.position)) ** 0.5) * 3));
-      this.update_angle(0.3);
-    } else if (1) {
-      this.target.facing = vector.add(player.position, vector.mult(player.velocity, vector.length(vector.sub(this.position, player.position)) * 0.3));
-      this.update_angle(0.3);
-    } else if (1) {
-      this.target.facing = player.position;
-      this.update_angle(1);
+    const face_type = this.options.face_type ?? "none";
+    if (face_type === "static") {
+
+    } else if (face_type === "predict2") {
+      this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, (vector.length(vector.sub(this.position, this.player_position)) ** 0.5) * 3));
+      this.update_angle(this.options.face_smoothness ?? 0.3);
+    } else if (face_type === "predict") {
+      this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, vector.length(vector.sub(this.position, this.player_position)) * 0.3));
+      this.update_angle(this.options.face_smoothness ?? 0.3);
+    } else if (face_type.startsWith("direct")) {
+      this.target.facing = this.player_position;
+      this.update_angle(this.options.face_smoothness ?? 1);
     }
   }
 
   move_enemy() {
+    const move_type = this.options.move_type ?? "none";
+    if (move_type === "static") {
 
+    } else if (move_type === "hover") {
+      const dist2 = vector.length2(vector.sub(this.position, this.player_position));
+      this.push_to(this.target.facing, (dist2 < (this.options.move_hover_distance ?? 300) ** 2) ? -1 : 1);
+    }
   }
 
   remove() {

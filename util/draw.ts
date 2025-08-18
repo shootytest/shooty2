@@ -267,8 +267,16 @@ export class Context {
     this.ctx.arc(x, y, r, start, end, !clockwise);
   }
 
+  arc_v(v: vector, r: number, start: number, end: number, clockwise = false) {
+    this.ctx.arc(v.x, v.y, r, start, end, !clockwise);
+  }
+
   circle(x: number, y: number, r: number, clockwise = false) {
     this.arc(x, y, r, 0, 2 * Math.PI, clockwise);
+  }
+
+  circle_v(v: vector, r: number, clockwise = false) {
+    this.arc(v.x, v.y, r, 0, 2 * Math.PI, clockwise);
   }
   
   // r1 > r2

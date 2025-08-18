@@ -1,5 +1,5 @@
 import { make } from "../game/make.js";
-import { ui } from "../map/map_ui.js";
+import { m_ui } from "../map/map_ui.js";
 import { camera } from "./camera.js";
 import { color } from "./color.js";
 import { Context } from "./draw.js";
@@ -39,7 +39,7 @@ export const map_draw = {
       depth: depth,
       options: options,
     };
-    ui.all_aabb = vector.aabb_combine(ui.all_aabb, shape.computed.aabb);
+    m_ui.all_aabb = vector.aabb_combine(m_ui.all_aabb, shape.computed.aabb);
   },
 
   duplicate_shape: (shape: map_shape_type, at_vertex_index = 0): map_shape_type => {
@@ -62,7 +62,7 @@ export const map_draw = {
       new_shape.id += split_by + "0";
     } else shape_id_number++;
     const splitted = new_shape.id.split(split_by);
-    while (ui.map.computed?.shape_map?.[new_shape.id] != undefined && shape_id_number <= 9999) {
+    while (m_ui.map.computed?.shape_map?.[new_shape.id] != undefined && shape_id_number <= 9999) {
       splitted[splitted.length - 1] = shape_id_number.toString();
       new_shape.id = splitted.join(split_by);
       shape_id_number++;
@@ -100,10 +100,10 @@ export const map_draw = {
             memo_aabb3[shape.z] = vector3.aabb_scale(screen_aabb3, vector3.create(z_scale, z_scale, 1));
           }
           shape.computed.on_screen = vector3.aabb_intersect(shape.computed.aabb3, memo_aabb3[shape.z]) && shape.z <= camera.z / camera.scale;
-          if (!ui.editor.layers.sensors && shape.computed.options?.sensor) shape.computed.on_screen = false;
-          if (!ui.editor.layers.spawners && shape.computed.options?.is_spawner) shape.computed.on_screen = false;
-          if (!ui.editor.layers.decoration && shape.computed.options?.decoration) shape.computed.on_screen = false;
-          ui.directory_spans[shape.id].style.color = shape.computed.on_screen ? "black" : "#999999";
+          if (!m_ui.editor.layers.sensors && shape.computed.options?.sensor) shape.computed.on_screen = false;
+          if (!m_ui.editor.layers.spawners && shape.computed.options?.is_spawner) shape.computed.on_screen = false;
+          if (!m_ui.editor.layers.decoration && shape.computed.options?.decoration) shape.computed.on_screen = false;
+          m_ui.directory_spans[shape.id].style.color = shape.computed.on_screen ? "black" : "#999999";
           if (!shape.computed.on_screen) continue; // hmmm can i get away with doing this
           for (const world_v of shape.computed.vertices) {
             const v = camera.world3screen(world_v);
@@ -166,7 +166,7 @@ export const map_draw = {
 
     const style = map_draw.get_style(shape);
     const id_prefix = shape.id + "__";
-    const selected = shape.id === ui.mouse.drag_target[0]?.shape?.id;
+    const selected = shape.id === m_ui.mouse.drag_target[0]?.shape?.id;
     
     for (const [i, v] of shape.computed.screen_vertices.entries()) {
       const id_ = id_prefix + i;
@@ -209,22 +209,22 @@ export const map_draw = {
           index: i,
           new: true,
         };
-        ui.mouse.hover_target = target;
-        ui.click.new(() => ui.select_shape(target));
-        ui.click.new(() => { // right click
-          ui.circle_menu.activate(true, ui.circle_menu.target.id !== target.id);
-          ui.select_shape(target); // ui.circle_menu.target = target;
+        m_ui.mouse.hover_target = target;
+        m_ui.click.new(() => m_ui.select_shape(target));
+        m_ui.click.new(() => { // right click
+          m_ui.circle_menu.activate(true, m_ui.circle_menu.target.id !== target.id);
+          m_ui.select_shape(target); // ui.circle_menu.target = target;
         }, 2);
       }
-      if (ui.mouse.drag_target[0].id === id_) {
+      if (m_ui.mouse.drag_target[0].id === id_) {
         ctx.begin();
         ctx.circle(v.x, v.y, hove_r);
         ctx.strokeStyle = style.stroke ?? style.fill ?? color.purewhite;
         ctx.lineWidth = camera.sqrtscale * 2;
         ctx.stroke();
-        const o = ui.mouse.drag_target[0] as map_vertex_type;
+        const o = m_ui.mouse.drag_target[0] as map_vertex_type;
         const ov = o.shape.vertices[o.index];
-        if (mouse.drag_vector_old[0] !== false && !ui.circle_menu.active) { // if the user is actually dragging the mouse
+        if (mouse.drag_vector_old[0] !== false && !m_ui.circle_menu.active) { // if the user is actually dragging the mouse
           if (o.new) {
             if (mouse.buttons[0]) {
               const newpos = camera.screen2world(mouse.position);
@@ -236,7 +236,7 @@ export const map_draw = {
                 if (o.shape.vertices.length === 1 && (o.shape.options.contains?.length ?? 0) > 0) {
                   const same_difference = vector.sub(newpos, ov);
                   for (const s_id of o.shape.options.contains ?? []) {
-                    const s = ui.map.computed?.shape_map?.[s_id];
+                    const s = m_ui.map.computed?.shape_map?.[s_id];
                     if (s == undefined) continue;
                     for (let i = 0; i < s.vertices.length; i++) {
                       s.vertices[i] = vector.add(s.vertices[i], same_difference);
@@ -260,7 +260,7 @@ export const map_draw = {
             ov.y += change.y;
           }
         }
-        if (ui.mouse.release_click) {
+        if (m_ui.mouse.release_click) {
           /*if (vector.in_circle(mouse.position, v, 10) && (mouse.drag_vector_old[0] === false || vector.length2(mouse.drag_vector_old[0]) < 30)) {
             ui.circle_menu.active = true;
             ui.circle_menu.active_time = ui.time;
@@ -299,7 +299,7 @@ export const map_draw = {
       s += shape.id + ", ";
     }
     console.log("%c%s", "background-color: #111; color: #abcdef", s.substring(0, s.length - (shapes.length <= 0 ? 1 : 2)));
-    const raw_string = map_serialiser.save("auto", ui.map);
+    const raw_string = map_serialiser.save("auto", m_ui.map);
     if (!type.startsWith("undo")) map_serialiser.save_undo_state(raw_string);
   },
 
@@ -307,12 +307,12 @@ export const map_draw = {
     if (!key.shift()) {
       if (!confirm("ARE YOU SURE YOU WANT TO DELETE [" + shape.id + "]")) return;
     }
-    const remove_index = ui.map.shapes.indexOf(shape);
-    if (remove_index >= 0) ui.map.shapes.splice(remove_index, 1);
+    const remove_index = m_ui.map.shapes.indexOf(shape);
+    if (remove_index >= 0) m_ui.map.shapes.splice(remove_index, 1);
     // handle parent
     let contains: string[] | undefined = undefined;
     if (shape.options.parent && shape.options.parent !== "all") {
-      contains = ui.map.computed?.shape_map[shape.options.parent].options.contains;
+      contains = m_ui.map.computed?.shape_map[shape.options.parent].options.contains;
       const contains_index = contains?.indexOf(shape.id) ?? -1;
       if (contains_index >= 0) contains?.splice(contains_index, 1);
     }
@@ -321,12 +321,12 @@ export const map_draw = {
       for (const s_id of shape.options.contains ?? []) {
         if (contains) {
           contains.push(s_id);
-          ui.map.computed!.shape_map[s_id].options.parent = shape.options.parent;
-        } else delete ui.map.computed?.shape_map[s_id].options.parent; // orphan :(
+          m_ui.map.computed!.shape_map[s_id].options.parent = shape.options.parent;
+        } else delete m_ui.map.computed?.shape_map[s_id].options.parent; // orphan :(
       }
     }
-    ui.circle_menu.deactivate();
-    ui.update_directory();
+    m_ui.circle_menu.deactivate();
+    m_ui.update_directory();
     map_draw.change("delete shape", shape);
   }
   

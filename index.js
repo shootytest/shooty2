@@ -1,5 +1,5 @@
 import { detector } from "./game/detector.js";
-import { Spawner } from "./game/enemy.js";
+import { Enemy, Spawner } from "./game/enemy.js";
 import { Particle } from "./game/particle.js";
 import { player } from "./game/player.js";
 import { Thing } from "./game/thing.js";
@@ -58,6 +58,7 @@ const tick_all = (timestamp_unused) => {
     camera.scale_target = player.camera_scale();
     mouse.tick();
     Thing.tick_things();
+    Enemy.tick();
     Spawner.tick_spawners();
     Particle.tick_particles();
     Engine.update(engine);

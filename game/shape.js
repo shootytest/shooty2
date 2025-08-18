@@ -1,11 +1,12 @@
 import { Vertices } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
+import { color } from "../util/color.js";
 import { config } from "../util/config.js";
 import { map_serialiser, STYLES } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
-import { clone_object, make_shoot, override_object } from "./make.js";
+import { clone_object, make_shoot, multiply_and_override_object, override_object } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { Thing } from "./thing.js";
@@ -148,6 +149,8 @@ export class Shape {
             if (z != undefined && s.z !== z)
                 continue;
             s.draw();
+            if (s.thing.is_enemy)
+                s.draw_health();
         }
         ctx.globalAlpha = 1;
     }
@@ -177,6 +180,7 @@ export class Shape {
     ;
     id = ++Shape.cumulative_id;
     thing;
+    index = -1;
     z = 0;
     vertices = [];
     offset = vector.create();
@@ -208,16 +212,21 @@ export class Shape {
     add(thing) {
         this.thing = thing;
         this.thing.shapes.push(this);
+        this.index = this.thing.shapes.length - 1;
         Shape.shapes.push(this);
     }
     calculate() {
         // ok there's nothing to do here because the vertices _are_ the data
         return;
     }
-    draw() {
+    draw(style_mult) {
         if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0)
             return;
-        const style = this.style;
+        let style = this.style;
+        if (style_mult) {
+            style = clone_object(this.style);
+            multiply_and_override_object(style, style_mult);
+        }
         ctx.beginPath();
         this.draw_path();
         ctx.lineCap = "round";
@@ -238,6 +247,24 @@ export class Shape {
         if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0)
             return;
         ctx.lines_v(this.computed.screen_vertices, this.closed_loop);
+    }
+    draw_health() {
+        const ratio = this.thing.health.ratio;
+        if (this.computed?.screen_vertices == undefined || ratio === 1 || this.index >= 1)
+            return;
+        ctx.ctx.save();
+        const c = vector.aabb_centre(vector.make_aabb(this.computed.screen_vertices));
+        ctx.beginPath();
+        ctx.moveTo(c.x, c.y);
+        ctx.arc_v(c, 99, 0, Math.PI * 2 * ratio);
+        ctx.lineTo(c.x, c.y);
+        ctx.clip();
+        this.draw({
+            stroke_opacity: 0.2,
+            fill_opacity: 0.2,
+            stroke: color.red,
+        });
+        ctx.ctx.restore();
     }
     compute_screen() {
         if (this.computed?.vertices == undefined)

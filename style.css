@@ -118,14 +118,14 @@ details.folder summary {
   user-select: none;
   cursor: pointer;
   list-style: none;
-  background: url(/map/folder_close.svg) 0 0.1em no-repeat;
+  background: url(map/folder_close.svg) 0 0.1em no-repeat;
   background-size: 1em 1em;
   padding: 0 0 0 1.5em;
   font-weight: bold;
   font-size: 14px;
 }
 details.folder:open > summary {
-  background-image: url(/map/folder_open.svg);
+  background-image: url(map/folder_open.svg);
 }
 details::details-content {
   transition: height 300ms ease, content-visibility 300ms allow-discrete;
