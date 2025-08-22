@@ -814,10 +814,6 @@ export const m_ui = {
         name: "decoration",
         type: "checkbox",
       },
-      sensor: {
-        name: "sensor",
-        type: "checkbox",
-      },
       invisible: {
         name: "invisible",
         type: "checkbox",
@@ -830,15 +826,29 @@ export const m_ui = {
         name: "movable object",
         type: "checkbox",
       },
+      sensor: {
+        name: "sensor",
+        type: "checkbox",
+      },
+      sensor_fov_mult: {
+        show: "sensor",
+        name: "FOV<br>",
+        type: "number",
+        min: 0.1,
+        max: 2,
+        step: 0.1,
+      },
       is_spawner: {
         name: "spawner",
         type: "checkbox",
       },
       spawn_enemy: {
+        show: "is_spawner",
         name: "enemy name",
         type: "text",
       },
       spawn_repeat: {
+        show: "is_spawner",
         name: "enemy repeat",
         type: "number",
         min: 0,
@@ -850,7 +860,7 @@ export const m_ui = {
       name: "parent",
       type: "text",
     },*/
-  } as { [key: string]: { [key: string]: { name: string, type: string, min?: number, max?: number, step?: number } } },
+  } as { [key: string]: { [key: string]: { name: string, type: string, min?: number, max?: number, step?: number, show?: string } } },
 
   properties_options_metadata: {
     shape: {
@@ -939,11 +949,13 @@ export const m_ui = {
         // summary.textContent = group_key;
         for (const option_key in group) {
           const option = group[option_key];
+          const showing = !option.show || (options as any)[option.show];
           const exists = option_key === "z" || (shape.options as any)[option_key] != undefined;
+          if (!showing && !exists) continue;
           const p = document.createElement("p");
           p.classList.add(option.type);
           const label = document.createElement("label");
-          label.innerHTML = `<span style="text-decoration: ${exists ? "underline" : "none"};">${option.name}</span>`;
+          label.innerHTML = `<span style="text-decoration: ${exists ? "underline" : "none"};${!showing ? " color: crimson;" : ""}">${option.name}</span>`;
           label.setAttribute("for", option_key);
           const input = document.createElement("input");
           input.setAttribute("type", option.type);

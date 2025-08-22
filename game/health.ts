@@ -15,6 +15,7 @@ export class Health {
   display = 0;
 
   invincible = false;
+  invincible_time = -1234567890; // time above which invincible should be set to false
 
   hit_tick = 0; // e.g. poison damage
   hit_time = -1234567890; // time last hit
@@ -63,6 +64,9 @@ export class Health {
     if (this.value > this.capacity) {
       this.value = this.capacity;
     }
+    if (this.invincible && time >= this.invincible_time) {
+      this.invincible = false;
+    }
   }
 
   hit(amount: number) {
@@ -72,6 +76,7 @@ export class Health {
     this.bound();
     this.hit_time = Thing.time;
     const real_damage = old_health - this.value;
+    this.thing.hit(real_damage);
     return real_damage;
   }
 
@@ -112,6 +117,11 @@ export class Health {
   set_capacity(capacity: number) {
     this.capacity = capacity;
     this.value = capacity;
+  }
+
+  set_invincible(time: number) {
+    this.invincible = true;
+    this.invincible_time = Thing.time + time;
   }
 
   use(amount: number) {

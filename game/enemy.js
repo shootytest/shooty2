@@ -9,14 +9,6 @@ import { Thing } from "./thing.js";
 export class Enemy extends Thing {
     static cumulative_ids = {};
     static cumulative_team_ids = {};
-    spawner;
-    wave_number = -1;
-    player_position = player.position;
-    constructor(spawner) {
-        super();
-        this.spawner = spawner;
-        this.is_enemy = true;
-    }
     static tick() {
         this.update_body_list();
     }
@@ -42,6 +34,14 @@ export class Enemy extends Thing {
         Enemy.body_list = result;
         return result;
     }
+    spawner;
+    wave_number = -1;
+    player_position = player.position;
+    constructor(spawner) {
+        super();
+        this.spawner = spawner;
+        this.is_enemy = true;
+    }
     make_enemy(key, position, id) {
         if (make[key] == undefined)
             return console.error(`[enemy/make_enemy] no such enemy: '${key}'`);
@@ -58,7 +58,8 @@ export class Enemy extends Thing {
             this.team += (Enemy.cumulative_team_ids[this.team]++) * 0.000000000001; // a trillion possible enemies per team
         }
         this.position = position;
-        this.angle = math.rand(0, Math.PI * 2);
+        if (!this.options.angle)
+            this.angle = math.rand(0, Math.PI * 2);
         this.create_body(this.create_body_options(filters.thing(this.team)));
         if (this.body)
             this.body.label = id;

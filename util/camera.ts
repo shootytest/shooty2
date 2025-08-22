@@ -38,7 +38,7 @@ export const camera = {
     return vector.add(this.position, this.halfworld);
   },
   get location3(): vector3 {
-    return vector3.create2(camera.location, camera.z)
+    return vector3.create2(camera.location, camera.z);
   },
   set location(loc: vector) {
     this.position = vector.sub(loc, this.halfworld);
@@ -66,12 +66,12 @@ export const camera = {
     return vector.add(centre, vector.mult(vector.sub(sv, centre), z));
   },
   zscale: function(z: number): number {
-    let z_ = (this.z / this.scale - this.look_z) / (this.z / this.scale - z + ZEPSILON);
+    let z_ = (this.z - this.look_z) / (this.z - z + ZEPSILON); // replaced this.z / this.scale
     if (z_ <= 0) z = 1 / ZEPSILON;
     return z_;
   },
   zscale_inverse: function(z: number): number {
-    let z_ = (this.z / this.scale - z) / (this.z / this.scale - this.look_z + ZEPSILON);
+    let z_ = (this.z - z) / (this.z - this.look_z + ZEPSILON); // replaced this.z / this.scale
     if (z_ <= 0) z = 1 / ZEPSILON;
     return z_;
   },
@@ -103,18 +103,19 @@ export const camera = {
   },
   scale_by: function(screen_position: vector, scale: number) {
     this.scaling_point = screen_position;
-    this.scale_target *= scale;
-    this.scale_target = math.bound(this.scale_target, 0.1, 10);
+    this.scale_target = math.bound(this.scale_target * scale, 0.1, 10);
     this.scale_adjust(screen_position);
   },
   scale_to: function(screen_position: vector, scale: number) {
     this.scaling_point = screen_position;
-    this.scale_target = scale;
-    this.scale_target = math.bound(this.scale_target, 0.1, 10);
+    this.scale_target = math.bound(scale, 0.1, 10);
     this.scale_adjust(screen_position);
   },
   scale_adjust: function(screen_position: vector) {
     this.position_target = vector.sub(vector.add(this.position, vector.mult(screen_position, 1 / this.scale)), vector.mult(screen_position, 1 / this.scale_target));
+  },
+  scale_adjust2: function(screen_position: vector) {
+    this.position_target = vector.sub(vector.add(this.position_target, vector.mult(screen_position, 1 / this.scale)), vector.mult(screen_position, 1 / this.scale_target));
   },
   jump_to: function(world_position: vector, scale: number, screen_position = vector.create(canvas.width / 2, canvas.height / 2)) {
     this.scale_target = scale;

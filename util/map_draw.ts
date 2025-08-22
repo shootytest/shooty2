@@ -235,13 +235,7 @@ export const map_draw = {
                 }
                 if (o.shape.vertices.length === 1 && (o.shape.options.contains?.length ?? 0) > 0) {
                   const same_difference = vector.sub(newpos, ov);
-                  for (const s_id of o.shape.options.contains ?? []) {
-                    const s = m_ui.map.computed?.shape_map?.[s_id];
-                    if (s == undefined) continue;
-                    for (let i = 0; i < s.vertices.length; i++) {
-                      s.vertices[i] = vector.add(s.vertices[i], same_difference);
-                    }
-                  }
+                  map_draw.move_vertices_recursively(o.shape, same_difference);
                 }
               } else {
                 ov.x = newpos.x;
@@ -269,7 +263,7 @@ export const map_draw = {
           o.new = false;
           if (!(mouse.drag_vector_old[0] === false || vector.length2(mouse.drag_vector_old[0]) < 30)) { 
             // if actually dragged
-            const round_to_number = key.ctrl() ? 1 : 10;
+            const round_to_number = key.ctrl() ? 10 : 1;
             if (key.shift()) {
               for (let i = 0; i < o.shape.vertices.length; i++) {
                 o.shape.vertices[i] = vector.round_to(o.shape.vertices[i], round_to_number);
@@ -287,9 +281,21 @@ export const map_draw = {
 
   },
 
+  move_vertices_recursively: (shape: map_shape_type, move_by: vector) => {
+    for (const s_id of shape.options.contains ?? []) {
+      const s = m_ui.map.computed?.shape_map?.[s_id];
+      if (s == undefined) continue;
+      for (let i = 0; i < s.vertices.length; i++) {
+        s.vertices[i] = vector.add(s.vertices[i], move_by);
+      }
+      map_draw.move_vertices_recursively(s, move_by);
+    }
+  },
+
   get_style: (shape: map_shape_type) => {
-    const style_maybe = shape.options.make_id != undefined ? make[shape.options.make_id].style : undefined;
-    return STYLES[shape.options.style ?? style_maybe ?? "test"] ?? STYLES.error;
+    if (shape.options.is_spawner) return STYLES.spawner;
+    const style_maybe = shape.options.make_id != undefined ? make[shape.options.make_id]?.style : undefined;
+    return STYLES[shape.options.style ?? style_maybe ?? "error"] ?? STYLES.error;
   },
 
   change: (type: string, shapes: map_shape_type | map_shape_type[]) => {

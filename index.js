@@ -54,8 +54,9 @@ const tick_all = (timestamp_unused) => {
     const dt = (time > -1) ? now - time : 0;
     time = now;
     camera.tick();
-    camera.location_target = player.camera_position();
     camera.scale_target = player.camera_scale();
+    camera.location_target = player.camera_position();
+    camera.scale_adjust2(camera.halfscreen);
     mouse.tick();
     Thing.tick_things();
     Enemy.tick();

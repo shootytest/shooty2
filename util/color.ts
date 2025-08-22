@@ -72,7 +72,7 @@ export const color/*: { [key: string]: `#${string}` }*/ = {
 export const STYLES: styles_type = {
   error: {
     stroke: "#ff0000",
-    fill: "#ff0000",
+    fill: "#ff000066",
   },
   test: {
     stroke: "#abcdef99",
@@ -82,6 +82,8 @@ export const STYLES: styles_type = {
   player: {
     stroke: "#eeeeee",
     stroke_opacity: 1,
+    fill: "#eeeeee",
+    fill_opacity: 0.4,
   },
   tutorial: {
     stroke: "#7f77ea",
@@ -89,12 +91,23 @@ export const STYLES: styles_type = {
     fill: "#544bdb",
     fill_opacity: 0.7,
   },
+  tutorial_breakable: {
+    stroke: "#778eea",
+    stroke_opacity: 0.4,
+  },
   tutorial_enemy: {
-    stroke: "#7f77ea",
+    stroke: "#d7193f",
+    fill: "#d7193f",
+    fill_opacity: 0.4,
+  },
+  tutorial_spike: {
+    stroke: "#d7193f",
+    fill: "#d7193f",
+    fill_opacity: 0.4,
   },
   tutorial_enemy_filled: {
-    stroke: "#7f77ea",
-    fill: "#7f77ea",
+    stroke: "#778eea",
+    fill: "#778eea",
   },
   tutorial_door: {
     stroke: "#4e47af",
@@ -108,11 +121,21 @@ export const STYLES: styles_type = {
   start: {
     stroke: "#00ddff99",
   },
+  switch: {
+    stroke: "#00ddff",
+    stroke_opacity: 1,
+    fill: "#00ddff",
+    fill_opacity: 0.2,
+  },
   sensor: {
     stroke: "#00ddff",
     stroke_opacity: 0,
     fill: "#00ddff",
     fill_opacity: 0.2,
+  },
+  sensor_path: {
+    stroke: "#00ddff",
+    stroke_opacity: 0.7,
   },
   spawner: {
     stroke_opacity: 0,

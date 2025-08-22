@@ -61,6 +61,8 @@ export class Shape {
             console.error(`[shape/from_make] shape type '${o.type}' doesn't exist!`);
             s = new Shape(thing);
         }
+        s.blinking = Boolean(o.blinking);
+        s.glowing = o.glowing ?? 0;
         s.seethrough = Boolean(thing.options.seethrough);
         s.style = clone_object(STYLES[o.style ?? thing.options.style ?? "error"] ?? STYLES.error);
         if (thing.options.style_ != undefined)
@@ -68,7 +70,11 @@ export class Shape {
         if (o.style_ != undefined)
             override_object(s.style, o.style_);
         if (o.shoot) {
-            const S = make_shoot[o.shoot];
+            let S = make_shoot[o.shoot];
+            if (o.shoot_ != undefined) {
+                S = clone_object(S);
+                override_object(S, o.shoot_);
+            }
             if (S) {
                 thing.add_shoot(S, s);
             }
@@ -150,8 +156,9 @@ export class Shape {
             if (z != undefined && s.z !== z)
                 continue;
             s.draw();
-            if (s.thing.is_enemy)
-                s.draw_health();
+            s.draw_health();
+            s.draw_blink();
+            s.draw_glow();
         }
         ctx.globalAlpha = 1;
     }
@@ -190,6 +197,8 @@ export class Shape {
     activate_scale = false;
     closed_loop = true;
     seethrough = false;
+    blinking = false;
+    glowing = 0;
     // computed
     computed;
     computed_aabb; // for use in Shape.filter()
@@ -201,6 +210,9 @@ export class Shape {
     }
     get is_added() {
         return this.thing != undefined;
+    }
+    get is_circle() {
+        return this.computed?.screen_vertices?.[2]?.x === -123 && this.computed?.screen_vertices?.[2]?.y === -123 && this.computed?.screen_vertices?.[2]?.z === -123;
     }
     init_computed() {
         this.computed = {
@@ -250,13 +262,13 @@ export class Shape {
         ctx.lines_v(this.computed.screen_vertices, this.closed_loop);
     }
     draw_health() {
-        if (this.thing.health == undefined)
+        if (this.computed?.screen_vertices == undefined || !this.computed.on_screen || this.thing.health == undefined || this.thing.options.hide_health || this.index >= 1)
             return;
         const ratio = this.thing.health.display_ratio;
-        if (this.computed?.screen_vertices == undefined || !this.computed.on_screen || Math.abs(ratio - 1) < math.epsilon || this.index >= 1)
+        if (Math.abs(ratio - 1) < math.epsilon)
             return;
         ctx.ctx.save();
-        const c = vector.aabb_centre(vector.make_aabb(this.computed.screen_vertices));
+        const c = this.is_circle ? this.computed.screen_vertices[0] : vector.aabb_centre(vector.make_aabb(this.computed.screen_vertices));
         ctx.beginPath();
         ctx.moveTo(c.x, c.y);
         const angle = -Thing.time / 10 * config.graphics.health_rotate_speed;
@@ -267,12 +279,42 @@ export class Shape {
             stroke_opacity: 0.2,
             fill_opacity: 0.2,
         };
-        if (this.style.fill)
-            style_mult.fill = color.red;
-        else if (this.style.stroke)
+        if (this.style.stroke) {
             style_mult.stroke = color.red;
+            style_mult.fill_opacity = 0;
+        }
+        else if (this.style.fill)
+            style_mult.fill = color.red;
+        // else console.error(`[shape/draw_health] no fill or stroke in ${this.thing.id}`);
         this.draw(style_mult);
         ctx.ctx.restore();
+    }
+    draw_blink() {
+        if (!this.blinking && (!this.thing.health?.invincible))
+            return;
+        const style_mult = {
+            stroke_opacity: math.bounce(Thing.time, 10) * 0.5,
+            fill_opacity: math.bounce(Thing.time, 10) * 0.5,
+        };
+        if (this.style.fill)
+            style_mult.fill = color.blackground;
+        if (this.style.stroke)
+            style_mult.stroke = color.blackground;
+        this.draw(style_mult);
+    }
+    draw_glow() {
+        if (this.glowing === 0)
+            return;
+        const style_mult = {
+            fill: this.style.stroke,
+            stroke_opacity: 0,
+            fill_opacity: ((this.style.stroke_opacity ?? 1) / (this.style.fill_opacity || 1)) * 0.8,
+        };
+        ctx.ctx.shadowBlur = config.graphics.shadowblur;
+        ctx.ctx.shadowColor = this.style.stroke ?? color.white;
+        for (let i = 0; i < this.glowing; i++)
+            this.draw(style_mult);
+        ctx.ctx.shadowBlur = 0;
     }
     compute_screen() {
         if (this.computed?.vertices == undefined)

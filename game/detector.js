@@ -3,6 +3,7 @@ import { Events } from "../matter.js";
 import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
 import { player } from "./player.js";
+import { save } from "./save.js";
 /**
  *
  * Collisions between two bodies will obey the following rules:
@@ -99,13 +100,15 @@ export const detector = {
         if (a.is_player) {
             if (b.options.sensor) {
                 detector.collision_start_fns[b.id]?.(b);
+                if (b.options.sensor_fov_mult != undefined)
+                    player.fov_mult = b.options.sensor_fov_mult || 1;
                 b.is_touching_player = true;
             }
         }
         if (a.is_bullet) {
             if (!b.options.sensor && !b.options.keep_bullets && !b_rittle && different_team) {
                 if (b.is_player)
-                    a.options.death = [];
+                    a.options.death = []; // clear bullets on death if it hits the player
                 a.remove();
             }
             else if (b_rittle || (!different_team)) {
@@ -119,6 +122,10 @@ export const detector = {
         }
         if (a.is_player && b.health && b_rittle && different_team) {
             b.health?.hit_all();
+        }
+        if (a.is_player && b.options.switch) {
+            save.activate_switch(b.spawner.id);
+            b.shapes[0].glowing = 1;
         }
         if (b.options.breakable)
             b.velocity = vector.mult(a.velocity, 0.5);
@@ -154,6 +161,9 @@ export const detector = {
         ["tutorial room 1 door 2"]: (door) => {
             do_door(door, "tutorial room 1 door sensor");
         },
+        ["tutorial rock 7"]: (door) => {
+            switch_door(door, "tutorial room 2 switch", "tutorial room 2 switch path", 1);
+        },
     },
 };
 const do_door = (door, sensor_id, speed = 5, invert = false) => {
@@ -170,4 +180,37 @@ const do_door = (door, sensor_id, speed = 5, invert = false) => {
         exceeded = vector.dot(offset, dir) < 0;
     if (!exceeded)
         door.translate_wall(vector.normalise(dir, triggered ? speed : -speed));
+};
+const switch_door = (door, switch_ids, path_id, speed = [5], invert = [false]) => {
+    const path = door.lookup(path_id);
+    if (path == undefined)
+        return;
+    const vs = path.shapes[0].vertices;
+    const pos = door.position;
+    let step = door.object.step ?? 1;
+    if (typeof switch_ids === "string")
+        switch_ids = [switch_ids];
+    if (typeof speed === "number")
+        speed = [speed];
+    if (step >= vs.length || step > switch_ids.length)
+        return;
+    if (door.object.step == undefined) {
+        door.object.original_position = vector.clone(pos);
+        door.object.step = step;
+    }
+    let triggered = save.check_switch(switch_ids[step - 1]);
+    if (invert[step - 1] ?? false)
+        triggered = !triggered;
+    if (triggered) {
+        const target_dv = vector.sub(vs[step], vs[0]);
+        const door_dv = vector.sub(vector.add(door.object.original_position, target_dv), pos);
+        const sped = speed[step] ?? speed[0];
+        if (vector.length(door_dv) <= sped) {
+            door.translate(door_dv);
+            door.object.step = step + 1;
+        }
+        else {
+            door.translate(vector.normalise(door_dv, sped));
+        }
+    }
 };

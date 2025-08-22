@@ -1,4 +1,3 @@
-import { Body } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { config } from "../util/config.js";
 import { keys } from "../util/key.js";
@@ -9,13 +8,15 @@ import { Thing } from "./thing.js";
 export class Player extends Thing {
 
   autoshoot = false;
+  fov_mult = 1;
 
   constructor() {
     super();
 
     this.is_player = true;
     this.team = 1;
-    this.make("player");
+    this.make("player", true);
+    // this.make_shape("player_basic");
 
     this.create_id("player");
     this.position = vector3.create();
@@ -40,7 +41,7 @@ export class Player extends Thing {
       facingy: Math.floor(camera.mouse_v.y),
       exit: (keys["KeyP"] === true),
     };
-    this.target.facing = vector.add(vector.sub(camera.mouse_v, camera.world2screen(this.position) ?? this.target.position), this.position);
+    this.target.facing = vector.add(vector.sub(camera.mouse_v, camera.world2screen(this.position)), this.position);
     const move_x = (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
     const move_y = (controls.down ? 1 : 0) - (controls.up ? 1 : 0);
     const move_v = vector.normalise(vector.create(move_x, move_y));
@@ -56,15 +57,22 @@ export class Player extends Thing {
     }
   }
 
+  hit(damage: number) {
+    super.hit(damage);
+    if (damage > 0) this.health?.set_invincible(config.game.invincibility_time);
+  }
+
   camera_position() {
-    let v = vector.sub(this.target.facing, camera.world2screen(this.position) ?? this.target.position);
-    v = vector.normalise(v, vector.length(v) / 30 * camera.scale);
-    return vector.add(player.position, v);
+    return vector.add(this.position, vector.mult(camera.mouse_v, 1 / 30 * camera.scale));
+    // todo remove
+    // let v = vector.sub(this.target.facing, camera.world2screen(this.position));
+    // v = vector.normalise(v, vector.length(v) / 30 * camera.scale);
+    // return vector.add(this.position, v);
   }
 
   camera_scale() {
     const v = camera.halfscreen;
-    return Math.sqrt(v.x * v.y) / 500;
+    return Math.sqrt(v.x * v.y) / 500 / this.fov_mult;
   }
 
 };

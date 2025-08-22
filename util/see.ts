@@ -133,8 +133,8 @@ const calc_visibility_path_2 = (v: vector): Path2D => {
   start.y = Math.round(v.y);
   start.r = Math.max(w, h);
 
-  const viewport_1 = camera.screen2world(vector.create());
-  const viewport_2 = camera.screen2world(vector.create(Math.round(w), Math.round(h)));
+  const viewport_1 = camera.screen2world(vector.create(-Math.round(w) * 999, -Math.round(h) * 999));
+  const viewport_2 = camera.screen2world(vector.create(Math.round(w) * 1000, Math.round(h) * 1000));
   
   const result = collide.get_visibility_polygon(start, Shape.get_vertices(), viewport_1, viewport_2);
 
@@ -165,10 +165,11 @@ const invert_path = (path: Path2D): Path2D => {
   return inverted;
 };
 
-const clip_path = (center: vector, path: Path2D, z: number) => {
+const clip_path = (center: vector, path: Path2D, z: number, inverted: boolean = false) => {
   if (z === 1) return;
   const s = camera.world2screen(center);
-  const scale = 1 / (1 - z);
+  // const scale = inverted ? 1 / (1 - z) : camera.zscale(z);
+  const scale = camera.zscale(z);
   ctx.translate(s.x, s.y);
   ctx.scale(scale, scale);
   ctx.translate(-s.x, -s.y);
@@ -185,7 +186,7 @@ const clip_visibility_path = (center: vector, path: Path2D, z: number) => {
 };
 
 const clip_inverted_path = (center: vector, inverted: Path2D, z: number) => {
-  clip_path(center, inverted, z);
+  clip_path(center, inverted, z, true);
   ctx.beginPath();
   ctx.rect(0, 0, w, h);
   ctx.fillStyle = Math.abs(z) < math.epsilon ? "#544bdb80" : color.blackground + "28"; // todo replace color

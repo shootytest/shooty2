@@ -20,6 +20,21 @@ make.wall_tutorial_rock = {
     make_parent: ["wall_tutorial"],
     keep_bullets: true,
 };
+make.wall_tutorial_spike = {
+    make_parent: ["wall_tutorial"],
+    style: "tutorial_spike",
+    keep_bullets: false,
+    seethrough: true,
+    damage: 100,
+};
+make.wall_tutorial_rock_breakable = {
+    make_parent: ["wall_tutorial"],
+    hide_health: true,
+    team: 7,
+    health: {
+        capacity: 500,
+    },
+};
 // floors
 make.floor = {
     decoration: true,
@@ -34,6 +49,18 @@ make.floor_tutorial = {
 make.sensor = {
     style: "sensor",
     sensor: true,
+    invisible: true,
+    seethrough: true,
+    keep_bullets: true,
+};
+make.switch = {
+    style: "switch",
+    switch: true,
+    seethrough: true,
+    restitution: 0,
+};
+make.sensor_path = {
+    style: "sensor_path",
     invisible: true,
     seethrough: true,
     keep_bullets: true,
@@ -87,8 +114,18 @@ make.enemy_tutorial = {
 };
 make.enemy_tutorial_block = {
     make_parent: ["enemy_tutorial"],
+    movable: false,
+    seethrough: false,
     health: {
         capacity: 500,
+    },
+};
+make.enemy_tutorial_4way = {
+    make_parent: ["enemy_tutorial"],
+    movable: false,
+    angle: -360 / 14,
+    health: {
+        capacity: 1000,
     },
 };
 make.enemy_tutorial_basic = {
@@ -102,8 +139,9 @@ make.enemy_tutorial_basic = {
 };
 make.enemy_tutorial_bit = {
     make_parent: ["enemy_tutorial", "enemy_breakable"],
+    style: "tutorial_breakable",
     style_: {
-        opacity: 0.4,
+        opacity: 0.6,
     },
 };
 make.bullet = {
@@ -117,10 +155,15 @@ export const make_shapes = {};
 make_shapes.player = [{
         type: "circle",
         radius: 31,
-    }, {
+    }];
+make_shapes.player_basic = [{
         type: "line",
         v2: vector.createpolar_deg(0, 30),
-        shoot: "player",
+        shoot: "player_basic",
+    }];
+make_shapes.switch = [{
+        type: "circle",
+        radius: 15,
     }];
 make_shapes.enemy_tutorial_block = [{
         type: "polygon",
@@ -136,6 +179,30 @@ make_shapes.enemy_tutorial_basic = [{
         type: "line",
         v2: vector.createpolar_deg(0, 35),
         shoot: "enemy_basic",
+    }];
+make_shapes.enemy_tutorial_4way = [{
+        type: "polygon",
+        sides: 7,
+        radius: 70,
+    }, {
+        type: "line",
+        v2: vector.createpolar_deg(0, 70),
+        shoot: "enemy_4way",
+    }, {
+        type: "line",
+        v2: vector.createpolar_deg(6 * 360 / 7, 70),
+        shoot: "enemy_4way",
+        shoot_: { angle: 6 * 360 / 7, delay: 2 / 4, },
+    }, {
+        type: "line",
+        v2: vector.createpolar_deg(5 * 360 / 7, 70),
+        shoot: "enemy_4way",
+        shoot_: { angle: 5 * 360 / 7, delay: 2 / 4, },
+    }, {
+        type: "line",
+        v2: vector.createpolar_deg(4 * 360 / 7, 70),
+        shoot: "enemy_4way",
+        shoot_: { angle: 4 * 360 / 7, delay: 2 / 4, },
     }];
 make_shapes.enemy_tutorial_bit = [{
         type: "polygon",
@@ -173,6 +240,13 @@ make_shoot.enemy = {
 };
 make_shoot.enemy_basic = {
     parent: ["enemy"],
+};
+make_shoot.enemy_4way = {
+    parent: ["enemy"],
+    size: 12,
+    reload: 60,
+    speed: 2.5,
+    recoil: 0,
 };
 const calculated_keys = ["default"];
 const calculated_shoot_keys = [];

@@ -16,7 +16,7 @@ export class Shoot {
     time = 0;
     duration = 0;
     duration_time = 0;
-    delay = 0;
+    delayed = 0;
     offset = vector.create();
     bullets = [];
     stats;
@@ -29,6 +29,9 @@ export class Shoot {
         if (thing.is_player || (thing.is_bullet && thing.bullet_shoot?.is_player))
             this.is_player = true;
     }
+    get ratio() {
+        return math.bound((this.time / (this.stats.reload ?? 1) - (this.stats.delay ?? 0) + 1) % 1, 0, 1);
+    }
     set_stats(new_stats) {
         override_object(this.stats, new_stats);
         // for (const [k, v] of Object.entries(new_stats)) {
@@ -39,16 +42,20 @@ export class Shoot {
         if (this.time < (this.stats.reload ?? 0)) {
             this.time++;
             if (this.shape) {
-                const ratio = math.bound(this.time / (this.stats.reload ?? 1), 0, 1);
+                const ratio = this.ratio;
                 this.shape.scale = vector.create(ratio, ratio);
             }
+        }
+        if (this.delayed > 0 && Thing.time >= this.delayed) {
+            this.shoot_bullet();
+            this.delayed = 0;
         }
     }
     shoot() {
         const S = this.stats;
         const reload = S.reload ?? 0;
         while (reload != undefined && this.time >= reload) {
-            this.shoot_bullet();
+            this.delayed = Thing.time + (S.delay ?? 0) * reload;
             this.time -= reload;
         }
     }

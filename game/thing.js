@@ -99,17 +99,33 @@ export class Thing {
         }
         if (this.body)
             this.body.label = o.id;
+        this.make_shoot(this.options.shoots);
+        this.make_the_rest();
     }
     make(key, reset = false) {
         const o = make[key];
-        if (reset) {
+        if (reset)
             this.options = {};
-            for (const shoot of this.shoots)
-                shoot.remove();
-        }
         override_object(this.options, o);
         this.make_shape(key, reset);
-        for (const shoot_key of o.shoots ?? []) {
+        this.make_shoot(this.options.shoots, reset);
+        this.make_the_rest();
+        return this.options;
+    }
+    make_shape(key, reset = false) {
+        if (reset)
+            for (const shape of clone_array(this.shapes))
+                shape.remove();
+        const shapes = make_shapes[key] ?? [];
+        for (const o of shapes) {
+            Shape.from_make(this, o);
+        }
+    }
+    make_shoot(shoots = [], reset = false) {
+        if (reset)
+            for (const shoot of clone_array(this.shoots))
+                shoot.remove();
+        for (const shoot_key of shoots) {
             const S = make_shoot[shoot_key];
             if (S) {
                 this.add_shoot(S);
@@ -117,6 +133,8 @@ export class Thing {
             else
                 console.error(`[thing/make] thing id '${this.id}': make_shoot '${shoot_key}' doesn't exist!`);
         }
+    }
+    make_the_rest() {
         if (this.options.damage != undefined)
             this.damage = this.options.damage;
         if (this.options.team != undefined)
@@ -131,17 +149,6 @@ export class Thing {
                 this.ability = new Health(this);
             this.ability.make(this.options.ability);
         }
-        return this.options;
-    }
-    make_shape(key, reset = false) {
-        if (reset) {
-            for (const shape of this.shapes)
-                shape.remove();
-        }
-        const shapes = make_shapes[key];
-        for (const o of shapes ?? []) {
-            Shape.from_make(this, o);
-        }
     }
     create_id(id) {
         this.id = id;
@@ -152,6 +159,7 @@ export class Thing {
         const result = {
             isStatic: !this.options.movable,
             isSensor: this.options.sensor,
+            angle: this.options.angle == undefined ? this.target.angle : vector.deg_to_rad(this.options.angle),
             friction: this.options.friction_contact ?? 0.1,
             frictionAir: this.options.friction ?? 0.01,
             restitution: this.options.restitution ?? 0,
@@ -163,7 +171,7 @@ export class Thing {
     }
     create_body(options = {}, shape_index = 0) {
         if (this.shapes.length <= shape_index) {
-            throw "shape index " + shape_index + " >= length " + this.shapes.length;
+            throw `thing '${this.id}': shape index ${shape_index} >= length ${this.shapes.length}`;
         }
         const s = this.shapes[shape_index];
         let body;
@@ -171,7 +179,7 @@ export class Thing {
         if (s instanceof Polygon && s.sides === 0) {
             body = Bodies.circle(s.offset.x, s.offset.y, s.radius, options);
             Body.setPosition(body, this.target.position);
-            Body.setAngle(body, this.target.angle);
+            // Body.setAngle(body, this.target.angle);
         }
         else { // just use vertices
             if (s.closed_loop && s.vertices.length > 2) {
@@ -180,7 +188,7 @@ export class Thing {
                 const offset_3_hour = vector.sub(vector.aabb2bounds(vector.make_aabb(s.vertices)).min, body.bounds.min);
                 body.offset = offset_3_hour;
                 Body.setPosition(body, vector.add(this.target.position, offset_3_hour));
-                Body.setAngle(body, this.target.angle);
+                // Body.setAngle(body, this.target.angle);
                 if (body.parts.length >= 2)
                     for (const b of body.parts) {
                         b.thing = this;
@@ -192,7 +200,7 @@ export class Thing {
                 // console.log(math.expand_lines(s.vertices, 1));
                 // const composite = Composite.create();
                 const sm = vector.mean(s.vertices);
-                const b = Bodies.fromVertices(sm.x, sm.y, math.expand_lines(s.vertices, config.physics.wall_width * 2), options);
+                const b = Bodies.fromVertices(sm.x, sm.y, math.expand_lines(s.vertices, config.physics.wall_width), options);
                 const walls = [];
                 b.density = 0;
                 b.collisionFilter = { category: 0 };
@@ -203,7 +211,7 @@ export class Thing {
                 let i = 0;
                 b.label = this.id + "_" + i;
                 i++;
-                for (const vs of math.expand_lines(s.vertices, config.physics.wall_width * 2)) {
+                for (const vs of math.expand_lines(s.vertices, config.physics.wall_width)) {
                     const vm = vector.mean(vs);
                     const b_ = Bodies.fromVertices(s.offset.x + vm.x, s.offset.y + vm.y, [vs], options);
                     b_.label = this.id + "_" + i;
@@ -340,6 +348,9 @@ export class Thing {
             }
         }
     }
+    hit(_damage) {
+        // do nothing when hit
+    }
     update_angle(smoothness = 1) {
         if (this.body == undefined)
             return;
@@ -355,12 +366,17 @@ export class Thing {
     translate_wall(vector) {
         if (!this.body)
             return;
+        this.translate(vector);
         const walls = this.body.walls ?? [];
-        Body.setPosition(this.body, Vector.add(this.body.position, vector));
         if (walls)
             for (const wall of walls) {
-                Body.setPosition(wall, Vector.add(wall.position, vector));
+                Body.setPosition(wall, Vector.add(wall.position, vector), true);
             }
+    }
+    translate(vector) {
+        if (!this.body)
+            return;
+        Body.setPosition(this.body, Vector.add(this.body.position, vector), true);
     }
     push_to(target, amount) {
         const push = vector.createpolar(Vector.angle(this.position, target), amount * (this.body?.mass ?? 1) * config.physics.force_factor);

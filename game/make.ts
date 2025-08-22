@@ -19,6 +19,7 @@ export interface maketype {
   movable?: boolean; // dynamic physics object
   seethrough?: boolean; // visibility
   keep_bullets?: boolean; // don't delete bullets if they collide
+  switch?: boolean;
 
   shoots?: string[];
 
@@ -26,8 +27,10 @@ export interface maketype {
   team?: number;
   health?: maketype_health;
   ability?: maketype_health;
+  hide_health?: boolean;
 
   // physics stuff
+  angle?: number;
   friction?: number;
   friction_contact?: number;
   restitution?: number;
@@ -69,7 +72,10 @@ export interface maketype_shape {
   scale?: vector;
   v1?: vector;
   v2?: vector;
+  blinking?: boolean;
+  glowing?: number;
   shoot?: string;
+  shoot_?: shoot_stats;
 
 };
 
@@ -140,6 +146,23 @@ make.wall_tutorial_rock = {
   keep_bullets: true,
 };
 
+make.wall_tutorial_spike = {
+  make_parent: ["wall_tutorial"],
+  style: "tutorial_spike",
+  keep_bullets: false,
+  seethrough: true,
+  damage: 100,
+};
+
+make.wall_tutorial_rock_breakable = {
+  make_parent: ["wall_tutorial"],
+  hide_health: true,
+  team: 7,
+  health: {
+    capacity: 500,
+  },
+};
+
 
 // floors
 
@@ -160,6 +183,20 @@ make.floor_tutorial = {
 make.sensor = {
   style: "sensor",
   sensor: true,
+  invisible: true,
+  seethrough: true,
+  keep_bullets: true,
+};
+
+make.switch = {
+  style: "switch",
+  switch: true,
+  seethrough: true,
+  restitution: 0,
+};
+
+make.sensor_path = {
+  style: "sensor_path",
   invisible: true,
   seethrough: true,
   keep_bullets: true,
@@ -224,8 +261,19 @@ make.enemy_tutorial = {
 
 make.enemy_tutorial_block = {
   make_parent: ["enemy_tutorial"],
+  movable: false,
+  seethrough: false,
   health: {
     capacity: 500,
+  },
+};
+
+make.enemy_tutorial_4way = {
+  make_parent: ["enemy_tutorial"],
+  movable: false,
+  angle: -360 / 14,
+  health: {
+    capacity: 1000,
   },
 };
 
@@ -241,8 +289,9 @@ make.enemy_tutorial_basic = {
 
 make.enemy_tutorial_bit = {
   make_parent: ["enemy_tutorial", "enemy_breakable"],
+  style: "tutorial_breakable",
   style_: {
-    opacity: 0.4,
+    opacity: 0.6,
   },
 };
 
@@ -261,10 +310,17 @@ export const make_shapes: { [key: string]: maketype_shape[] } = {};
 make_shapes.player = [{
   type: "circle",
   radius: 31,
-}, {
+}];
+
+make_shapes.player_basic = [{
   type: "line",
   v2: vector.createpolar_deg(0, 30),
-  shoot: "player",
+  shoot: "player_basic",
+}];
+
+make_shapes.switch = [{
+  type: "circle",
+  radius: 15,
 }];
 
 make_shapes.enemy_tutorial_block = [{
@@ -282,6 +338,31 @@ make_shapes.enemy_tutorial_basic = [{
   type: "line",
   v2: vector.createpolar_deg(0, 35),
   shoot: "enemy_basic",
+}];
+
+make_shapes.enemy_tutorial_4way = [{
+  type: "polygon",
+  sides: 7,
+  radius: 70,
+}, {
+  type: "line",
+  v2: vector.createpolar_deg(0, 70),
+  shoot: "enemy_4way",
+}, {
+  type: "line",
+  v2: vector.createpolar_deg(6 * 360 / 7, 70),
+  shoot: "enemy_4way",
+  shoot_: { angle: 6 * 360 / 7, delay: 2 / 4, },
+}, {
+  type: "line",
+  v2: vector.createpolar_deg(5 * 360 / 7, 70),
+  shoot: "enemy_4way",
+  shoot_: { angle: 5 * 360 / 7, delay: 2 / 4, },
+}, {
+  type: "line",
+  v2: vector.createpolar_deg(4 * 360 / 7, 70),
+  shoot: "enemy_4way",
+  shoot_: { angle: 4 * 360 / 7, delay: 2 / 4, },
 }];
 
 make_shapes.enemy_tutorial_bit = [{
@@ -328,6 +409,14 @@ make_shoot.enemy = {
 
 make_shoot.enemy_basic = {
   parent: ["enemy"],
+};
+
+make_shoot.enemy_4way = {
+  parent: ["enemy"],
+  size: 12,
+  reload: 60,
+  speed: 2.5,
+  recoil: 0,
 };
 
 

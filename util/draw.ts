@@ -92,6 +92,22 @@ export class Context {
     return this.ctx.lineJoin;
   }
 
+  get shadowBlur() {
+    return this.ctx.shadowBlur;
+  }
+
+  get shadowOffsetX() {
+    return this.ctx.shadowOffsetX;
+  }
+
+  get shadowOffsetY() {
+    return this.ctx.shadowOffsetY;
+  }
+
+  get shadowColor() {
+    return this.ctx.shadowColor;
+  }
+
   get filter() {
     return this.ctx.filter;
   }
@@ -132,6 +148,22 @@ export class Context {
 
   set lineJoin(lineJoin: CanvasLineJoin) {
     this.ctx.lineJoin = lineJoin;
+  }
+
+  set shadowBlur(shadowBlur: number) {
+    this.ctx.shadowBlur = shadowBlur;
+  }
+
+  set shadowOffsetX(shadowOffsetX: number) {
+    this.ctx.shadowOffsetX = shadowOffsetX;
+  }
+
+  set shadowOffsetY(shadowOffsetY: number) {
+    this.ctx.shadowOffsetY = shadowOffsetY;
+  }
+
+  set shadowColor(shadowColor: string) {
+    this.ctx.shadowColor = shadowColor;
   }
 
   set filter(filter: string) {
