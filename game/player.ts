@@ -81,11 +81,18 @@ export class Player extends Thing {
     return Math.sqrt(v.x * v.y) / 500 / this.fov_mult;
   }
 
+  remake_shoot(shoot_id: string) {
+    this.make_shape("player", true);
+    this.make_shape("player_" + shoot_id);
+  }
+
   save(): player_save {
     this.autosave_time = Thing.time + config.game.autosave_interval;
     const o = {
       position: this.position,
       fov_mult: this.fov_mult,
+      health: this.health?.value ?? 0,
+      ability: this.ability?.value ?? 0,
     } as player_save;
     if (this.shoots.length > 0) o.shoots = ["basic"];
     save.save.player = o;
@@ -99,9 +106,11 @@ export class Player extends Thing {
       this.teleport_to(o.position);
     }
     if (o.fov_mult) this.fov_mult = o.fov_mult;
+    if (this.health && o.health) this.health.value = o.health;
+    if (this.ability && o.ability) this.ability.value = o.ability;
     // this.make("player", true);
     if (o.shoots) {
-      this.make_shape("player_" + o.shoots[0]);
+      this.remake_shoot(o.shoots[0]);
     }
   }
 

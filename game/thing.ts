@@ -7,6 +7,7 @@ import { vector, vector3, vector3_ } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
 import { Health } from "./health.js";
 import { make, make_shapes, shoot_stats, override_object, make_shoot, clone_array, bullet_death_type, multiply_and_override_object, clone_object, maketype_shape, maketype } from "./make.js";
+import { save } from "./save.js";
 import { Polygon, Shape } from "./shape.js";
 import { Shoot } from "./shoot.js";
 
@@ -315,6 +316,10 @@ export class Thing {
     if (this.body != undefined) {
       // remove from world
       Composite.remove(world, this.body);
+      const walls = (this.body as any).walls as Matter.Body[] ?? [];
+      for (const wall of walls) {
+        Composite.remove(world, wall);
+      }
       this.body = undefined;
       return true;
     } else {
@@ -391,7 +396,7 @@ export class Thing {
     if (!this.body) return;
     this.translate(vector);
     const walls = (this.body as any).walls as Matter.Body[] ?? [];
-    if (walls) for (const wall of walls) {
+    for (const wall of walls) {
       Body.setPosition(wall, Vector.add(wall.position, vector), true);
     }
   }
@@ -403,7 +408,7 @@ export class Thing {
   
   teleport_to(vector: vector) {
     if (!this.body) return;
-    Body.setPosition(this.body, vector, true);
+    Body.setPosition(this.body, vector);
   }
 
   push_to(target: vector, amount: number) {

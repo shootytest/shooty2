@@ -208,6 +208,7 @@ make.sensor = {
 
 make.switch = {
   style: "switch",
+  team: 0, // "team: 1" keeps bullets...
   switch: true,
   seethrough: true,
   restitution: 0,
@@ -215,6 +216,7 @@ make.switch = {
 
 make.sensor_path = {
   style: "sensor_path",
+  decoration: true,
   invisible: true,
   seethrough: true,
   keep_bullets: true,
@@ -371,17 +373,17 @@ make_shapes.enemy_tutorial_4way = [{
   type: "line",
   v2: vector.createpolar_deg(6 * 360 / 7, 70),
   shoot: "enemy_4way",
-  shoot_: { angle: 6 * 360 / 7, delay: 2 / 4, },
+  shoot_: { angle: 6 * 360 / 7 },
 }, {
   type: "line",
   v2: vector.createpolar_deg(5 * 360 / 7, 70),
   shoot: "enemy_4way",
-  shoot_: { angle: 5 * 360 / 7, delay: 2 / 4, },
+  shoot_: { angle: 5 * 360 / 7 },
 }, {
   type: "line",
   v2: vector.createpolar_deg(4 * 360 / 7, 70),
   shoot: "enemy_4way",
-  shoot_: { angle: 4 * 360 / 7, delay: 2 / 4, },
+  shoot_: { angle: 4 * 360 / 7 },
 }];
 
 make_shapes.enemy_tutorial_bit = [{
@@ -439,8 +441,8 @@ make_shoot.enemy_easy = {
 make_shoot.enemy_4way = {
   parent: ["enemy"],
   size: 12,
-  reload: 55,
-  speed: 2.5,
+  reload: 60,
+  speed: 2,
   recoil: 0,
   time: 100,
 };
@@ -587,6 +589,6 @@ for (const k of Object.keys(make_shoot)) {
 }
 
 // debug
-console.log(make);
+// console.log(make);
 // console.log(make_shapes);
 // console.log(make_shoot);

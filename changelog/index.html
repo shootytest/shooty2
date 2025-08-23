@@ -7,6 +7,8 @@
     <link href="../style.css" rel="stylesheet" type="text/css" media="all">
     <style>
       body {
+        background-color: #122334;
+        color: "#eeeeee";
         padding: 0 12%;
       }
       h2 {
@@ -20,6 +22,9 @@
         line-height: 1.25em;
         padding-top: 0.3em;
       }
+      a {
+        color: #ffb48f;
+      }
     </style>
   </head>
   <body style="text-align: left;">
@@ -28,16 +33,19 @@
     <ul>
       <li>make this to do list</li>
     </ul>
+    <h2>0.1.1 | 23-08-2025 | 3 🧱 1 ❔</h2>
+    <ul>
+      <li>the game autosaves!</li>
+      <li>danger zone</li>
+    </ul>
     <h2>0.1.0 | 22-08-2025 | 2 🧱 1 ❔</h2>
     <ul>
       <li>made <i>the game</i></li>
       <li>with a map maker</li>
     </ul>
-    <!--
     <h2>danger zone</h2>
-    <a href="reset.html">click here to reset position!</a>
-    <br><br>
-    <a href="javascript:localStorage.clear()">click here to clear all progress saved in this browser</a>
-    -->
+    <!--<a href="reset.html">click here to reset position!</a>
+    <br><br>-->
+    <a href="javascript:(function() { localStorage.removeItem('saves'); localStorage.setItem('reload', 'true'); console.log(localStorage.getItem('saves')); })();">click here to clear all progress saved in this browser</a>
   </body>
 </html>

@@ -305,6 +305,10 @@ export class Thing {
         if (this.body != undefined) {
             // remove from world
             Composite.remove(world, this.body);
+            const walls = this.body.walls ?? [];
+            for (const wall of walls) {
+                Composite.remove(world, wall);
+            }
             this.body = undefined;
             return true;
         }
@@ -380,10 +384,9 @@ export class Thing {
             return;
         this.translate(vector);
         const walls = this.body.walls ?? [];
-        if (walls)
-            for (const wall of walls) {
-                Body.setPosition(wall, Vector.add(wall.position, vector), true);
-            }
+        for (const wall of walls) {
+            Body.setPosition(wall, Vector.add(wall.position, vector), true);
+        }
     }
     translate(vector) {
         if (!this.body)
@@ -393,7 +396,7 @@ export class Thing {
     teleport_to(vector) {
         if (!this.body)
             return;
-        Body.setPosition(this.body, vector, true);
+        Body.setPosition(this.body, vector);
     }
     push_to(target, amount) {
         const push = vector.createpolar(Vector.angle(this.position, target), amount * (this.body?.mass ?? 1) * config.physics.force_factor);

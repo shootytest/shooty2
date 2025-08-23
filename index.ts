@@ -2,6 +2,7 @@ import { detector } from "./game/detector.js";
 import { Enemy, Spawner } from "./game/enemy.js";
 import { Particle } from "./game/particle.js";
 import { player } from "./game/player.js";
+import { save } from "./game/save.js";
 import { Thing } from "./game/thing.js";
 import { Engine, Runner } from "./matter.js";
 import { camera } from "./util/camera.js";
@@ -108,12 +109,18 @@ for (const map_shape of shapelist) {
 player.position = vector3.create_(MAP.computed?.shape_map.start.vertices[0] ?? vector.create());
 player.fov_mult = MAP.computed?.shape_map.start.options.sensor_fov_mult ?? 1;
 player.create_player();
+save.load_from_storage();
 
-// todo remove debugs :()()
-// console.log(Thing.things);
-// console.log(Shape.shapes);
 
 // autoreload map
+window.localStorage.removeItem("reload");
 window.addEventListener("storage", function(event) {
   if (event.key === "map_auto") window.location.reload();
+  if (event.key === "reload") window.location.reload();
+});
+window.addEventListener("beforeunload", function(event) {
+  if (!window.localStorage.getItem("reload")) save.changed(true);
+  // event.preventDefault();
+  // event.returnValue = true;
+  // return true;
 });

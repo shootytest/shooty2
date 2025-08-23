@@ -156,6 +156,10 @@ export const detector = {
         ["tutorial room 1 sensor"]: (thing) => {
             thing.lookup("tutorial room 1 arrow").shapes[0].style.stroke_opacity = 1 - math.bound((player.position.x - thing.position.x) / 350, 0, 1);
         },
+        ["tutorial room 2 door sensor"]: (thing) => {
+            // const style = thing.lookup("tutorial room 2 arrow").shapes[0].style;
+            // style.stroke_opacity = math.bound((style.stroke_opacity ?? 1) - 0.05, 0, 1);
+        },
         ["tutorial room 4 sensor"]: (thing) => {
             player.fov_mult = 1.3 - 0.6 * math.bound(1 - vector.length(vector.sub(player.position, thing.position)) / 350, 0, 1);
         },
@@ -179,12 +183,32 @@ export const detector = {
             return true;
         },
     },
+    spawner_calc_fns: {
+        ["tutorial room 3 enemy 1"]: (spawner) => {
+            if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 2") > 0) {
+                spawner.thing_lookup("tutorial window 1").remove();
+                spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
+            }
+        },
+        ["tutorial room 3 enemy 2"]: (spawner) => {
+            if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 1") > 0) {
+                spawner.thing_lookup("tutorial window 1").remove();
+                spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
+            }
+        },
+    },
     tick_fns: {
         ["tutorial room 1 door 1"]: (door) => {
             do_door(door, "tutorial room 1 door sensor");
         },
         ["tutorial room 1 door 2"]: (door) => {
             do_door(door, "tutorial room 1 door sensor");
+        },
+        ["tutorial room 2 arrow"]: (thing) => {
+            if (player.shoots.length > 0) {
+                thing.shapes[0].activate_scale = true;
+                thing.shapes[0].scale.x = -1;
+            }
         },
         ["tutorial room 2 door 1"]: (door) => {
             do_door(door, "tutorial room 2 door sensor");

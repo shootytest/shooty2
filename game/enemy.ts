@@ -65,6 +65,9 @@ export class Enemy extends Thing {
     this.create_body(this.create_body_options(filters.thing(this.team)));
     if (this.body) this.body.label = id;
     else console.error("[enemy/make_enemy] no body?");
+    if (this.options.switch && save.check_switch(this.spawner.id)) {
+      this.shapes[0].glowing = 1;
+    }
   }
 
   die() {
@@ -267,6 +270,7 @@ export class Spawner {
     if (this.permanent && this.wave_progress > -1) {
       save.set_switch(this.id, this.wave_progress);
     }
+    detector.spawner_calc_fns[this.id]?.(this);
   }
 
   random_position(): vector {
@@ -283,6 +287,15 @@ export class Spawner {
       Spawner.spawners.splice(index, 1);
     }
     delete Spawner.spawners_lookup[this.id];
+  }
+  
+  check_progress(spawner_id: string): number {
+    return Spawner.check_progress(spawner_id);
+  }
+
+  // useful
+  thing_lookup(thing_id: string) {
+    return Thing.things_lookup[thing_id];
   }
 
 };
