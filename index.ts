@@ -106,6 +106,7 @@ for (const map_shape of shapelist) {
 }
 
 player.position = vector3.create_(MAP.computed?.shape_map.start.vertices[0] ?? vector.create());
+player.fov_mult = MAP.computed?.shape_map.start.options.sensor_fov_mult ?? 1;
 player.create_player();
 
 // todo remove debugs :()()

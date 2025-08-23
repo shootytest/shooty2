@@ -30,7 +30,7 @@ export class Shoot {
             this.is_player = true;
     }
     get ratio() {
-        return math.bound((this.time / (this.stats.reload ?? 1) - (this.stats.delay ?? 0) + 1) % 1, 0, 1);
+        return math.bound((this.time / (this.stats.reload ?? 1) - (this.stats.delay ?? 0) + 1) % (1 + math.epsilon), 0, 1);
     }
     set_stats(new_stats) {
         override_object(this.stats, new_stats);
@@ -41,10 +41,7 @@ export class Shoot {
     tick() {
         if (this.time < (this.stats.reload ?? 0)) {
             this.time++;
-            if (this.shape) {
-                const ratio = this.ratio;
-                this.shape.scale = vector.create(ratio, ratio);
-            }
+            this.update_shape();
         }
         if (this.delayed > 0 && Thing.time >= this.delayed) {
             this.shoot_bullet();
@@ -118,6 +115,11 @@ export class Shoot {
         if (index >= 0) {
             this.thing.shoots.splice(index, 1);
         }
+    }
+    update_shape(ratio = this.ratio) {
+        if (!this.shape)
+            return;
+        this.shape.scale = vector.create(ratio, ratio);
     }
 }
 ;

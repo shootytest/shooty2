@@ -3,12 +3,14 @@ import { config } from "../util/config.js";
 import { keys } from "../util/key.js";
 import { vector, vector3 } from "../util/vector.js";
 import { filters } from "./detector.js";
+import { player_save, save } from "./save.js";
 import { Thing } from "./thing.js";
 
 export class Player extends Thing {
 
   autoshoot = false;
   fov_mult = 1;
+  autosave_time = -1;
 
   constructor() {
     super();
@@ -55,6 +57,10 @@ export class Player extends Thing {
     if (controls.shoot || this.autoshoot) {
       this.shoot();
     }
+    if (Thing.time >= this.autosave_time) {
+      if (this.autosave_time < 0) this.autosave_time = Thing.time + config.game.autosave_interval;
+      else this.save();
+    }
   }
 
   hit(damage: number) {
@@ -73,6 +79,30 @@ export class Player extends Thing {
   camera_scale() {
     const v = camera.halfscreen;
     return Math.sqrt(v.x * v.y) / 500 / this.fov_mult;
+  }
+
+  save(): player_save {
+    this.autosave_time = Thing.time + config.game.autosave_interval;
+    const o = {
+      position: this.position,
+      fov_mult: this.fov_mult,
+    } as player_save;
+    if (this.shoots.length > 0) o.shoots = ["basic"];
+    save.save.player = o;
+    save.changed();
+    return o;
+  }
+
+  load(o: player_save) {
+    if (o.position) {
+      this.position = o.position;
+      this.teleport_to(o.position);
+    }
+    if (o.fov_mult) this.fov_mult = o.fov_mult;
+    // this.make("player", true);
+    if (o.shoots) {
+      this.make_shape("player_" + o.shoots[0]);
+    }
   }
 
 };

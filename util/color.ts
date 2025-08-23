@@ -88,26 +88,48 @@ export const STYLES: styles_type = {
   tutorial: {
     stroke: "#7f77ea",
     stroke_opacity: 1,
+  },
+  tutorial_filled: {
+    stroke: "#7f77ea",
+    stroke_opacity: 1,
     fill: "#544bdb",
     fill_opacity: 0.7,
   },
+  tutorial_window: {
+    stroke: "#778eea",
+    fill: "#778eea",
+    fill_opacity: 0.2,
+  },
+  tutorial_curtain: {
+    stroke: "#4e47af",
+    stroke_opacity: 0,
+    fill: "#4e47af",
+    fill_opacity: 0.3,
+  },
   tutorial_breakable: {
     stroke: "#778eea",
-    stroke_opacity: 0.4,
+    stroke_opacity: 0.45,
   },
   tutorial_enemy: {
     stroke: "#d7193f",
     fill: "#d7193f",
+    health: "#778eea",
     fill_opacity: 0.4,
+    health_opacity: 0.6,
   },
   tutorial_spike: {
     stroke: "#d7193f",
     fill: "#d7193f",
+    health: "#778eea",
     fill_opacity: 0.4,
+    health_opacity: 0.6,
   },
-  tutorial_enemy_filled: {
+  tutorial_enemy_2: {
     stroke: "#778eea",
     fill: "#778eea",
+    health: "#d7193f",
+    fill_opacity: 0.4,
+    health_opacity: 0.25,
   },
   tutorial_door: {
     stroke: "#4e47af",

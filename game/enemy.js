@@ -1,9 +1,10 @@
 import { Query } from "../matter.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
-import { filters } from "./detector.js";
+import { detector, filters } from "./detector.js";
 import { make } from "./make.js";
 import { player } from "./player.js";
+import { save } from "./save.js";
 import { Shape } from "./shape.js";
 import { Thing } from "./thing.js";
 export class Enemy extends Thing {
@@ -66,17 +67,28 @@ export class Enemy extends Thing {
         else
             console.error("[enemy/make_enemy] no body?");
     }
+    die() {
+        const id = this.spawner.id;
+        const bypass_remove = detector.before_death_fns[id]?.(this);
+        if (bypass_remove)
+            return;
+        super.die();
+    }
     tick() {
         super.tick();
         this.tick_enemy();
     }
     tick_enemy() {
-        if (this.can_see_player())
-            this.shoot();
+        if (!this.can_see_player())
+            return;
+        this.shoot();
         this.face_enemy();
         this.move_enemy();
     }
     can_see_player() {
+        if (vector.length2(vector.sub(this.position, player.position)) > (this.options.enemy_detect_range ?? 1000) ** 2) {
+            return false;
+        }
         const player_size = player.shapes[0]?.radius ?? 0;
         const checks = [
             player.position,
@@ -134,6 +146,23 @@ export class Enemy extends Thing {
         this.spawner.calc_progress();
         super.remove();
     }
+    remove_static() {
+        const index = this.spawner.enemies.indexOf(this);
+        if (index != undefined && index > -1) {
+            this.spawner.enemies.splice(index, 1);
+        }
+        this.spawner.calc_progress();
+        if (this.is_removed)
+            return;
+        this.remove_death();
+        delete this.health; // important! prevents remove on tick (health.is_zero)
+        if (this.body)
+            this.body.isStatic = true;
+        for (const shoot of this.shoots)
+            shoot.update_shape(1);
+        this.remove_children();
+        this.remove_shoots();
+    }
 }
 ;
 ;
@@ -147,14 +176,18 @@ export class Spawner {
             spawner.tick();
         }
     }
+    static check_progress(spawner_id) {
+        return this.spawners_lookup[spawner_id]?.wave_progress ?? -1;
+    }
     uid = ++Spawner.cumulative_id;
     id = "generic spawner #" + this.uid;
     spawn;
     waves = [];
-    wave_progress = -1;
+    wave_progress = 0;
     vertices = [];
     enemies = [];
     delays = [];
+    permanent = false;
     constructor() {
         Spawner.spawners.push(this);
     }
@@ -167,18 +200,22 @@ export class Spawner {
             repeat: o.options.spawn_repeat,
             repeat_delay: o.options.spawn_repeat_delay,
         };
+        this.permanent = o.options.spawn_permanent ?? false;
+        if (this.permanent) {
+            this.wave_progress = save.get_switch(this.id);
+        }
     }
     create_id(id) {
         this.id = id;
         Spawner.spawners_lookup[id] = this;
     }
     tick() {
-        if (this.spawn && this.wave_progress < 0 && this.enemies.length <= 0) {
+        if (this.spawn && this.wave_progress <= 0 && this.enemies.length <= 0) {
             for (let i = 0; i < (this.spawn.repeat ?? 1); i++) {
                 this.delays.push({ enemy: this.spawn.enemy, time: Thing.time + (this.spawn.delay ?? 0) + i * (this.spawn.repeat_delay ?? 0) });
             }
         }
-        else if (this.waves.length >= 1 && this.wave_progress < this.waves.length) {
+        else if (this.waves.length >= 1 && this.wave_progress < this.waves.length + 1) {
             // todo waves
         }
         this.delays = this.delays.filter((d) => {
@@ -198,10 +235,13 @@ export class Spawner {
     }
     calc_progress() {
         if (this.spawn) {
-            this.wave_progress = this.enemies.length <= 0 ? 0 : -1;
+            this.wave_progress = (this.enemies.length <= 0) ? 1 : 0;
         }
         else {
             // todo waves
+        }
+        if (this.permanent && this.wave_progress > -1) {
+            save.set_switch(this.id, this.wave_progress);
         }
     }
     random_position() {

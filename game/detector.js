@@ -1,7 +1,9 @@
 import { engine } from "../index.js";
 import { Events } from "../matter.js";
+import { STYLES } from "../util/color.js";
 import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
+import { clone_object } from "./make.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
 /**
@@ -53,7 +55,7 @@ export const filters = {
     thing: (team) => {
         return {
             group: -team,
-            category: filter_groups.player_thing,
+            category: filter_groups.thing,
             mask: filter_groups.all,
         };
     },
@@ -69,10 +71,15 @@ export const filters = {
         category: filter_groups.wall,
         mask: filter_groups.all,
     },
-    pass: {
+    window: {
         group: 0,
         category: filter_groups.wall,
         mask: filter_groups.thing,
+    },
+    curtain: {
+        group: 0,
+        category: filter_groups.wall,
+        mask: filter_groups.bullet,
     },
 };
 export const detector = {
@@ -123,8 +130,10 @@ export const detector = {
         if (a.is_player && b.health && b_rittle && different_team) {
             b.health?.hit_all();
         }
-        if (a.is_player && b.options.switch) {
-            save.activate_switch(b.spawner.id);
+        if (Math.floor(a.team) === 1 && b.options.switch) {
+            const switch_id = b.spawner.id;
+            if (!save.check_switch(switch_id))
+                save.set_switch(switch_id);
             b.shapes[0].glowing = 1;
         }
         if (b.options.breakable)
@@ -147,12 +156,28 @@ export const detector = {
         ["tutorial room 1 sensor"]: (thing) => {
             thing.lookup("tutorial room 1 arrow").shapes[0].style.stroke_opacity = 1 - math.bound((player.position.x - thing.position.x) / 350, 0, 1);
         },
+        ["tutorial room 4 sensor"]: (thing) => {
+            player.fov_mult = 1.3 - 0.6 * math.bound(1 - vector.length(vector.sub(player.position, thing.position)) / 350, 0, 1);
+        },
     },
     collision_start_fns: {
-    // nothing for now
+        // nothing for now
+        ["tutorial room 1 door sensor"]: (thing) => {
+            thing.lookup("tutorial room 1 arrow").shapes[0].style.stroke_opacity = 0;
+        },
     },
     collision_end_fns: {
     // nothing for now
+    },
+    before_death_fns: {
+        // nothing for now
+        ["tutorial room 2 enemy shooter"]: (thing) => {
+            thing.remove_static();
+            for (const shape of thing.shapes) {
+                shape.style = clone_object(STYLES.tutorial);
+            }
+            return true;
+        },
     },
     tick_fns: {
         ["tutorial room 1 door 1"]: (door) => {
@@ -160,6 +185,12 @@ export const detector = {
         },
         ["tutorial room 1 door 2"]: (door) => {
             do_door(door, "tutorial room 1 door sensor");
+        },
+        ["tutorial room 2 door 1"]: (door) => {
+            do_door(door, "tutorial room 2 door sensor");
+        },
+        ["tutorial room 2 door 2"]: (door) => {
+            do_door(door, "tutorial room 2 door sensor");
         },
         ["tutorial rock 7"]: (door) => {
             switch_door(door, "tutorial room 2 switch", "tutorial room 2 switch path", 1);

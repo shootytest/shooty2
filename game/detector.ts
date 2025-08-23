@@ -1,8 +1,10 @@
 import { engine } from "../index.js";
 import { Events } from "../matter.js";
+import { STYLES } from "../util/color.js";
 import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
 import type { Enemy } from "./enemy.js";
+import { clone_object } from "./make.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
 import type { Thing } from "./thing.js";
@@ -63,7 +65,7 @@ export const filters = {
   },
   thing: (team: number) => { return {
     group: -team,
-    category: filter_groups.player_thing,
+    category: filter_groups.thing,
     mask: filter_groups.all,
   }},
   bullet: (team: number) => { return {
@@ -76,10 +78,15 @@ export const filters = {
     category: filter_groups.wall,
     mask: filter_groups.all,
   },
-  pass: {
+  window: {
     group: 0,
     category: filter_groups.wall,
     mask: filter_groups.thing,
+  },
+  curtain: {
+    group: 0,
+    category: filter_groups.wall,
+    mask: filter_groups.bullet,
   },
 };
 
@@ -128,8 +135,9 @@ export const detector = {
     if (a.is_player && b.health && b_rittle && different_team) {
       b.health?.hit_all();
     }
-    if (a.is_player && b.options.switch) {
-      save.activate_switch((b as Enemy).spawner.id);
+    if (Math.floor(a.team) === 1 && b.options.switch) {
+      const switch_id = (b as Enemy).spawner.id;
+      if (!save.check_switch(switch_id)) save.set_switch(switch_id);
       b.shapes[0].glowing = 1;
     }
     if (b.options.breakable) b.velocity = vector.mult(a.velocity, 0.5);
@@ -153,17 +161,38 @@ export const detector = {
     ["tutorial room 1 sensor"]: (thing) => {
       thing.lookup("tutorial room 1 arrow").shapes[0].style.stroke_opacity = 1 - math.bound((player.position.x - thing.position.x) / 350, 0, 1);
     },
-  } as { [key: string]: (thing: Thing) => void },
+    ["tutorial room 4 sensor"]: (thing) => {
+      player.fov_mult = 1.3 - 0.6 * math.bound(1 - vector.length(vector.sub(player.position, thing.position)) / 350, 0, 1);
+    },
+  } as { [thing_id: string]: (thing: Thing) => void },
 
 
   collision_start_fns: {
     // nothing for now
-  } as { [key: string]: (thing: Thing) => void },
+    ["tutorial room 1 door sensor"]: (thing) => {
+      thing.lookup("tutorial room 1 arrow").shapes[0].style.stroke_opacity = 0;
+    },
+  } as { [thing_id: string]: (thing: Thing) => void },
   
 
   collision_end_fns: {
     // nothing for now
-  } as { [key: string]: (thing: Thing) => void },
+  } as { [thing_id: string]: (thing: Thing) => void },
+  
+
+  before_death_fns: {
+    // nothing for now
+    ["tutorial room 2 enemy shooter"]: (thing) => {
+      (thing as Enemy).remove_static();
+      for (const shape of thing.shapes) {
+        shape.style = clone_object(STYLES.tutorial);
+      }
+      return true;
+    },
+  } as {
+    [spawner_id: string]:         // can choose spawner_id or make_id
+      (thing: Thing) => boolean   // return: whether to bypass remove
+  },
   
 
   tick_fns: {
@@ -172,6 +201,12 @@ export const detector = {
     },
     ["tutorial room 1 door 2"]: (door) => {
       do_door(door, "tutorial room 1 door sensor");
+    },
+    ["tutorial room 2 door 1"]: (door) => {
+      do_door(door, "tutorial room 2 door sensor");
+    },
+    ["tutorial room 2 door 2"]: (door) => {
+      do_door(door, "tutorial room 2 door sensor");
     },
     ["tutorial rock 7"]: (door) => {
       switch_door(door, "tutorial room 2 switch", "tutorial room 2 switch path", 1);

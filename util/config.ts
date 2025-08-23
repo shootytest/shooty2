@@ -2,6 +2,7 @@ export const config = {
   game: {
     version: "0.1.0",
     invincibility_time: 90,
+    autosave_interval: 60, // 1 second
   },
   physics: {
     wall_width: 3,
@@ -11,6 +12,7 @@ export const config = {
     velocity_shoot_boost: 0.3,
   },
   graphics: {
+    shape_cull_padding: 100, // 16 should be ok, 100 is just to be safe
     linewidth_mult: 8,
     shadowblur: 75,
     health_display_smoothness: 0.07,

@@ -127,7 +127,7 @@ export class Shape {
     const screen_topleft = camera.screen2world({ x: 0, y: 0 });
     const screen_bottomright = camera.screen2world({ x: ctx.canvas.width, y: ctx.canvas.height });
     const screen_aabb: AABB3 = {
-      min_x: screen_topleft.x, min_y: screen_topleft.y, max_x: screen_bottomright.x, max_y: screen_bottomright.y, min_z: -Number.MAX_SAFE_INTEGER, max_z: Number.MAX_SAFE_INTEGER,
+      min_x: screen_topleft.x - config.graphics.shape_cull_padding, min_y: screen_topleft.y - config.graphics.shape_cull_padding, max_x: screen_bottomright.x + config.graphics.shape_cull_padding, max_y: screen_bottomright.y + config.graphics.shape_cull_padding, min_z: -Number.MAX_SAFE_INTEGER, max_z: Number.MAX_SAFE_INTEGER,
     };
     Shape.draw_shapes = Shape.filter(screen_aabb);
     Shape.draw_zs = [0];
@@ -277,14 +277,16 @@ export class Shape {
     ctx.arc_v(c, 123456, angle % (Math.PI * 2), (angle + Math.PI * 2 * ratio) % (Math.PI * 2));
     ctx.lineTo(c.x, c.y);
     ctx.clip();
+    const health_color = this.style.health ?? color.red;
+    const health_opacity = this.style.health_opacity ?? 0.3;
     const style_mult: style_type = {
-      stroke_opacity: 0.2,
-      fill_opacity: 0.2,
+      stroke_opacity: health_opacity,
+      fill_opacity: health_opacity,
     };
     if (this.style.stroke) {
-      style_mult.stroke = color.red;
+      style_mult.stroke = health_color;
       style_mult.fill_opacity = 0;
-    } else if (this.style.fill) style_mult.fill = color.red;
+    } else if (this.style.fill) style_mult.fill = health_color;
     // else console.error(`[shape/draw_health] no fill or stroke in ${this.thing.id}`);
     this.draw(style_mult);
     ctx.ctx.restore();

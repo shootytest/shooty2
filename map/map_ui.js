@@ -685,7 +685,21 @@ export const m_ui = {
             if (shape.options.parent == undefined)
                 shape.options.parent = "all";
             const parent = shape.options.parent;
-            const shortened_id = (shape.id.startsWith(parent) && shape.id !== parent) ? shape.id.substring(parent.length) : shape.id;
+            let shortened_id = (shape.id.startsWith(parent) && shape.id !== parent) ? shape.id.substring(parent.length) : shape.id;
+            let grandparent = m_ui.map.computed?.shape_map?.[parent]?.options?.parent;
+            let depth = 1, ups = 0;
+            while (grandparent !== "all" && depth < 1000) {
+                if (grandparent == undefined)
+                    break;
+                if (grandparent !== "all" && shortened_id.startsWith(grandparent) && shortened_id !== grandparent) {
+                    shortened_id = shortened_id.substring(grandparent.length);
+                    ups = depth;
+                    break;
+                }
+                grandparent = m_ui.map.computed?.shape_map?.[grandparent]?.options?.parent;
+                depth++;
+            }
+            shortened_id = "↑".repeat(ups) + shortened_id;
             const li = document.createElement("li");
             let clickable = li;
             if (id === "all" || (shape.options.contains?.length ?? 0) > 0) {
@@ -834,6 +848,11 @@ export const m_ui = {
                 min: 0,
                 max: 100,
                 step: 1,
+            },
+            spawn_permanent: {
+                show: "is_spawner",
+                name: "death is permanent",
+                type: "checkbox",
             },
         },
         /*parent: {

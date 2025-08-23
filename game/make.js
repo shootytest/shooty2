@@ -10,14 +10,27 @@ export const make_ = {};
 make.default = {};
 // walls
 make.wall = {
-// nothing different from default yet
+    wall_filter: "wall",
 };
 make.wall_tutorial = {
     make_parent: ["wall"],
     style: "tutorial",
 };
+make.wall_tutorial_window = {
+    // make_parent: ["wall_tutorial"], // hmmm it's not needed for now
+    style: "tutorial_window",
+    wall_filter: "window",
+    keep_bullets: true,
+    seethrough: true,
+};
+make.wall_tutorial_curtain = {
+    style: "tutorial_curtain",
+    wall_filter: "curtain",
+    seethrough: true,
+};
 make.wall_tutorial_rock = {
     make_parent: ["wall_tutorial"],
+    style: "tutorial_filled",
     keep_bullets: true,
 };
 make.wall_tutorial_spike = {
@@ -125,14 +138,15 @@ make.enemy_tutorial_4way = {
     movable: false,
     angle: -360 / 14,
     health: {
-        capacity: 1000,
+        capacity: 750,
     },
 };
-make.enemy_tutorial_basic = {
+make.enemy_tutorial_easy = {
     make_parent: ["enemy_tutorial"],
+    move_type: "direct",
     face_type: "direct",
-    move_type: "hover",
     move_speed: 2,
+    enemy_detect_range: 500,
     health: {
         capacity: 250,
     },
@@ -171,14 +185,14 @@ make_shapes.enemy_tutorial_block = [{
         sides: 7,
         radius: 50,
     }];
-make_shapes.enemy_tutorial_basic = [{
+make_shapes.enemy_tutorial_easy = [{
         type: "polygon",
         sides: 7,
         radius: 35,
     }, {
         type: "line",
         v2: vector.createpolar_deg(0, 35),
-        shoot: "enemy_basic",
+        shoot: "enemy_easy",
     }];
 make_shapes.enemy_tutorial_4way = [{
         type: "polygon",
@@ -221,6 +235,7 @@ make_shoot.player = {
     restitution: 1,
     recoil: 1,
     damage: 100,
+    time: 50,
 };
 make_shoot.half_reload = {
     reload: 0.5,
@@ -237,16 +252,22 @@ make_shoot.enemy = {
     restitution: 1,
     recoil: 1,
     damage: 100,
+    time: 60,
 };
-make_shoot.enemy_basic = {
+make_shoot.enemy_easy = {
     parent: ["enemy"],
+    size: 11,
+    reload: 70,
+    speed: 2,
+    time: 100,
 };
 make_shoot.enemy_4way = {
     parent: ["enemy"],
     size: 12,
-    reload: 60,
+    reload: 55,
     speed: 2.5,
     recoil: 0,
+    time: 100,
 };
 const calculated_keys = ["default"];
 const calculated_shoot_keys = [];

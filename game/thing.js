@@ -94,7 +94,7 @@ export class Thing {
             this.position = /*(o.vertices.length >= 3 && !o.options.open_loop) ? Vertices.centre(o.computed.vertices) :*/ vector3.mean(o.computed.vertices);
         this.create_id(o.id);
         if (!this.body && !this.options.decoration) {
-            const body_options = this.create_body_options(filters.wall);
+            const body_options = this.create_body_options();
             this.create_body(body_options);
         }
         if (this.body)
@@ -167,6 +167,8 @@ export class Thing {
         };
         if (filter)
             result.collisionFilter = filter;
+        else if (this.options.wall_filter)
+            result.collisionFilter = filters[this.options.wall_filter];
         return result;
     }
     create_body(options = {}, shape_index = 0) {
@@ -184,16 +186,19 @@ export class Thing {
         else { // just use vertices
             if (s.closed_loop && s.vertices.length > 2) {
                 body = Bodies.fromVertices(s.offset.x, s.offset.y, [s.vertices], options);
-                // console.log(vector.adds(vector.adds(s.vertices, this.target.position), vector.create(-14.28, -8.66)), body.vertices);
-                const offset_3_hour = vector.sub(vector.aabb2bounds(vector.make_aabb(s.vertices)).min, body.bounds.min);
-                body.offset = offset_3_hour;
-                Body.setPosition(body, vector.add(this.target.position, offset_3_hour));
-                // Body.setAngle(body, this.target.angle);
-                if (body.parts.length >= 2)
+                if (body.parts.length >= 2 || !(s instanceof Polygon)) {
                     for (const b of body.parts) {
                         b.thing = this;
                         b.label = this.id;
                     }
+                    const offset_3_hour = vector.sub(vector.aabb2bounds(vector.make_aabb(s.vertices)).min, body.bounds.min);
+                    body.offset = offset_3_hour;
+                    Body.setPosition(body, vector.add(this.target.position, offset_3_hour));
+                }
+                else {
+                    Body.setPosition(body, this.target.position);
+                    // Body.setAngle(body, this.target.angle);
+                }
             }
             else {
                 // console.log(s.vertices);
@@ -235,6 +240,13 @@ export class Thing {
         if ( /*s.z === 0 &&*/add_body)
             Composite.add(world, this.body); // todo handle other z?
         Body.setVelocity(body, this.target.velocity);
+    }
+    die() {
+        const id = this.id.split("#")[0].trim();
+        const bypass_remove = detector.before_death_fns[id]?.(this);
+        if (bypass_remove)
+            return;
+        this.remove();
     }
     remove() {
         if (this.is_removed)
@@ -328,7 +340,7 @@ export class Thing {
             shoot.tick();
         }
         if (this.health?.is_zero) {
-            this.remove();
+            this.die();
         }
         else {
             this.health?.tick();
@@ -377,6 +389,11 @@ export class Thing {
         if (!this.body)
             return;
         Body.setPosition(this.body, Vector.add(this.body.position, vector), true);
+    }
+    teleport_to(vector) {
+        if (!this.body)
+            return;
+        Body.setPosition(this.body, vector, true);
     }
     push_to(target, amount) {
         const push = vector.createpolar(Vector.angle(this.position, target), amount * (this.body?.mass ?? 1) * config.physics.force_factor);
