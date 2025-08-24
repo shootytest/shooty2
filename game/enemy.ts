@@ -1,12 +1,10 @@
-import { Body, Query } from "../matter.js";
 import { map_shape_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
-import { face_mode, make, move_mode, shoot_mode } from "./make.js";
+import { make } from "./make.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
-import { Polygon, Shape } from "./shape.js";
 import { Thing } from "./thing.js";
 
 
@@ -15,33 +13,8 @@ export class Enemy extends Thing {
   static cumulative_ids: { [key: string]: number } = {};
   static cumulative_team_ids: { [team: string]: number } = {};
 
-  static tick() {
-    this.update_body_list();
-  }
-
-  static body_list: Matter.Body[] = [];
-  static update_body_list() {
-    const result: Matter.Body[] = [];
-    for (const s of Shape.draw_shapes) {
-      if (s.seethrough) continue;
-      const body = s.thing.body;
-      if (body != undefined && !result.includes(body)) {
-        if ((body as any).walls) {
-          for (const w of (body as any).walls) {
-            if (!result.includes(w)) result.push(w);
-          }
-        } else {
-          result.push(body);
-        }
-      }
-    }
-    Enemy.body_list = result;
-    return result;
-  }
-
   spawner: Spawner;
   wave_number = -1;
-  random_number = 0;
   player_position: vector3 = player.position;
   is_seeing_player = false;
 
@@ -64,7 +37,6 @@ export class Enemy extends Thing {
     }
     this.position = position;
     if (!this.options.angle) this.angle = math.rand(0, Math.PI * 2);
-    this.random_number = math.rand();
     if (!this.options.decoration) this.create_body(this.create_body_options(filters.thing(this.team)));
     if (this.body) this.body.label = id;
     if (this.options.switch && save.check_switch(this.spawner.id)) {
@@ -81,85 +53,6 @@ export class Enemy extends Thing {
 
   tick() {
     super.tick();
-    // this.tick_enemy();
-  }
-
-  tick_enemy() {
-    this.can_see_player();
-    this.do_shoot(this.is_seeing_player ? (this.options.shoot_mode ?? "none") : (this.options.shoot_mode_idle ?? "none"));
-    this.do_face(this.is_seeing_player ? (this.options.face_mode ?? "none") : (this.options.face_mode_idle ?? "none"));
-    this.do_move(this.is_seeing_player ? (this.options.move_mode ?? "none") : (this.options.move_mode_idle ?? "none"));
-  }
-
-  can_see_player() {
-    if (this.options.enemy_detect_range === 0 || vector.length2(vector.sub(this.position, player.position)) > (this.options.enemy_detect_range ?? 1000) ** 2) {
-      this.is_seeing_player = false;
-      return false;
-    }
-    const player_size = (player.shapes[0] as Polygon)?.radius ?? 0;
-    const checks = [
-      player.position,
-      vector3.add(player.position, vector3.create(player_size, 0, 0)),
-      vector3.add(player.position, vector3.create(0, player_size, 0)),
-      vector3.add(player.position, vector3.create(-player_size, 0, 0)),
-      vector3.add(player.position, vector3.create(0, -player_size, 0)),
-    ];
-    for (const check of checks) {
-      if (Query.ray(Enemy.body_list, this.position, check).length === 0) {
-        this.is_seeing_player = true;
-        this.player_position = check;
-        return check;
-      }
-    }
-    this.is_seeing_player = false;
-    return false;
-  }
-
-  do_shoot(shoot_mode: shoot_mode) {
-    if (shoot_mode === "none") {
-
-    } else if (shoot_mode === "normal") {
-      this.shoot();
-    }
-  }
-
-  do_face(face_mode: face_mode) {
-    if (face_mode === "none") {
-
-    } else if (face_mode === "static") {
-
-    } else if (face_mode === "predict2") {
-      this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, (vector.length(vector.sub(this.position, this.player_position)) ** 0.5) * 3));
-      this.update_angle(this.options.face_smoothness ?? 0.3);
-    } else if (face_mode === "predict") {
-      this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, vector.length(vector.sub(this.position, this.player_position)) * 0.3));
-      this.update_angle(this.options.face_smoothness ?? 0.3);
-    } else if (face_mode === "spin") {
-      this.target.angle = this.angle + (this.options.spin_speed ?? 0.01) * (this.random_number >= 0.5 ? 1 : -1);
-      this.target.facing = vector.add(this.position, vector.createpolar(this.target.angle));
-      if (this.body) Body.setAngle(this.body, this.target.angle);
-    } else if (face_mode === "direct") {
-      this.target.facing = this.player_position;
-      this.update_angle(this.options.face_smoothness ?? 1);
-    }
-  }
-
-  do_move(move_mode: move_mode) {
-    if (move_mode === "none") {
-
-    } else if (move_mode === "static") {
-
-    } else if (move_mode === "hover") {
-      const dist2 = vector.length2(vector.sub(this.position, this.player_position));
-      this.push_to(this.target.facing, (this.options.move_speed ?? 1) * ((dist2 < (this.options.move_hover_distance ?? 300) ** 2) ? -1 : 1));
-    } else if (move_mode === "direct") {
-      this.push_to(this.target.facing, (this.options.move_speed ?? 1));
-    } else if (move_mode === "spiral") {
-      const v = vector.rotate(vector.create(), vector.sub(this.position, this.player_position), vector.deg_to_rad(80));
-      this.push_to(vector.add(this.target.facing, vector.mult(v, 0.5)), (this.options.move_speed ?? 1));
-    } else if (move_mode === "circle") {
-      this.push_to(this.target.facing, (this.options.move_speed ?? 1));
-    }
   }
 
   shoot() {

@@ -69,7 +69,6 @@ const tick_all = (timestamp_unused: number) => {
   camera.scale_adjust2(camera.halfscreen);
   mouse.tick();
   Thing.tick_things();
-  Enemy.tick();
   Spawner.tick_spawners();
   Particle.tick_particles();
   Engine.update(engine);

@@ -111,7 +111,7 @@ export class Shape {
       if (s.computed == undefined || s.thing == undefined || s.thing.options.invisible) continue;
       s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position);
       if (memo_aabb3[s.z] == undefined) {
-        const z_scale = camera.zscale_inverse(s.z ?? 0) * camera.scale;
+        const z_scale = camera.zscale_inverse(s.z ?? 0);
         memo_aabb3[s.z] = vector3.aabb_scale(screen_aabb, vector3.create(z_scale, z_scale, 1));
       }
       const inside = vector3.aabb_intersect(s.computed_aabb, memo_aabb3[s.z]);

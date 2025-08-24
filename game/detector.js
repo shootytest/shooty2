@@ -1,8 +1,9 @@
-import { engine } from "../index.js";
+import { engine, MAP } from "../index.js";
 import { Events } from "../matter.js";
 import { STYLES } from "../util/color.js";
 import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
+import { Spawner } from "./enemy.js";
 import { clone_object } from "./make.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
@@ -40,6 +41,7 @@ export const filter_groups = {
     wall: 0x0010,
     all: 0xFFFF,
 };
+;
 export const filters = {
     group: filter_groups,
     all: {
@@ -111,6 +113,9 @@ export const detector = {
                     player.fov_mult = b.options.sensor_fov_mult || 1;
                 b.is_touching_player = true;
             }
+            if (b.health && b_rittle && different_team) {
+                b.health?.hit_all();
+            }
         }
         if (a.is_bullet) {
             if (!b.options.sensor && !b.options.keep_bullets && !a.options.collectible && !b_rittle && different_team) {
@@ -118,7 +123,7 @@ export const detector = {
                     a.options.death = []; // clear bullets on death if it hits the player
                 a.remove();
             }
-            else if (b_rittle || (!different_team)) {
+            else if (b_rittle || (!different_team && a.team > 0)) {
                 pair.isSensor = true;
                 ba.temporarySensor = true;
             }
@@ -126,9 +131,6 @@ export const detector = {
         if (a.damage > 0 && b.health && b.health.capacity > 0 && different_team) {
             // console.log(`[detector/collision_start] ${a.id} hits ${b.id} for ${a.damage} damage!`);
             b.health?.hit(a.damage);
-        }
-        if (a.is_player && b.health && b_rittle && different_team) {
-            b.health?.hit_all();
         }
         if (Math.floor(a.team) === 1 && b.options.collectible) {
             const collect = b.options.collectible;
@@ -162,15 +164,17 @@ export const detector = {
     collision_during_fns: {
         ["tutorial room 1 sensor"]: (thing) => {
             thing.lookup("tutorial room 1 arrow").shapes[0].style.stroke_opacity = 1 - math.bound((player.position.x - thing.position.x) / 350, 0, 1);
+            player.checkpoint = vector.clone(MAP.computed?.shape_map["start"].vertices[0] ?? vector.create(100, -100));
         },
-        ["tutorial room 2 door sensor"]: (thing) => {
-            // const style = thing.lookup("tutorial room 2 arrow").shapes[0].style;
+        ["tutorial room 2 door sensor"]: (_thing) => {
+            // const style = thing.lookup("tutorial room 2 arrow 1").shapes[0].style;
             // style.stroke_opacity = math.bound((style.stroke_opacity ?? 1) - 0.05, 0, 1);
         },
-        ["tutorial room 4 sensor"]: (thing) => {
-            const d = vector.length(vector.sub(player.position, thing.position));
+        ["tutorial room 4 sensor"]: (_thing) => {
+            const center = vector.clone(MAP.computed?.shape_map["tutorial room 4 gun"].vertices[0] ?? vector.create());
+            const d = vector.length(vector.sub(player.position, center));
             if (d < 100)
-                player.checkpoint = thing.position;
+                player.checkpoint = center;
             player.fov_mult = 1.25 - 0.5 * math.bound(1 - d / 500, 0, 1);
         },
     },
@@ -194,6 +198,9 @@ export const detector = {
         },
         ["tutorial room 4 rocky"]: (thing) => {
             thing.remove_deco();
+            for (const shape of thing.shapes) {
+                shape.style.opacity = 0.5;
+            }
             return true;
         },
     },
@@ -218,10 +225,26 @@ export const detector = {
         ["tutorial room 1 door 2"]: (door) => {
             do_door(door, "tutorial room 1 door sensor");
         },
-        ["tutorial room 2 arrow"]: (thing) => {
+        ["tutorial room 2 arrow 1"]: (thing) => {
             if (player.shoots.length > 0) {
                 thing.shapes[0].activate_scale = true;
                 thing.shapes[0].scale.x = -1;
+                const warning_offset = 100;
+                thing.lookup("tutorial room 2 warning").shapes[0].offset.y = warning_offset;
+                thing.lookup("tutorial room 2 warning 1").shapes[0].offset.y = warning_offset;
+                thing.lookup("tutorial room 2 warning 2").shapes[0].offset.y = warning_offset;
+                thing.lookup("tutorial room 2 arrow 2").shapes[0].style.opacity = 1;
+            }
+            else {
+                thing.lookup("tutorial room 2 arrow 2").shapes[0].style.opacity = 0;
+            }
+        },
+        ["tutorial room 2 warning"]: (thing) => {
+            if (player.shoots.length > 0) {
+                const offset = 100;
+                thing.shapes[0].offset.y = offset;
+                thing.lookup(thing.id + " 1").shapes[0].offset.y = offset;
+                thing.lookup(thing.id + " 2").shapes[0].offset.y = offset;
             }
         },
         ["tutorial room 2 door 1"]: (door) => {
@@ -232,6 +255,9 @@ export const detector = {
         },
         ["tutorial rock 7"]: (door) => {
             switch_door(door, "tutorial room 2 switch", "tutorial room 2 switch path", 1);
+        },
+        ["tutorial rock 11"]: (door) => {
+            switch_door(door, (Spawner.spawners_lookup["tutorial room 2 enemy shooter"]?.wave_progress ?? 0) > 0 || door.lookup("tutorial room 2.1 sensor").is_touching_player, "tutorial room 2.1 switch path", 1);
         },
     },
 };
@@ -257,7 +283,7 @@ const switch_door = (door, switch_ids, path_id, speed = [5], invert = [false]) =
     const vs = path.shapes[0].vertices;
     const pos = door.position;
     let step = door.object.step ?? 1;
-    if (typeof switch_ids === "string")
+    if (!Array.isArray(switch_ids))
         switch_ids = [switch_ids];
     if (typeof speed === "number")
         speed = [speed];
@@ -267,7 +293,8 @@ const switch_door = (door, switch_ids, path_id, speed = [5], invert = [false]) =
         door.object.original_position = vector.clone(pos);
         door.object.step = step;
     }
-    let triggered = save.check_switch(switch_ids[step - 1]);
+    const switch_id = switch_ids[step - 1];
+    let triggered = typeof switch_id === "string" ? save.check_switch(switch_id) : switch_id;
     if (invert[step - 1] ?? false)
         triggered = !triggered;
     if (triggered) {

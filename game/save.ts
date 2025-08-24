@@ -69,6 +69,10 @@ export const save = {
 
   changed: (big = false) => {
     // todo autosave to slot
+    if (player.enemy_can_see) {
+      player.enemy_can_see = false;
+      return false;
+    }
     if (big) console.log("saving... ", save.save);
     save.save_to_slot(save.current_slot);
     save.save_to_storage();

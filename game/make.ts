@@ -338,17 +338,17 @@ make.enemy_tutorial_rocky = {
   movable: false,
   style: "tutorial_enemy_coin",
   health: {
-    capacity: 150,
+    capacity: 350,
   },
   death: [
-    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1 }, repeat: 0, angle_increment: 36 },
-    { type: "collect_coin", stats: { make: "collect_coin_10", speed: 0 }, repeat: 0 },
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1 }, repeat: 5, angle_increment: 72 },
+    { type: "collect_coin", stats: { make: "collect_coin_5", speed: 0 }, repeat: 1 },
   ],
 };
 make_shapes.enemy_tutorial_rocky = [{
   type: "polygon",
   sides: 7,
-  radius: 30,
+  radius: 50,
   glowing: 0.1,
 }];
 
@@ -417,7 +417,7 @@ make.enemy_tutorial_easy = {
     capacity: 250,
   },
   death: [
-    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1, spread: -1 }, repeat: 0 },
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.3, spread: -1 }, repeat: 2 },
   ],
 };
 make_shapes.enemy_tutorial_easy = [{
@@ -466,14 +466,17 @@ make.collect = {
 make.collect_coin = {
   make_parent: ["collect"],
   style: "collect_coin",
+  movable: true,
+  keep_bullets: true,
+  team: -1,
+  face_mode: "predict",
   move_mode: "direct",
-  move_speed: 5,
+  move_speed: 2,
   enemy_detect_range: 500,
 };
 
 make.collect_coin_1 = {
   make_parent: ["collect_coin"],
-  movable: true,
   collectible: {
     currency_name: "coin",
     currency_amount: 1,
@@ -484,9 +487,20 @@ make_shapes.collect_coin_1 = [{
   radius: 4,
 }];
 
+make.collect_coin_5 = {
+  make_parent: ["collect_coin"],
+  collectible: {
+    currency_name: "coin",
+    currency_amount: 5,
+  },
+};
+make_shapes.collect_coin_5 = [{
+  type: "circle",
+  radius: 6.5,
+}];
+
 make.collect_coin_10 = {
   make_parent: ["collect_coin"],
-  movable: true,
   collectible: {
     currency_name: "coin",
     currency_amount: 10,
@@ -494,12 +508,13 @@ make.collect_coin_10 = {
 };
 make_shapes.collect_coin_10 = [{
   type: "circle",
-  radius: 7,
+  radius: 7.5,
 }];
 
 make.collect_gun = {
   make_parent: ["collect"],
   style: "collect_gun",
+  movable: false,
 };
 
 make.collect_gun_basic = {
@@ -574,10 +589,10 @@ make_shoot.player_basic = {
 };
 
 make_shoot.collect_coin = {
-  speed: 1,
+  speed: 2.5,
   spread: 0.03,
   spread_speed: 0.1,
-  friction: 0,
+  friction: 0.04,
 };
 
 make_shoot.enemy = {

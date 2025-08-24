@@ -151,7 +151,7 @@ const clip_path = (center, path, z, inverted = false) => {
     ctx.resetTransform();
 };
 const clip_visibility_path = (center, path, z) => {
-    clip_path(center, path, z);
+    clip_path(center, path, z >= 0 ? z : 0);
     const s = camera.world2screen(center);
     if (z === 0) {
         draw_lighting(s, Math.max(w, h) * camera.scale);

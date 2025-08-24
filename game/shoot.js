@@ -63,9 +63,11 @@ export class Shoot {
         const bullet = new Bullet();
         bullet.position = position;
         bullet.is_bullet = true;
-        bullet.team = this.thing.team;
         bullet.damage = S.damage ?? 0;
         bullet.make(S.make ?? "bullet", true);
+        if (bullet.team === 0)
+            bullet.team = this.thing.team;
+        // bullet.is_bullet = bullet.team > 0;
         const angle = S.spread === -1 ? math.rand(0, Math.PI * 2) : math.randgauss(this.thing.angle + (vector.deg_to_rad(S.angle ?? 0)), S.spread ?? 0);
         const spreadv = S.spread_speed ?? 0;
         let speed = spreadv === 0 ? (S.speed ?? 0) : math.randgauss(S.speed ?? 0, spreadv);
@@ -89,7 +91,7 @@ export class Shoot {
             if (S.style_)
                 override_object(s.style, S.style_);
         }
-        const body_options = bullet.create_body_options(filters.bullet(bullet.team));
+        const body_options = bullet.create_body_options(bullet.is_bullet ? filters.bullet(bullet.team) : filters.thing(bullet.team));
         body_options.frictionAir = S.friction ?? body_options.frictionAir ?? 0;
         body_options.restitution = S.restitution ?? body_options.restitution ?? 0;
         bullet.create_body(body_options);
