@@ -71,7 +71,7 @@ export class Shoot {
 
     const S = this.stats;
 
-    const position: vector = vector.add(this.thing.position, Vector.rotate(vector.create((this.offset.x || 0), (this.offset.y || 0)), this.thing.angle));
+    const position: vector = vector.add(this.thing.position, Vector.rotate(vector.create((this.offset.x ?? 0) + (this.stats.offset?.x ?? 0), (this.offset.y ?? 0) + (this.stats.offset?.y ?? 0)), this.thing.angle));
     const bullet = new Bullet();
     bullet.position = position;
     bullet.is_bullet = true;
@@ -79,25 +79,27 @@ export class Shoot {
     bullet.damage = S.damage ?? 0;
     bullet.make(S.make ?? "bullet", true);
 
-    const angle = math.randgauss(this.thing.angle + (vector.deg_to_rad(S.angle ?? 0)), S.spread ?? 0);
+    const angle = S.spread === -1 ? math.rand(0, Math.PI * 2) : math.randgauss(this.thing.angle + (vector.deg_to_rad(S.angle ?? 0)), S.spread ?? 0);
     const spreadv = S.spread_speed ?? 0;
     let speed = spreadv === 0 ? (S.speed ?? 0) : math.randgauss(S.speed ?? 0, spreadv);
     const thing_velocity = Vector.rotate(this.thing.velocity, -angle).x;
-    if (speed !== 0) speed += thing_velocity * config.physics.velocity_shoot_boost * (S.boost_mult ?? 1);
+    if (speed !== 0 && thing_velocity !== 0) speed += thing_velocity * config.physics.velocity_shoot_boost * (S.boost_mult ?? 1);
     bullet.velocity = vector.createpolar(angle, speed);
     bullet.angle = angle;
-    bullet.bullet_time = Thing.time + (S.time ?? 200);
+    bullet.bullet_time = Thing.time + (S.time ?? 1000000);
     bullet.target.facing = vector.clone(this.thing.target.facing);
     this.bullets.push(bullet);
 
     const spreadsize = S.spread_size ?? 0;
     const size = spreadsize === 0 ? (S.size ?? 0) : math.randgauss(S.size ?? 0, spreadsize);
-    const s = Shape.circle(bullet, size);
-    s.thing = bullet;
-    s.seethrough = true;
-    s.style = clone_object(this.thing.shapes[0].style);
-    if (S.style) override_object(s.style, (STYLES[S.style] ?? STYLES.error));
-    if (S.style_) override_object(s.style, S.style_);
+    if (bullet.shapes.length <= 0) {
+      const s = Shape.circle(bullet, size);
+      s.thing = bullet;
+      s.seethrough = true;
+      s.style = clone_object(this.thing.shapes[0].style);
+      if (S.style) override_object(s.style, (STYLES[S.style] ?? STYLES.error));
+      if (S.style_) override_object(s.style, S.style_);
+    }
 
     const body_options = bullet.create_body_options(filters.bullet(bullet.team));
     body_options.frictionAir = S.friction ?? body_options.frictionAir ?? 0;

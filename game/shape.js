@@ -109,7 +109,7 @@ export class Shape {
                 continue;
             s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position);
             if (memo_aabb3[s.z] == undefined) {
-                const z_scale = camera.zscale_inverse(s.z ?? 0);
+                const z_scale = camera.zscale_inverse(s.z ?? 0) * camera.scale;
                 memo_aabb3[s.z] = vector3.aabb_scale(screen_aabb, vector3.create(z_scale, z_scale, 1));
             }
             const inside = vector3.aabb_intersect(s.computed_aabb, memo_aabb3[s.z]);
@@ -156,9 +156,9 @@ export class Shape {
             if (z != undefined && s.z !== z)
                 continue;
             s.draw();
-            s.draw_health();
-            s.draw_blink();
             s.draw_glow();
+            s.draw_blink();
+            s.draw_health();
         }
         ctx.globalAlpha = 1;
     }
@@ -307,10 +307,10 @@ export class Shape {
     draw_glow() {
         if (this.glowing === 0)
             return;
+        const frac = this.glowing - Math.floor(this.glowing);
         const style_mult = {
             fill: this.style.stroke,
-            stroke_opacity: 0,
-            fill_opacity: ((this.style.stroke_opacity ?? 1) / (this.style.fill_opacity || 1)) * 0.8,
+            fill_opacity: ((this.style.stroke_opacity ?? 1) / (this.style.fill_opacity || 1)) * (frac === 0 ? 0.8 : frac),
         };
         ctx.ctx.shadowBlur = config.graphics.shadowblur;
         ctx.ctx.shadowColor = this.style.stroke ?? color.white;

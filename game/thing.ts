@@ -5,9 +5,9 @@ import { map_shape_options_type, map_shape_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
+import type { Enemy } from "./enemy.js";
 import { Health } from "./health.js";
 import { make, make_shapes, shoot_stats, override_object, make_shoot, clone_array, bullet_death_type, multiply_and_override_object, clone_object, maketype_shape, maketype } from "./make.js";
-import { save } from "./save.js";
 import { Polygon, Shape } from "./shape.js";
 import { Shoot } from "./shoot.js";
 
@@ -98,11 +98,15 @@ export class Thing {
   }
 
   get velocity(): vector {
-    return (this.body) ? vector.clone(this.body.velocity) : vector.create();
+    return vector.clone((this.body) ? this.body.velocity : this.target.velocity);
   }
   set velocity(velocity: vector) {
     this.target.velocity.x = velocity.x;
     this.target.velocity.y = velocity.y;
+  }
+
+  get has_behaviour(): boolean {
+    return this.options.shoot_mode != undefined || this.options.shoot_mode_idle != undefined || this.options.move_mode != undefined || this.options.move_mode_idle != undefined || this.options.face_mode != undefined || this.options.face_mode_idle != undefined;
   }
 
   make_map(o: map_shape_type) {
@@ -362,6 +366,9 @@ export class Thing {
       this.health?.tick();
       this.ability?.tick();
     }
+    if (this.has_behaviour) {
+      (this as unknown as Enemy).tick_enemy();
+    }
   }
 
   shoot(index = -1) {
@@ -397,18 +404,23 @@ export class Thing {
     this.translate(vector);
     const walls = (this.body as any).walls as Matter.Body[] ?? [];
     for (const wall of walls) {
-      Body.setPosition(wall, Vector.add(wall.position, vector), true);
+      Body.setPosition(wall, Vector.add(wall.position, vector));
     }
   }
   
-  translate(vector: vector) {
+  translate(v: vector) {
     if (!this.body) return;
-    Body.setPosition(this.body, Vector.add(this.body.position, vector), true);
+    Body.setPosition(this.body, Vector.add(this.body.position, v));
   }
   
-  teleport_to(vector: vector) {
+  teleport_to(v: vector) {
     if (!this.body) return;
-    Body.setPosition(this.body, vector);
+    Body.setPosition(this.body, v);
+  }
+  
+  reset_velocity() {
+    if (!this.body) return;
+    Body.setVelocity(this.body, vector.create());
   }
 
   push_to(target: vector, amount: number) {

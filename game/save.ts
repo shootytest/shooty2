@@ -1,5 +1,5 @@
 import { config } from "../util/config.js";
-import type { vector } from "../util/vector.js";
+import type { vector, vector3_ } from "../util/vector.js";
 import { clone_object } from "./make.js";
 import { player } from "./player.js";
 
@@ -17,7 +17,18 @@ export interface player_save {
   health?: number;
   ability?: number;
   fov_mult?: number;
-  shoots?: string[];
+  xp?: number;
+  checkpoint?: vector3_;
+  current_gun?: string;
+  guns?: string[];
+  stats?: player_stats;
+};
+
+export interface player_stats {
+  deaths: number;
+  pixels_walked: number;
+  enemies_killed: number;
+  currencies_total: { [key: string]: number };
 };
 
 
@@ -51,7 +62,8 @@ export const save = {
   },
 
   add_currency: (name: string, number = 1) => {
-    save.save.currencies[name] += number;
+    save.save.currencies[name] = (save.save.currencies[name] ?? 0) + number;
+    player.stats.currencies_total[name] = (player.stats.currencies_total[name] ?? 0) + number;
     save.changed(true);
   },
 

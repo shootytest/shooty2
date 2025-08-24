@@ -200,7 +200,7 @@ export const key = {
         canvas_.addEventListener("wheel", function (event) {
             wheel(event);
         }, {
-            passive: false,
+            passive: true,
         });
         canvas_.addEventListener("dblclick", function (event) {
             dblclick(event);

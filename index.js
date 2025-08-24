@@ -76,6 +76,12 @@ map_serialiser.compute(MAP);
   const t = new Thing();
   t.make_map(shape);
 }*/
+player.position = vector3.create_(MAP.computed?.shape_map.start.vertices[0] ?? vector.create());
+player.old_position = player.position;
+player.checkpoint = player.position;
+player.fov_mult = MAP.computed?.shape_map.start.options.sensor_fov_mult ?? 1;
+player.create_player();
+save.load_from_storage();
 const shapelist = MAP.shapes?.sort((s1, s2) => (s1.computed?.depth ?? 0) - (s2.computed?.depth ?? 0)) ?? [];
 for (const map_shape of shapelist) {
     if (map_shape.options.is_spawner) {
@@ -95,10 +101,6 @@ for (const map_shape of shapelist) {
         }
     }
 }
-player.position = vector3.create_(MAP.computed?.shape_map.start.vertices[0] ?? vector.create());
-player.fov_mult = MAP.computed?.shape_map.start.options.sensor_fov_mult ?? 1;
-player.create_player();
-save.load_from_storage();
 // autoreload map
 window.localStorage.removeItem("reload");
 window.addEventListener("storage", function (event) {
@@ -108,9 +110,15 @@ window.addEventListener("storage", function (event) {
         window.location.reload();
 });
 window.addEventListener("beforeunload", function (event) {
-    if (!window.localStorage.getItem("reload"))
+    if (player.enemy_can_see) {
+        player.save_but_health_only();
         save.changed(true);
-    // event.preventDefault();
-    // event.returnValue = true;
-    // return true;
+        event.preventDefault();
+        event.returnValue = true;
+        return true;
+    }
+    else {
+        if (!window.localStorage.getItem("reload"))
+            save.changed(true);
+    }
 });

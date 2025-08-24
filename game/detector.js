@@ -113,7 +113,7 @@ export const detector = {
             }
         }
         if (a.is_bullet) {
-            if (!b.options.sensor && !b.options.keep_bullets && !b_rittle && different_team) {
+            if (!b.options.sensor && !b.options.keep_bullets && !a.options.collectible && !b_rittle && different_team) {
                 if (b.is_player)
                     a.options.death = []; // clear bullets on death if it hits the player
                 a.remove();
@@ -129,6 +129,13 @@ export const detector = {
         }
         if (a.is_player && b.health && b_rittle && different_team) {
             b.health?.hit_all();
+        }
+        if (Math.floor(a.team) === 1 && b.options.collectible) {
+            const collect = b.options.collectible;
+            if (collect.allow_bullet_collect || a.is_player) {
+                player.collect(collect);
+                b.remove();
+            }
         }
         if (Math.floor(a.team) === 1 && b.options.switch) {
             const switch_id = b.spawner.id;
@@ -161,7 +168,10 @@ export const detector = {
             // style.stroke_opacity = math.bound((style.stroke_opacity ?? 1) - 0.05, 0, 1);
         },
         ["tutorial room 4 sensor"]: (thing) => {
-            player.fov_mult = 1.3 - 0.6 * math.bound(1 - vector.length(vector.sub(player.position, thing.position)) / 350, 0, 1);
+            const d = vector.length(vector.sub(player.position, thing.position));
+            if (d < 100)
+                player.checkpoint = thing.position;
+            player.fov_mult = 1.25 - 0.5 * math.bound(1 - d / 500, 0, 1);
         },
     },
     collision_start_fns: {
@@ -180,6 +190,10 @@ export const detector = {
             for (const shape of thing.shapes) {
                 shape.style = clone_object(STYLES.tutorial);
             }
+            return true;
+        },
+        ["tutorial room 4 rocky"]: (thing) => {
+            thing.remove_deco();
             return true;
         },
     },

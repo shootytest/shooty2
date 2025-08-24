@@ -4,9 +4,13 @@ import { vector } from "../util/vector.js";
 ;
 ;
 ;
+;
 // make
 export const make = {};
 export const make_ = {};
+export const make_shapes = {};
+export const make_shoot = {};
+// default
 make.default = {};
 // walls
 make.wall = {
@@ -73,6 +77,10 @@ make.switch = {
     seethrough: true,
     restitution: 0,
 };
+make_shapes.switch = [{
+        type: "circle",
+        radius: 15,
+    }];
 make.sensor_path = {
     style: "sensor_path",
     decoration: true,
@@ -105,6 +113,15 @@ make.player = {
         regen_time: 0,
     },
 };
+make_shapes.player = [{
+        type: "circle",
+        radius: 31,
+    }];
+make_shapes.player_basic = [{
+        type: "line",
+        v2: vector.createpolar_deg(0, 30),
+        shoot: "player_basic",
+    }];
 // enemies
 make.enemy = {
     movable: true,
@@ -130,72 +147,61 @@ make.enemy_tutorial = {
 make.enemy_tutorial_block = {
     make_parent: ["enemy_tutorial"],
     movable: false,
-    seethrough: false,
     health: {
         capacity: 500,
     },
 };
+make_shapes.enemy_tutorial_block = [{
+        type: "polygon",
+        sides: 7,
+        radius: 50,
+    }];
+make.enemy_tutorial_rocky = {
+    make_parent: ["enemy_tutorial"],
+    movable: false,
+    style: "tutorial_enemy_coin",
+    health: {
+        capacity: 150,
+    },
+    death: [
+        { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1 }, repeat: 0, angle_increment: 36 },
+        { type: "collect_coin", stats: { make: "collect_coin_10", speed: 0 }, repeat: 0 },
+    ],
+};
+make_shapes.enemy_tutorial_rocky = [{
+        type: "polygon",
+        sides: 7,
+        radius: 30,
+        glowing: 0.1,
+    }];
+make.enemy_tutorial_rock_room4 = {
+    make_parent: ["enemy_tutorial"],
+    movable: false,
+    seethrough: false,
+    angle: 0,
+    health: {
+        capacity: 3000,
+        value: 300,
+    },
+};
+make_shapes.enemy_tutorial_rock_room4 = [{
+        type: "polygon",
+        sides: 7,
+        radius: 50,
+    }];
 make.enemy_tutorial_4way = {
     make_parent: ["enemy_tutorial"],
     movable: false,
+    shoot_mode: "normal",
+    shoot_mode_idle: "normal",
+    move_mode: "static",
+    face_mode: "static",
     angle: -360 / 14,
+    enemy_detect_range: 0,
     health: {
         capacity: 750,
     },
 };
-make.enemy_tutorial_easy = {
-    make_parent: ["enemy_tutorial"],
-    move_type: "direct",
-    face_type: "direct",
-    move_speed: 2,
-    enemy_detect_range: 500,
-    health: {
-        capacity: 250,
-    },
-};
-make.enemy_tutorial_bit = {
-    make_parent: ["enemy_tutorial", "enemy_breakable"],
-    style: "tutorial_breakable",
-    style_: {
-        opacity: 0.6,
-    },
-};
-make.bullet = {
-    // sensor: true,
-    movable: true,
-    seethrough: true,
-    keep_bullets: true,
-};
-// make_shape
-export const make_shapes = {};
-make_shapes.player = [{
-        type: "circle",
-        radius: 31,
-    }];
-make_shapes.player_basic = [{
-        type: "line",
-        v2: vector.createpolar_deg(0, 30),
-        shoot: "player_basic",
-    }];
-make_shapes.switch = [{
-        type: "circle",
-        radius: 15,
-    }];
-make_shapes.enemy_tutorial_block = [{
-        type: "polygon",
-        // style: "tutorial_enemy_filled",
-        sides: 7,
-        radius: 50,
-    }];
-make_shapes.enemy_tutorial_easy = [{
-        type: "polygon",
-        sides: 7,
-        radius: 35,
-    }, {
-        type: "line",
-        v2: vector.createpolar_deg(0, 35),
-        shoot: "enemy_easy",
-    }];
 make_shapes.enemy_tutorial_4way = [{
         type: "polygon",
         sides: 7,
@@ -220,13 +226,128 @@ make_shapes.enemy_tutorial_4way = [{
         shoot: "enemy_4way",
         shoot_: { angle: 4 * 360 / 7 },
     }];
+make.enemy_tutorial_easy = {
+    make_parent: ["enemy_tutorial"],
+    shoot_mode: "normal",
+    move_mode: "direct",
+    face_mode: "direct",
+    move_speed: 2.5,
+    enemy_detect_range: 500,
+    health: {
+        capacity: 250,
+    },
+    death: [
+        { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1, spread: -1 }, repeat: 0 },
+    ],
+};
+make_shapes.enemy_tutorial_easy = [{
+        type: "polygon",
+        sides: 7,
+        radius: 35,
+    }, {
+        type: "line",
+        v2: vector.createpolar_deg(0, 35),
+        shoot: "enemy_easy",
+    }];
+make.enemy_tutorial_bit = {
+    make_parent: ["enemy_tutorial", "enemy_breakable"],
+    face_mode_idle: "spin",
+    move_mode_idle: "circle",
+    enemy_detect_range: 0,
+    style: "tutorial_breakable",
+    style_: {
+        opacity: 0.6,
+    },
+};
 make_shapes.enemy_tutorial_bit = [{
         type: "polygon",
         sides: 7,
         radius: 10,
     }];
-// make_shoot
-export const make_shoot = {};
+// bullets
+make.bullet = {
+    movable: true,
+    seethrough: true,
+};
+// collectibles
+make.collect = {
+    seethrough: true,
+};
+make.collect_coin = {
+    make_parent: ["collect"],
+    style: "collect_coin",
+    move_mode: "direct",
+    move_speed: 5,
+    enemy_detect_range: 500,
+};
+make.collect_coin_1 = {
+    make_parent: ["collect_coin"],
+    movable: true,
+    collectible: {
+        currency_name: "coin",
+        currency_amount: 1,
+    },
+};
+make_shapes.collect_coin_1 = [{
+        type: "circle",
+        radius: 4,
+    }];
+make.collect_coin_10 = {
+    make_parent: ["collect_coin"],
+    movable: true,
+    collectible: {
+        currency_name: "coin",
+        currency_amount: 10,
+    },
+};
+make_shapes.collect_coin_10 = [{
+        type: "circle",
+        radius: 7,
+    }];
+make.collect_gun = {
+    make_parent: ["collect"],
+    style: "collect_gun",
+};
+make.collect_gun_basic = {
+    make_parent: ["collect_gun"],
+    face_mode_idle: "spin",
+    spin_speed: 0.02,
+    enemy_detect_range: 0,
+    collectible: {
+        gun: "basic",
+        restore_health: true,
+    },
+};
+make_shapes.collect_gun_basic = [{
+        type: "circle",
+        radius: 30,
+        glowing: 0.1,
+    }, {
+        type: "line",
+        v2: vector.createpolar_deg(0, 30),
+    }];
+// decorations
+make.deco = {
+    decoration: true,
+    seethrough: true,
+};
+make.deco_gun_basic = {
+    make_parent: ["deco"],
+    style: "collect_gun",
+    style_: {
+        stroke_opacity: 0.3,
+        fill_opacity: 0,
+    }
+};
+make_shapes.deco_gun_basic = [];
+for (let i = 0; i < 10; i++) {
+    make_shapes.deco_gun_basic.push({
+        type: "circle",
+        radius: 330 - i * 30,
+        z: -0.5 + i * 0.05,
+    });
+}
+// shoots
 make_shoot.player = {
     make: "bullet",
     size: 9,
@@ -245,6 +366,12 @@ make_shoot.half_reload = {
 make_shoot.player_basic = {
     parent: ["player"],
 };
+make_shoot.collect_coin = {
+    speed: 1,
+    spread: 0.03,
+    spread_speed: 0.1,
+    friction: 0,
+};
 make_shoot.enemy = {
     make: "bullet",
     size: 10,
@@ -259,9 +386,10 @@ make_shoot.enemy = {
 make_shoot.enemy_easy = {
     parent: ["enemy"],
     size: 11,
+    spread: 0.05,
     reload: 70,
     speed: 2,
-    time: 100,
+    time: 120,
 };
 make_shoot.enemy_4way = {
     parent: ["enemy"],

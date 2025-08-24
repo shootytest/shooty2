@@ -74,11 +74,14 @@ export class Thing {
         this.target.angle = angle;
     }
     get velocity() {
-        return (this.body) ? vector.clone(this.body.velocity) : vector.create();
+        return vector.clone((this.body) ? this.body.velocity : this.target.velocity);
     }
     set velocity(velocity) {
         this.target.velocity.x = velocity.x;
         this.target.velocity.y = velocity.y;
+    }
+    get has_behaviour() {
+        return this.options.shoot_mode != undefined || this.options.shoot_mode_idle != undefined || this.options.move_mode != undefined || this.options.move_mode_idle != undefined || this.options.face_mode != undefined || this.options.face_mode_idle != undefined;
     }
     make_map(o) {
         if (o.computed == undefined) {
@@ -350,6 +353,9 @@ export class Thing {
             this.health?.tick();
             this.ability?.tick();
         }
+        if (this.has_behaviour) {
+            this.tick_enemy();
+        }
     }
     shoot(index = -1) {
         if (index >= 0) {
@@ -385,18 +391,23 @@ export class Thing {
         this.translate(vector);
         const walls = this.body.walls ?? [];
         for (const wall of walls) {
-            Body.setPosition(wall, Vector.add(wall.position, vector), true);
+            Body.setPosition(wall, Vector.add(wall.position, vector));
         }
     }
-    translate(vector) {
+    translate(v) {
         if (!this.body)
             return;
-        Body.setPosition(this.body, Vector.add(this.body.position, vector), true);
+        Body.setPosition(this.body, Vector.add(this.body.position, v));
     }
-    teleport_to(vector) {
+    teleport_to(v) {
         if (!this.body)
             return;
-        Body.setPosition(this.body, vector);
+        Body.setPosition(this.body, v);
+    }
+    reset_velocity() {
+        if (!this.body)
+            return;
+        Body.setVelocity(this.body, vector.create());
     }
     push_to(target, amount) {
         const push = vector.createpolar(Vector.angle(this.position, target), amount * (this.body?.mass ?? 1) * config.physics.force_factor);

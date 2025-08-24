@@ -3,6 +3,7 @@ import { clone_object } from "./make.js";
 import { player } from "./player.js";
 ;
 ;
+;
 export const save = {
     save: {
         version: config.game.version,
@@ -26,7 +27,8 @@ export const save = {
         return save.save.currencies[name] ?? 0;
     },
     add_currency: (name, number = 1) => {
-        save.save.currencies[name] += number;
+        save.save.currencies[name] = (save.save.currencies[name] ?? 0) + number;
+        player.stats.currencies_total[name] = (player.stats.currencies_total[name] ?? 0) + number;
         save.changed(true);
     },
     changed: (big = false) => {

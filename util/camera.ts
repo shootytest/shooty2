@@ -71,7 +71,7 @@ export const camera = {
     return z_;
   },
   zscale_inverse: function(z: number): number {
-    let z_ = (this.z / this.scale - z) / (this.z / this.scale - this.look_z + ZEPSILON); // replaced this.z / this.scale
+    let z_ = (this.z - z) / (this.z - this.look_z + ZEPSILON); // replaced this.z / this.scale
     if (z_ <= 0) z = 1 / ZEPSILON;
     return z_;
   },

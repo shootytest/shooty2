@@ -1,4 +1,4 @@
-import { Query } from "../matter.js";
+import { Body, Query } from "../matter.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
@@ -37,7 +37,9 @@ export class Enemy extends Thing {
     }
     spawner;
     wave_number = -1;
+    random_number = 0;
     player_position = player.position;
+    is_seeing_player = false;
     constructor(spawner) {
         super();
         this.spawner = spawner;
@@ -61,11 +63,11 @@ export class Enemy extends Thing {
         this.position = position;
         if (!this.options.angle)
             this.angle = math.rand(0, Math.PI * 2);
-        this.create_body(this.create_body_options(filters.thing(this.team)));
+        this.random_number = math.rand();
+        if (!this.options.decoration)
+            this.create_body(this.create_body_options(filters.thing(this.team)));
         if (this.body)
             this.body.label = id;
-        else
-            console.error("[enemy/make_enemy] no body?");
         if (this.options.switch && save.check_switch(this.spawner.id)) {
             this.shapes[0].glowing = 1;
         }
@@ -79,17 +81,17 @@ export class Enemy extends Thing {
     }
     tick() {
         super.tick();
-        this.tick_enemy();
+        // this.tick_enemy();
     }
     tick_enemy() {
-        if (!this.can_see_player())
-            return;
-        this.shoot();
-        this.face_enemy();
-        this.move_enemy();
+        this.can_see_player();
+        this.do_shoot(this.is_seeing_player ? (this.options.shoot_mode ?? "none") : (this.options.shoot_mode_idle ?? "none"));
+        this.do_face(this.is_seeing_player ? (this.options.face_mode ?? "none") : (this.options.face_mode_idle ?? "none"));
+        this.do_move(this.is_seeing_player ? (this.options.move_mode ?? "none") : (this.options.move_mode_idle ?? "none"));
     }
     can_see_player() {
-        if (vector.length2(vector.sub(this.position, player.position)) > (this.options.enemy_detect_range ?? 1000) ** 2) {
+        if (this.options.enemy_detect_range === 0 || vector.length2(vector.sub(this.position, player.position)) > (this.options.enemy_detect_range ?? 1000) ** 2) {
+            this.is_seeing_player = false;
             return false;
         }
         const player_size = player.shapes[0]?.radius ?? 0;
@@ -102,44 +104,69 @@ export class Enemy extends Thing {
         ];
         for (const check of checks) {
             if (Query.ray(Enemy.body_list, this.position, check).length === 0) {
+                this.is_seeing_player = true;
                 this.player_position = check;
                 return check;
             }
         }
+        this.is_seeing_player = false;
         return false;
     }
-    face_enemy() {
-        const face_type = this.options.face_type ?? "none";
-        if (face_type === "static") {
+    do_shoot(shoot_mode) {
+        if (shoot_mode === "none") {
         }
-        else if (face_type === "predict2") {
+        else if (shoot_mode === "normal") {
+            this.shoot();
+        }
+    }
+    do_face(face_mode) {
+        if (face_mode === "none") {
+        }
+        else if (face_mode === "static") {
+        }
+        else if (face_mode === "predict2") {
             this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, (vector.length(vector.sub(this.position, this.player_position)) ** 0.5) * 3));
             this.update_angle(this.options.face_smoothness ?? 0.3);
         }
-        else if (face_type === "predict") {
+        else if (face_mode === "predict") {
             this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, vector.length(vector.sub(this.position, this.player_position)) * 0.3));
             this.update_angle(this.options.face_smoothness ?? 0.3);
         }
-        else if (face_type.startsWith("direct")) {
+        else if (face_mode === "spin") {
+            this.target.angle = this.angle + (this.options.spin_speed ?? 0.01) * (this.random_number >= 0.5 ? 1 : -1);
+            this.target.facing = vector.add(this.position, vector.createpolar(this.target.angle));
+            if (this.body)
+                Body.setAngle(this.body, this.target.angle);
+        }
+        else if (face_mode === "direct") {
             this.target.facing = this.player_position;
             this.update_angle(this.options.face_smoothness ?? 1);
         }
     }
-    move_enemy() {
-        const move_type = this.options.move_type ?? "none";
-        if (move_type === "static") {
+    do_move(move_mode) {
+        if (move_mode === "none") {
         }
-        else if (move_type === "hover") {
+        else if (move_mode === "static") {
+        }
+        else if (move_mode === "hover") {
             const dist2 = vector.length2(vector.sub(this.position, this.player_position));
             this.push_to(this.target.facing, (this.options.move_speed ?? 1) * ((dist2 < (this.options.move_hover_distance ?? 300) ** 2) ? -1 : 1));
         }
-        else if (move_type === "direct") {
+        else if (move_mode === "direct") {
             this.push_to(this.target.facing, (this.options.move_speed ?? 1));
         }
-        else if (move_type === "spiral") {
+        else if (move_mode === "spiral") {
             const v = vector.rotate(vector.create(), vector.sub(this.position, this.player_position), vector.deg_to_rad(80));
             this.push_to(vector.add(this.target.facing, vector.mult(v, 0.5)), (this.options.move_speed ?? 1));
         }
+        else if (move_mode === "circle") {
+            this.push_to(this.target.facing, (this.options.move_speed ?? 1));
+        }
+    }
+    shoot() {
+        if (this.is_seeing_player)
+            player.enemy_can_see = true;
+        super.shoot();
     }
     remove() {
         const index = this.spawner.enemies.indexOf(this);
@@ -161,6 +188,22 @@ export class Enemy extends Thing {
         delete this.health; // important! prevents remove on tick (health.is_zero)
         if (this.body)
             this.body.isStatic = true;
+        for (const shoot of this.shoots)
+            shoot.update_shape(1);
+        this.remove_children();
+        this.remove_shoots();
+    }
+    remove_deco() {
+        const index = this.spawner.enemies.indexOf(this);
+        if (index != undefined && index > -1) {
+            this.spawner.enemies.splice(index, 1);
+        }
+        this.spawner.calc_progress();
+        if (this.is_removed)
+            return;
+        delete this.health;
+        this.remove_death();
+        this.remove_body();
         for (const shoot of this.shoots)
             shoot.update_shape(1);
         this.remove_children();
@@ -203,7 +246,8 @@ export class Spawner {
             repeat: o.options.spawn_repeat,
             repeat_delay: o.options.spawn_repeat_delay,
         };
-        this.permanent = o.options.spawn_permanent ?? false;
+        if (o.options.spawn_permanent)
+            this.permanent = o.options.spawn_permanent;
         if (this.permanent) {
             this.wave_progress = save.get_switch(this.id);
         }

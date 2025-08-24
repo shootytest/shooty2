@@ -3,12 +3,25 @@ import { config } from "../util/config.js";
 import { keys } from "../util/key.js";
 import { vector, vector3 } from "../util/vector.js";
 import { filters } from "./detector.js";
+import { override_object } from "./make.js";
 import { save } from "./save.js";
 import { Thing } from "./thing.js";
 export class Player extends Thing {
     autoshoot = false;
     fov_mult = 1;
     autosave_time = -1;
+    old_position = vector.create();
+    checkpoint = vector.create();
+    current_gun = "";
+    enemy_can_see = false;
+    guns = [];
+    xp = 0;
+    stats = {
+        deaths: 0,
+        pixels_walked: 0,
+        enemies_killed: 0,
+        currencies_total: {},
+    };
     constructor() {
         super();
         this.is_player = true;
@@ -17,6 +30,9 @@ export class Player extends Thing {
         // this.make_shape("player_basic");
         this.create_id("player");
         this.position = vector3.create();
+    }
+    get level() {
+        return 1;
     }
     create_player() {
         this.create_body(this.create_body_options(filters.thing(this.team)));
@@ -45,6 +61,8 @@ export class Player extends Thing {
             this.push_by(vector.mult(move_v, this.options.move_speed ?? config.physics.player_speed));
             this.update_angle();
         }
+        this.stats.pixels_walked += Math.floor(vector.length(vector.sub(this.position, this.old_position)));
+        this.old_position = this.position;
         if (controls.toggle_autoshoot) {
             this.autoshoot = !this.autoshoot;
         }
@@ -57,6 +75,13 @@ export class Player extends Thing {
             else
                 this.save();
         }
+    }
+    die() {
+        this.stats.deaths++;
+        this.reset_velocity();
+        this.teleport_to(this.checkpoint);
+        this.health?.heal_all();
+        this.health?.set_invincible(config.game.invincibility_time);
     }
     hit(damage) {
         super.hit(damage);
@@ -75,37 +100,75 @@ export class Player extends Thing {
         return Math.sqrt(v.x * v.y) / 500 / this.fov_mult;
     }
     remake_shoot(shoot_id) {
+        if (!shoot_id)
+            shoot_id = this.current_gun;
         this.make_shape("player", true);
         this.make_shape("player_" + shoot_id);
     }
+    save_but_health_only() {
+        save.save.player.health = this.health?.value ?? 0;
+        save.save.player.ability = this.ability?.value ?? 0;
+    }
     save() {
+        if (this.enemy_can_see) {
+            this.enemy_can_see = false;
+            return false;
+        }
         this.autosave_time = Thing.time + config.game.autosave_interval;
         const o = {
             position: this.position,
             fov_mult: this.fov_mult,
             health: this.health?.value ?? 0,
             ability: this.ability?.value ?? 0,
+            xp: this.xp,
+            checkpoint: this.checkpoint,
+            current_gun: this.current_gun,
+            guns: this.guns,
+            stats: this.stats,
         };
-        if (this.shoots.length > 0)
-            o.shoots = ["basic"];
         save.save.player = o;
         save.changed();
-        return o;
+        return true;
     }
     load(o) {
         if (o.position) {
             this.position = o.position;
+            this.old_position = o.position;
+            this.reset_velocity();
             this.teleport_to(o.position);
         }
+        if (o.checkpoint)
+            this.checkpoint = o.checkpoint;
         if (o.fov_mult)
             this.fov_mult = o.fov_mult;
+        if (o.xp)
+            this.xp = o.xp;
         if (this.health && o.health)
             this.health.value = o.health;
         if (this.ability && o.ability)
             this.ability.value = o.ability;
-        // this.make("player", true);
-        if (o.shoots) {
-            this.remake_shoot(o.shoots[0]);
+        if (o.guns)
+            this.guns = o.guns;
+        if (o.current_gun) {
+            this.current_gun = o.current_gun;
+            this.remake_shoot();
+        }
+        if (o.stats)
+            override_object(this.stats, o.stats);
+    }
+    add_xp(xp) {
+    }
+    collect(o) {
+        if (o.restore_health)
+            this.health?.heal_all();
+        if (o.gun) {
+            if (!this.guns.includes(o.gun))
+                this.guns.push(o.gun);
+            this.current_gun = o.gun;
+            this.remake_shoot();
+        }
+        if (o.currency_name) {
+            save.add_currency(o.currency_name, o.currency_amount);
         }
     }
 }

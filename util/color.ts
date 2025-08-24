@@ -72,7 +72,7 @@ export const color/*: { [key: string]: `#${string}` }*/ = {
 export const STYLES: styles_type = {
   error: {
     stroke: "#ff0000",
-    fill: "#ff000066",
+    fill: "#ff0000",
   },
   test: {
     stroke: "#abcdef99",
@@ -131,6 +131,13 @@ export const STYLES: styles_type = {
     fill_opacity: 0.4,
     health_opacity: 0.25,
   },
+  tutorial_enemy_coin: {
+    stroke: "#778eea",
+    fill: "#778eea",
+    health: "#fff200",
+    fill_opacity: 0.4,
+    health_opacity: 0.3,
+  },
   tutorial_door: {
     stroke: "#4e47af",
   },
@@ -142,6 +149,19 @@ export const STYLES: styles_type = {
   },
   start: {
     stroke: "#00ddff99",
+  },
+  collect_coin: {
+    stroke: "#fff200",
+    stroke_opacity: 1,
+    width: 0.5,
+    fill: "#fff200",
+    fill_opacity: 0.1,
+  },
+  collect_gun: {
+    stroke: "#a6ff00",
+    stroke_opacity: 1,
+    fill: "#a6ff00",
+    fill_opacity: 0.2,
   },
   switch: {
     stroke: "#00ddff",
