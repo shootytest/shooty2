@@ -125,7 +125,7 @@ export class Player extends Thing {
       return false;
     }
     this.autosave_time = Thing.time + config.game.autosave_interval;
-    const o = {
+    const o: player_save = {
       position: this.position,
       fov_mult: this.fov_mult,
       health: this.health?.value ?? 0,
@@ -135,7 +135,7 @@ export class Player extends Thing {
       current_gun: this.current_gun,
       guns: this.guns,
       stats: this.stats,
-    } as player_save;
+    };
     save.save.player = o;
     save.changed();
     return true;

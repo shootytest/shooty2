@@ -1,5 +1,5 @@
 import { detector } from "./game/detector.js";
-import { Enemy, Spawner } from "./game/enemy.js";
+import { Spawner } from "./game/enemy.js";
 import { Particle } from "./game/particle.js";
 import { player } from "./game/player.js";
 import { save } from "./game/save.js";

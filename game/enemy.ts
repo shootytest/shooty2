@@ -134,6 +134,10 @@ export class Spawner {
     return this.spawners_lookup[spawner_id]?.wave_progress ?? -1;
   }
 
+  static get_enemy(spawner_id: string): Enemy {
+    return Spawner.spawners_lookup[spawner_id].enemies[0];
+  }
+
   uid: number = ++Spawner.cumulative_id;
   id: string = "generic spawner #" + this.uid;
 

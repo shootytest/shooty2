@@ -52,6 +52,17 @@ make.wall_tutorial_rock_breakable = {
         capacity: 500,
     },
 };
+make.wall_tutorial_fake = {
+    make_parent: ["wall"],
+    style: "tutorial",
+    style_: {
+        opacity: 0.7,
+    },
+    hide_health: true,
+    health: {
+        capacity: 500,
+    },
+};
 // floors
 make.floor = {
     decoration: true,
@@ -146,10 +157,16 @@ make.enemy_tutorial = {
 };
 make.enemy_tutorial_block = {
     make_parent: ["enemy_tutorial"],
+    style: "tutorial_enemy_coin",
     movable: false,
+    seethrough: false,
+    angle: 0,
     health: {
         capacity: 500,
     },
+    death: [
+        { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1 }, repeat: 6, angle_increment: 60 },
+    ],
 };
 make_shapes.enemy_tutorial_block = [{
         type: "polygon",
@@ -161,7 +178,7 @@ make.enemy_tutorial_rocky = {
     movable: false,
     style: "tutorial_enemy_coin",
     health: {
-        capacity: 350,
+        capacity: 400,
     },
     death: [
         { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1 }, repeat: 5, angle_increment: 72 },
@@ -173,6 +190,12 @@ make_shapes.enemy_tutorial_rocky = [{
         sides: 7,
         radius: 50,
         glowing: 0.1,
+    }, {
+        type: "polygon",
+        style: "coin_rock",
+        sides: 7,
+        radius: 25,
+        glowing: 0.5,
     }];
 make.enemy_tutorial_rock_room4 = {
     make_parent: ["enemy_tutorial"],
@@ -263,6 +286,25 @@ make_shapes.enemy_tutorial_bit = [{
         type: "polygon",
         sides: 7,
         radius: 10,
+    }];
+make.enemy_tutorial_down = {
+    make_parent: ["enemy_tutorial"],
+    style: "tutorial",
+    movable: false,
+    shoot_mode: "normal",
+    move_mode: "static",
+    face_mode: "static",
+    angle: 110,
+    enemy_detect_range: 300,
+};
+make_shapes.enemy_tutorial_down = [{
+        type: "polygon",
+        sides: 7,
+        radius: 50,
+    }, {
+        type: "line",
+        v2: vector.createpolar_deg(0, 50),
+        shoot: "enemy_block",
     }];
 // bullets
 make.bullet = {
@@ -356,7 +398,9 @@ make.deco_gun_basic = {
 make_shapes.deco_gun_basic = [];
 for (let i = 0; i < 10; i++) {
     make_shapes.deco_gun_basic.push({
-        type: "circle",
+        type: "polygon",
+        sides: 7,
+        angle: 0.175 * i,
         radius: 330 - i * 30,
         z: -0.5 + i * 0.05,
     });
@@ -404,6 +448,16 @@ make_shoot.enemy_easy = {
     reload: 70,
     speed: 2,
     time: 120,
+};
+make_shoot.enemy_block = {
+    parent: ["enemy"],
+    size: 13,
+    spread: 0,
+    reload: 3,
+    speed: 5,
+    time: 100,
+    density: 999999,
+    damage: 0,
 };
 make_shoot.enemy_4way = {
     parent: ["enemy"],

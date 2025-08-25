@@ -105,6 +105,7 @@ export class Shoot {
     const body_options = bullet.create_body_options(bullet.is_bullet ? filters.bullet(bullet.team) : filters.thing(bullet.team));
     body_options.frictionAir = S.friction ?? body_options.frictionAir ?? 0;
     body_options.restitution = S.restitution ?? body_options.restitution ?? 0;
+    body_options.density = S.density ?? body_options.density ?? 0;
     bullet.create_body(body_options);
 
     if (S.recoil !== 0 && speed && S.speed) {

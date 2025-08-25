@@ -130,6 +130,10 @@ export class Thing {
     this.target.velocity.y = velocity.y;
   }
 
+  get thing_time(): number {
+    return Thing.time;
+  }
+
   get has_behaviour(): boolean {
     return this.options.shoot_mode != undefined || this.options.shoot_mode_idle != undefined || this.options.move_mode != undefined || this.options.move_mode_idle != undefined || this.options.face_mode != undefined || this.options.face_mode_idle != undefined;
   }
@@ -380,7 +384,7 @@ export class Thing {
   tick() {
     detector.tick_fns[this.id]?.(this);
     if (this.is_touching_player && !this.is_player) {
-      detector.collision_during_fns[this.id]?.(this);
+      detector.sensor_during_fns[this.id]?.(this);
     }
     for (const shoot of this.shoots) {
       shoot.tick();

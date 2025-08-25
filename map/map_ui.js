@@ -115,6 +115,14 @@ export const m_ui = {
                 }
             }
         });
+        key.add_key_listener("KeyF", () => {
+            m_ui.right_sidebar_mode = m_ui.right_sidebar_mode === "directory" ? "properties" : "directory";
+            if (m_ui.right_sidebar_mode === "directory")
+                m_ui.update_directory();
+            else
+                m_ui.update_properties();
+            m_ui.update_right_sidebar();
+        });
         m_ui.map = map_serialiser.load("auto");
         if (m_ui.map.shapes.length <= 0)
             m_ui.map = TEST_MAP;
@@ -588,12 +596,19 @@ export const m_ui = {
         m_ui.mouse.drag_target[0] = target;
         m_ui.color_directory_element(old_id, "");
         m_ui.color_directory_element(target.shape.id, "#ff000033");
+        m_ui.directory_elements[target.shape.id].scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "nearest",
+        });
         if (m_ui.circle_menu.active) {
             m_ui.circle_menu.target = target;
         }
         if (!dont_open_properties && m_ui.right_sidebar_mode === "properties") {
             m_ui.open_properties(target.shape);
         }
+        else
+            m_ui.properties_selected = target.shape;
     },
     deselect_shape: () => {
         m_ui.color_directory_element(m_ui.mouse.drag_target[0]?.shape?.id, "");

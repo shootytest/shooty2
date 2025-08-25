@@ -150,6 +150,12 @@ export const STYLES: styles_type = {
   start: {
     stroke: "#00ddff99",
   },
+  coin_rock: {
+    stroke: "#fff200",
+    stroke_opacity: 0.5,
+    fill: "#fff200",
+    fill_opacity: 0.1,
+  },
   collect_coin: {
     stroke: "#fff200",
     stroke_opacity: 1,

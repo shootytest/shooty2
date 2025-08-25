@@ -194,7 +194,7 @@ export const key = {
     });
 
     function wheel(event: WheelEvent) {
-      event.preventDefault();
+      // event.preventDefault();
       mouse.scroll = event.deltaY;
       return false;
     };

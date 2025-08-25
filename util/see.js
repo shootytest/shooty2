@@ -38,7 +38,7 @@ const add_wall = (p1, p2, force = false) => {
 };
 export const do_visibility = () => {
     Shape.compute();
-    const path = calc_visibility_path_2(player);
+    const path = calc_visibility_path_2(player, Shape.get_vertices());
     const inverted = invert_path(path);
     for (const z of Shape.draw_zs) {
         ctx.save("see");
@@ -46,10 +46,29 @@ export const do_visibility = () => {
         Shape.draw(z);
         ctx.restore("see");
     }
-    for (let z = 0 /* + ((performance.now() / 300) % 1) / 10*/; z < 0.9; z += 0.1) {
+    // ctx.ctx.save();
+    // clip_inverted_path(player, inverted, 0);
+    // ctx.ctx.restore();
+    for (let z = 0 /* + ((performance.now() / 300) % 1) / 10 */; z < 0.9; z += 0.1) {
         ctx.ctx.save();
         clip_inverted_path(player, inverted, z);
         ctx.ctx.restore();
+    }
+    // do translucent walls
+    const other_vertices = Shape.get_other_vertices();
+    for (const other_key in other_vertices) {
+        const other_list = other_vertices[other_key];
+        const alpha = Number(other_key);
+        const path = calc_visibility_path_2(player, other_list);
+        const inverted = invert_path(path);
+        ctx.fillStyle = color.blackground;
+        ctx.globalAlpha = alpha;
+        clip_path(player, inverted, 0, true);
+        for (let z = 0; z < 0.9; z += 0.1) {
+            ctx.fillStyle = z === 0 ? "#544bdb" : color.blackground;
+            ctx.globalAlpha = z === 0 ? alpha / 2 : alpha * 40 / 256;
+            clip_path(player, inverted, z, true);
+        }
     }
     /* // not so good
     ctx.globalAlpha = 0.1;
@@ -106,13 +125,13 @@ const calc_visibility_path = (v) => {
     // ctx.arc(s.x, s.y, display_radius, 0, 2 * Math.PI);
     // ctx.clip();
 };
-const calc_visibility_path_2 = (v) => {
+const calc_visibility_path_2 = (v, vertices_list) => {
     start.x = Math.round(v.x);
     start.y = Math.round(v.y);
     start.r = Math.max(w, h);
     const viewport_1 = camera.screen2world(vector.create(-Math.round(w) * 999, -Math.round(h) * 999));
     const viewport_2 = camera.screen2world(vector.create(Math.round(w) * 1000, Math.round(h) * 1000));
-    const result = collide.get_visibility_polygon(start, Shape.get_vertices(), viewport_1, viewport_2);
+    const result = collide.get_visibility_polygon(start, vertices_list, viewport_1, viewport_2);
     // clip
     const s = camera.world2screen(start);
     const path = new Path2D();
@@ -138,7 +157,7 @@ const invert_path = (path) => {
     inverted.addPath(path);
     return inverted;
 };
-const clip_path = (center, path, z, inverted = false) => {
+const clip_path = (center, path, z, fill_instead = false) => {
     if (z === 1)
         return;
     const s = camera.world2screen(center);
@@ -147,18 +166,21 @@ const clip_path = (center, path, z, inverted = false) => {
     ctx.translate(s.x, s.y);
     ctx.scale(scale, scale);
     ctx.translate(-s.x, -s.y);
-    ctx.clip_path(path, "evenodd");
+    if (fill_instead)
+        ctx.ctx.fill(path, "evenodd");
+    else
+        ctx.clip_path(path, "evenodd");
     ctx.resetTransform();
 };
 const clip_visibility_path = (center, path, z) => {
     clip_path(center, path, z >= 0 ? z : 0);
-    const s = camera.world2screen(center);
     if (z === 0) {
-        draw_lighting(s, Math.max(w, h) * camera.scale);
+        const s = camera.world2screen(center);
+        draw_lighting(s, Math.sqrt(w * h) * camera.scale);
     }
 };
 const clip_inverted_path = (center, inverted, z) => {
-    clip_path(center, inverted, z, true);
+    clip_path(center, inverted, z);
     ctx.beginPath();
     ctx.rect(0, 0, w, h);
     ctx.fillStyle = Math.abs(z) < math.epsilon ? "#544bdb80" : color.blackground + "28"; // todo replace color
@@ -168,13 +190,13 @@ const clip_inverted_path = (center, inverted, z) => {
 export const draw_lighting = (centre, display_radius) => {
     const x = centre.x;
     const y = centre.y;
-    const min_radius = display_radius / 10;
+    const min_radius = display_radius * 0.2;
     const max_radius = display_radius;
     const gradient = ctx.createRadialGradient(x, y, min_radius, x, y, max_radius);
     gradient.addColorStop(0, "#ffff1133");
     gradient.addColorStop(0.3 - math.bounce(camera.time, 30) * 0.1, "#eeee1022");
     gradient.addColorStop(0.7, "#dddd0911");
-    gradient.addColorStop(1, "#00000000");
+    gradient.addColorStop(1, color.blackground + "00");
     ctx.fillStyle = gradient;
     ctx.beginPath();
     ctx.circle(x, y, max_radius);

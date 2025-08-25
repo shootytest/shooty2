@@ -1,5 +1,5 @@
 import { engine, MAP } from "../index.js";
-import { Events } from "../matter.js";
+import { Events, Vertices } from "../matter.js";
 import { STYLES } from "../util/color.js";
 import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
@@ -108,7 +108,7 @@ export const detector = {
         // console.log(`[detector/collision_start] Collision started betwixt ${ba.label} & ${bb.label}!`);
         if (a.is_player) {
             if (b.options.sensor) {
-                detector.collision_start_fns[b.id]?.(b);
+                detector.sensor_start_fns[b.id]?.(b);
                 if (b.options.sensor_fov_mult != undefined)
                     player.fov_mult = b.options.sensor_fov_mult || 1;
                 b.is_touching_player = true;
@@ -153,7 +153,7 @@ export const detector = {
         // console.log(`[detector/collision_end] Collision ended betwixt ${ba.label} & ${bb.label}!`);
         if (a.is_player) {
             if (b.options.sensor) {
-                detector.collision_end_fns[b.id]?.(b);
+                detector.sensor_end_fns[b.id]?.(b);
                 b.is_touching_player = false;
             }
         }
@@ -161,7 +161,7 @@ export const detector = {
             pair.isSensor = false;
         }
     },
-    collision_during_fns: {
+    sensor_during_fns: {
         ["tutorial room 1 sensor"]: (thing) => {
             thing.lookup("tutorial room 1 arrow").shapes[0].style.stroke_opacity = 1 - math.bound((player.position.x - thing.position.x) / 350, 0, 1);
             player.checkpoint = vector.clone(MAP.computed?.shape_map["start"].vertices[0] ?? vector.create(100, -100));
@@ -170,21 +170,48 @@ export const detector = {
             // const style = thing.lookup("tutorial room 2 arrow 1").shapes[0].style;
             // style.stroke_opacity = math.bound((style.stroke_opacity ?? 1) - 0.05, 0, 1);
         },
-        ["tutorial room 4 sensor"]: (_thing) => {
+        ["tutorial room 4 sensor"]: (thing) => {
             const center = vector.clone(MAP.computed?.shape_map["tutorial room 4 gun"].vertices[0] ?? vector.create());
             const d = vector.length(vector.sub(player.position, center));
             if (d < 100)
                 player.checkpoint = center;
             player.fov_mult = 1.25 - 0.5 * math.bound(1 - d / 500, 0, 1);
+            // hmmm
+            let i = 0;
+            for (const s of Spawner.get_enemy("tutorial room 4 gun deco")?.shapes ?? []) {
+                s.angle = d / 3000 * i;
+                s.calculate();
+                i++;
+            }
+            const mouse = thing.lookup("tutorial room 4 mouse");
+            if (mouse) {
+                const show_mouse = player.guns.length >= 1 && Spawner.check_progress("tutorial room 4 rocky 1") <= 0;
+                const move_mouse = player.guns.length >= 1 && !show_mouse && Spawner.check_progress("tutorial room 4 rocky 2") <= 0;
+                const mouse_icon = mouse.shapes[0];
+                mouse_icon.style.opacity = (show_mouse || move_mouse) ? 1 : 0;
+                if (move_mouse && !mouse.object.moved) {
+                    mouse.object.moved = true;
+                    mouse_icon.activate_scale = true;
+                    mouse_icon.scale.x = -1;
+                    mouse_icon.offset = vector.create(630, 200);
+                    mouse_icon.init_computed();
+                }
+                mouse_icon.style.fill = mouse_icon.style.stroke;
+                mouse_icon.style.fill_opacity = math.bounce(thing.thing_time, 30) * 0.5;
+            }
         },
     },
-    collision_start_fns: {
+    sensor_start_fns: {
         // nothing for now
         ["tutorial room 1 door sensor"]: (thing) => {
             thing.lookup("tutorial room 1 arrow").shapes[0].style.stroke_opacity = 0;
         },
+        ["tutorial room 2.5 sensor"]: (thing) => {
+            const centre = Vertices.centre(Spawner.spawners_lookup["tutorial room 2 breakables 4"].vertices);
+            player.checkpoint = centre;
+        },
     },
-    collision_end_fns: {
+    sensor_end_fns: {
     // nothing for now
     },
     before_death_fns: {
@@ -226,25 +253,32 @@ export const detector = {
             do_door(door, "tutorial room 1 door sensor");
         },
         ["tutorial room 2 arrow 1"]: (thing) => {
-            if (player.shoots.length > 0) {
-                thing.shapes[0].activate_scale = true;
-                thing.shapes[0].scale.x = -1;
-                const warning_offset = 100;
-                thing.lookup("tutorial room 2 warning").shapes[0].offset.y = warning_offset;
-                thing.lookup("tutorial room 2 warning 1").shapes[0].offset.y = warning_offset;
-                thing.lookup("tutorial room 2 warning 2").shapes[0].offset.y = warning_offset;
-                thing.lookup("tutorial room 2 arrow 2").shapes[0].style.opacity = 1;
+            const show = player.guns.length >= 1;
+            if (show) {
+                if (!thing.object.done) {
+                    thing.object.done = true;
+                    thing.shapes[0].activate_scale = true;
+                    thing.shapes[0].scale.x = -1;
+                    const warning_offset = vector.create(160, 500);
+                    for (let i = 0; i < 3; i++) {
+                        const shape = thing.lookup("tutorial room 2 warning" + (i > 0 ? " " + i : "")).shapes[0];
+                        shape.offset = vector.clone(warning_offset);
+                        shape.init_computed();
+                    }
+                    thing.lookup("tutorial room 2 arrow 2").shapes[0].style.opacity = 1;
+                }
+                if (!thing.object.block_done) {
+                    const block = Spawner.get_enemy("tutorial room 2 block");
+                    if (block) {
+                        thing.object.block_done = true;
+                        block.options.seethrough = true;
+                        for (const s of block.shapes)
+                            s.seethrough = true;
+                    }
+                }
             }
             else {
                 thing.lookup("tutorial room 2 arrow 2").shapes[0].style.opacity = 0;
-            }
-        },
-        ["tutorial room 2 warning"]: (thing) => {
-            if (player.shoots.length > 0) {
-                const offset = 100;
-                thing.shapes[0].offset.y = offset;
-                thing.lookup(thing.id + " 1").shapes[0].offset.y = offset;
-                thing.lookup(thing.id + " 2").shapes[0].offset.y = offset;
             }
         },
         ["tutorial room 2 door 1"]: (door) => {
@@ -257,7 +291,7 @@ export const detector = {
             switch_door(door, "tutorial room 2 switch", "tutorial room 2 switch path", 1);
         },
         ["tutorial rock 11"]: (door) => {
-            switch_door(door, (Spawner.spawners_lookup["tutorial room 2 enemy shooter"]?.wave_progress ?? 0) > 0 || door.lookup("tutorial room 2.1 sensor").is_touching_player, "tutorial room 2.1 switch path", 1);
+            switch_door(door, Spawner.check_progress("tutorial room 2 enemy shooter") > 0 || door.lookup("tutorial room 2.1 sensor").is_touching_player, "tutorial room 2.1 switch path", 1);
         },
     },
 };

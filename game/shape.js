@@ -186,6 +186,24 @@ export class Shape {
         return result;
     }
     ;
+    static get_other_vertices() {
+        const result = {};
+        for (const s of Shape.draw_shapes) {
+            const vs = s.computed?.vertices;
+            if (!vs)
+                continue;
+            if (s.translucent <= 0 || !s.seethrough)
+                continue;
+            if (s.closed_loop)
+                vs.push(vs[0]);
+            const translucent = math.round_to(s.translucent, 0.0001).toFixed(4);
+            if (!result[translucent])
+                result[translucent] = [];
+            result[translucent]?.push(vs);
+        }
+        return result;
+    }
+    ;
     id = ++Shape.cumulative_id;
     thing;
     index = -1;
@@ -196,9 +214,18 @@ export class Shape {
     opacity = 1;
     activate_scale = false;
     closed_loop = true;
-    seethrough = false;
+    translucent = 0;
     blinking = false;
     glowing = 0;
+    get seethrough() {
+        return !(this.translucent >= 1 - math.epsilon);
+    }
+    set seethrough(see) {
+        if (see)
+            this.translucent = 0;
+        else
+            this.translucent = 1;
+    }
     // computed
     computed;
     computed_aabb; // for use in Shape.filter()
@@ -215,12 +242,19 @@ export class Shape {
         return this.computed?.screen_vertices?.[2]?.x === -123 && this.computed?.screen_vertices?.[2]?.y === -123 && this.computed?.screen_vertices?.[2]?.z === -123;
     }
     init_computed() {
-        this.computed = {
-            aabb: vector.make_aabb(this.vertices),
-            aabb3: vector3.make_aabb(this.vertices),
-            mean: this.closed_loop ? vector3.create2(Vertices.centre(this.vertices), this.z) : vector3.mean(this.vertices),
-            vertices: vector3.clone_list(this.vertices),
-        };
+        const calc_vertices = vector3.add_list(this.vertices, this.offset), vertices = vector3.clone_list(this.vertices);
+        if (this.activate_scale)
+            vector3.scale_to_list(calc_vertices, this.scale);
+        const aabb = vector.make_aabb(calc_vertices), aabb3 = vector3.make_aabb(calc_vertices), mean = this.closed_loop ? vector3.create2(Vertices.centre(calc_vertices), this.z) : vector3.mean(calc_vertices); // don't use mean...
+        if (this.computed == undefined) {
+            this.computed = { aabb, aabb3, mean, vertices };
+        }
+        else {
+            this.computed.aabb = aabb;
+            this.computed.aabb3 = aabb3;
+            this.computed.mean = mean;
+            this.computed.vertices = vertices;
+        }
     }
     add(thing) {
         this.thing = thing;
@@ -247,7 +281,7 @@ export class Shape {
         if (style.stroke) {
             ctx.strokeStyle = style.stroke;
             ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1);
-            ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * config.graphics.linewidth_mult * (this.seethrough ? 1 : 1.8);
+            ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * config.graphics.linewidth_mult * (this.translucent <= math.epsilon ? 1 : 1.8);
             ctx.stroke();
         }
         if (style.fill && this.closed_loop) {
@@ -262,8 +296,16 @@ export class Shape {
         ctx.lines_v(this.computed.screen_vertices, this.closed_loop);
     }
     draw_health() {
-        if (this.computed?.screen_vertices == undefined || !this.computed.on_screen || this.thing.health == undefined || this.thing.options.hide_health || this.index >= 1)
+        if (this.computed?.screen_vertices == undefined || !this.computed.on_screen || this.thing.health == undefined || this.index >= 1)
             return;
+        if (this.thing.options.hide_health) {
+            if (this.thing.options.wall_filter) {
+                const ratio = math.bound((this.thing.health?.ratio ?? 0), 0, 1);
+                this.translucent = ratio;
+                this.style.stroke_opacity = ratio;
+            }
+            return;
+        }
         const ratio = this.thing.health.display_ratio;
         if (Math.abs(ratio - 1) < math.epsilon)
             return;

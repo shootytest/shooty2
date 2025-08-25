@@ -186,7 +186,7 @@ export const key = {
             event.preventDefault();
         });
         function wheel(event) {
-            event.preventDefault();
+            // event.preventDefault();
             mouse.scroll = event.deltaY;
             return false;
         }
