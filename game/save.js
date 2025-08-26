@@ -1,6 +1,7 @@
 import { config } from "../util/config.js";
 import { clone_object } from "./make.js";
 import { player } from "./player.js";
+import { Thing } from "./thing.js";
 ;
 ;
 ;
@@ -11,6 +12,7 @@ export const save = {
         switches: {},
         currencies: {},
     },
+    switch_times: {},
     saves: [],
     current_slot: 0,
     get_switch: (id) => {
@@ -22,6 +24,13 @@ export const save = {
     set_switch: (id, number = 1) => {
         save.save.switches[id] = number;
         save.changed(true);
+    },
+    get_switch_time: (id) => {
+        const time = save.switch_times[id] ?? -1;
+        return time === -1 ? -1 : (Thing.time - time);
+    },
+    set_switch_time: (id, time = -1) => {
+        save.switch_times[id] = time;
     },
     get_currency: (name) => {
         return save.save.currencies[name] ?? 0;
@@ -37,8 +46,7 @@ export const save = {
             // player.enemy_can_see = false; // hmmm
             return false;
         }
-        if (big)
-            console.log("saving... ", save.save);
+        // if (big) console.log("saving... ", save.save);
         save.save_to_slot(save.current_slot);
         save.save_to_storage();
     },

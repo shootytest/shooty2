@@ -90,6 +90,13 @@ export const STYLES = {
         stroke: "#778eea",
         stroke_opacity: 0.45,
     },
+    tutorial_boss: {
+        stroke: "#d75f19",
+        fill: "#d75f19",
+        health: "#778eea",
+        fill_opacity: 0.4,
+        health_opacity: 0.6,
+    },
     tutorial_enemy: {
         stroke: "#d7193f",
         fill: "#d7193f",

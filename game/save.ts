@@ -2,6 +2,7 @@ import { config } from "../util/config.js";
 import type { vector, vector3_ } from "../util/vector.js";
 import { clone_object } from "./make.js";
 import { player } from "./player.js";
+import { Thing } from "./thing.js";
 
 
 
@@ -40,6 +41,7 @@ export const save = {
     switches: {},
     currencies: {},
   } as save_type,
+  switch_times: {} as { [key: string]: number },
 
   saves: [] as save_type[],
   current_slot: 0,
@@ -55,6 +57,15 @@ export const save = {
   set_switch: (id: string, number = 1) => {
     save.save.switches[id] = number;
     save.changed(true);
+  },
+
+  get_switch_time: (id: string) => {
+    const time = save.switch_times[id] ?? -1;
+    return time === -1 ? -1 : (Thing.time - time);
+  },
+
+  set_switch_time: (id: string, time = -1) => {
+    save.switch_times[id] = time;
   },
 
   get_currency: (name: string) => {
@@ -73,7 +84,7 @@ export const save = {
       // player.enemy_can_see = false; // hmmm
       return false;
     }
-    if (big) console.log("saving... ", save.save);
+    // if (big) console.log("saving... ", save.save);
     save.save_to_slot(save.current_slot);
     save.save_to_storage();
   },

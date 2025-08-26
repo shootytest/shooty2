@@ -4,7 +4,7 @@ import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3_ } from "../util/vector.js";
 import { filters } from "./detector.js";
-import { bullet_death_type, clone_object, make, make_shapes, override_object, shoot_stats } from "./make.js";
+import { bullet_death_type, clone_object, override_object, shoot_stats } from "./make.js";
 import { Shape } from "./shape.js";
 import { Bullet, Thing } from "./thing.js";
 
@@ -77,6 +77,7 @@ export class Shoot {
     bullet.is_bullet = true;
     bullet.damage = S.damage ?? 0;
     bullet.make(S.make ?? "bullet", true);
+    bullet.create_room(this.thing.room_id);
     if (bullet.team === 0) bullet.team = this.thing.team;
     // bullet.is_bullet = bullet.team > 0;
     

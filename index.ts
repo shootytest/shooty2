@@ -4,7 +4,8 @@ import { Particle } from "./game/particle.js";
 import { player } from "./game/player.js";
 import { save } from "./game/save.js";
 import { Thing } from "./game/thing.js";
-import { Engine, Runner } from "./matter.js";
+import { ui } from "./game/ui.js";
+import { Engine } from "./matter.js";
 import { camera } from "./util/camera.js";
 import { ctx, init_canvas } from "./util/canvas.js";
 import { color } from "./util/color.js";
@@ -19,13 +20,6 @@ export const world = engine.world;
 engine.gravity.x = 0;
 engine.gravity.y = 0;
 
-// todo move camera straight to player position
-// camera.move_by(vector.create(-window.innerWidth / 2, -window.innerHeight / 2));
-// camera.position_jump();
-
-export const runner = Runner.create();
-Runner.run(runner, engine);
-
 export let MAP = map_serialiser.load("auto");
 if (MAP.shapes.length <= 0) MAP = TEST_MAP;
 
@@ -35,33 +29,16 @@ const init_all = () => {
   // ui.init();
   detector.init();
   key.init();
+  ui.init();
 };
 window.addEventListener("load", init_all);
 
-/*const tick_all = (event: Matter.IEventTimestamped<Runner>) => {
-
-  // ui.tick();
-  // ui.draw();
-  camera.tick();
-  camera.location_target = player.position;
-  camera.scale_target = player.camera_scale();
-  mouse.tick();
-  Thing.tick_things();
-  // clear screen
-  // ctx.clear();
-  ctx.clear();
-  ctx.fill_screen(color.blackground);
-  // draw all shapes
-  do_visibility();
-
-};
-Events.on(runner, "tick", tick_all);*/
 
 let time = -1;
 const tick_all = (timestamp_unused: number) => {
 
   const now = performance.now();
-  const dt = (time > -1) ? now - time : 0;
+  const _dt = (time > -1) ? now - time : 0;
   time = now;
   camera.tick();
   camera.scale_target = player.camera_scale();
@@ -71,11 +48,12 @@ const tick_all = (timestamp_unused: number) => {
   Thing.tick_things();
   Spawner.tick_spawners();
   Particle.tick_particles();
-  Engine.update(engine);
+  if (Thing.time > 10) Engine.update(engine);
   ctx.clear();
   ctx.fill_screen(color.blackground);
   do_visibility(); // draw all shapes
-  Particle.draw_particles();
+  ui.tick();
+  ui.draw();
   requestAnimationFrame(tick_all);
 
 };

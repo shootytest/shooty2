@@ -65,6 +65,7 @@ export class Shoot {
         bullet.is_bullet = true;
         bullet.damage = S.damage ?? 0;
         bullet.make(S.make ?? "bullet", true);
+        bullet.create_room(this.thing.room_id);
         if (bullet.team === 0)
             bullet.team = this.thing.team;
         // bullet.is_bullet = bullet.team > 0;

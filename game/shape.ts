@@ -300,7 +300,9 @@ export class Shape {
     if (this.computed?.screen_vertices == undefined || !this.computed.on_screen || this.thing.health == undefined || this.index >= 1) return;
     if (this.thing.options.hide_health) {
       if (this.thing.options.wall_filter) {
-        const ratio = math.bound((this.thing.health?.ratio ?? 0), 0, 1);
+        const until = this.thing.options.hide_health_until;
+        if (until && until < (this.thing.health?.value ?? 0)) return;
+        const ratio = math.bound(until ? this.thing.health.value / until : this.thing.health.ratio, 0, 1);
         this.translucent = ratio;
         this.style.stroke_opacity = ratio;
       }

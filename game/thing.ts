@@ -1,3 +1,4 @@
+// import spam
 import { world } from "../index.js";
 import { Bodies, Body, Composite, IBodyDefinition, ICollisionFilter, Query, Vector } from "../matter.js";
 import { config } from "../util/config.js";
@@ -5,16 +6,16 @@ import { map_shape_options_type, map_shape_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
-import type { Enemy } from "./enemy.js";
 import { Health } from "./health.js";
-import { make, make_shapes, shoot_stats, override_object, make_shoot, clone_array, bullet_death_type, multiply_and_override_object, clone_object, maketype_shape, maketype, shoot_mode, face_mode, move_mode } from "./make.js";
+import { make, make_shapes, shoot_stats, override_object, make_shoot, clone_array, multiply_and_override_object, clone_object, maketype_shape, shoot_mode, face_mode, move_mode, multiply_object } from "./make.js";
+import { save } from "./save.js";
 import { Polygon, Shape } from "./shape.js";
 import { Shoot } from "./shoot.js";
 
 /**
- * the thing class... i probably have made like 5 of these already
- * this covers all things (which interact with each other)
- * maybe this is everything
+ * the thing class... i probably have made like 5 of these (in other projects :)
+ * this should cover all "things"
+ * maybe this is everything (update: i made a spawner class that isn't a thing :O)
  */
 export class Thing {
 
@@ -22,6 +23,7 @@ export class Thing {
 
   static things: Thing[] = [];
   static things_lookup: { [key: string]: Thing } = {};
+  static things_rooms: { [room_key: string]: Thing[] } = {};
   
   static cumulative_id = 0;
 
@@ -134,6 +136,13 @@ export class Thing {
     return Thing.time;
   }
 
+  get room_id(): string {
+    return this.options.room_id ?? "";
+  }
+  set room_id(room_id: string) {
+    this.options.room_id = room_id;
+  }
+
   get has_behaviour(): boolean {
     return this.options.shoot_mode != undefined || this.options.shoot_mode_idle != undefined || this.options.move_mode != undefined || this.options.move_mode_idle != undefined || this.options.face_mode != undefined || this.options.face_mode_idle != undefined;
   }
@@ -149,6 +158,7 @@ export class Thing {
     const s = Shape.from_map(this, o);
     if (this.shapes.length <= 1) this.position = /*(o.vertices.length >= 3 && !o.options.open_loop) ? Vertices.centre(o.computed.vertices) :*/ vector3.mean(o.computed.vertices);
     this.create_id(o.id);
+    this.create_room();
     if (!this.body && !this.options.decoration) {
       const body_options = this.create_body_options();
       this.create_body(body_options);
@@ -156,6 +166,9 @@ export class Thing {
     if (this.body) this.body.label = o.id;
     this.make_shoot(this.options.shoots);
     this.make_the_rest();
+    if (this.options.spawn_permanent && save.check_switch(this.id)) {
+      this.remove();
+    }
   }
 
   make(key: string, reset = false) {
@@ -202,6 +215,14 @@ export class Thing {
   create_id(id: string) {
     this.id = id;
     Thing.things_lookup[id] = this;
+    return;
+  }
+
+  create_room(room_id?: string) {
+    if (room_id) this.room_id = room_id;
+    else room_id = this.room_id;
+    if (Thing.things_rooms[room_id] == undefined) Thing.things_rooms[room_id] = [];
+    Thing.things_rooms[room_id].push(this);
     return;
   }
 
@@ -308,10 +329,15 @@ export class Thing {
   remove_death() {
     if (this.options.death != undefined) {
       for (const d of this.options.death) {
+        if (d.type === "none") continue;
         let S = make_shoot[d.type] ?? {};
         if (d.stats) {
           S = clone_object(S);
-          multiply_and_override_object(S, d.stats);
+          override_object(S, d.stats);
+        }
+        if (d.stats_mult) {
+          if (!d.stats) S = clone_object(S);
+          multiply_object(S, d.stats_mult);
         }
         if (S) {
           const shoot = this.add_shoot(S);
@@ -326,12 +352,15 @@ export class Thing {
         } else console.error(`[thing/bullet/remove] thing id '${this.id}': make_shoot '${d.type}' doesn't exist!`);
       }
     }
+    if (this.options.spawn_permanent) { // death is permanent
+      save.set_switch(this.id);
+    }
   }
 
   remove_break() {
     const v: vector3_ = this.options.breakable ? this.target.velocity : this.velocity;
     // v.z = 0.025;
-    this.shapes[0]?.break({ type: "fade", velocity: v, opacity_mult: 0.5 });
+    this.shapes[0]?.break({ type: "fade", velocity: vector.create(), opacity_mult: 0.5 });
   }
 
   remove_list() {
@@ -474,10 +503,12 @@ export class Thing {
     } else if (face_mode === "static") {
 
     } else if (face_mode === "predict2") {
-      this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, (vector.length(vector.sub(this.position, this.player_position)) ** 0.5) * 3));
+      const predict_amount = (this.options.face_predict_amount ?? 1);
+      this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, (vector.length(vector.sub(this.position, this.player_position)) ** 0.5) * 3 * predict_amount));
       this.update_angle(this.options.face_smoothness ?? 0.3);
     } else if (face_mode === "predict") {
-      this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, vector.length(vector.sub(this.position, this.player_position)) * 0.3));
+      const predict_amount = (this.options.face_predict_amount ?? 1);
+      this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, vector.length(vector.sub(this.position, this.player_position)) * 0.3 * predict_amount));
       this.update_angle(this.options.face_smoothness ?? 0.3);
     } else if (face_mode === "spin") {
       this.target.angle = this.angle + (this.options.spin_speed ?? 0.01) * (this.random_number >= 0.5 ? 1 : -1);

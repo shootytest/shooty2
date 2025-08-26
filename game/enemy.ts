@@ -121,6 +121,7 @@ export class Spawner {
 
   static spawners: Spawner[] = [];
   static spawners_lookup: { [key: string]: Spawner } = {};
+  static spawners_rooms: { [key: string]: Spawner[] } = {};
   
   static cumulative_id = 0;
 
@@ -134,12 +135,13 @@ export class Spawner {
     return this.spawners_lookup[spawner_id]?.wave_progress ?? -1;
   }
 
-  static get_enemy(spawner_id: string): Enemy {
-    return Spawner.spawners_lookup[spawner_id].enemies[0];
+  static get_enemy(spawner_id: string): Enemy | undefined {
+    return Spawner.spawners_lookup[spawner_id]?.enemies?.[0];
   }
 
   uid: number = ++Spawner.cumulative_id;
   id: string = "generic spawner #" + this.uid;
+  room_id: string = "";
 
   spawn?: enemy_spawn;
   waves: enemy_wave[] = [];
@@ -156,6 +158,11 @@ export class Spawner {
   make_map(o: map_shape_type) {
     this.vertices = vector.clone_list(o.vertices);
     this.create_id(o.id);
+    if (o.options.room_id) {
+      this.room_id = o.options.room_id;
+      if (Spawner.spawners_rooms[this.room_id] == undefined) Spawner.spawners_rooms[this.room_id] = [];
+      Spawner.spawners_rooms[this.room_id].push(this);
+    }
     this.spawn = {
       enemy: o.options.spawn_enemy ?? "enemy",
       delay: o.options.spawn_delay,
@@ -191,6 +198,7 @@ export class Spawner {
   spawn_enemy(key: string, position?: vector) {
     const e = new Enemy(this);
     e.make_enemy(key, position ?? this.random_position());
+    e.create_room(this.room_id);
     this.enemies.push(e);
     return e;
   }

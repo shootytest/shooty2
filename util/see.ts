@@ -1,3 +1,4 @@
+import { Particle } from "../game/particle.js";
 import { player } from "../game/player.js";
 import { Shape } from "../game/shape.js";
 import { Common } from "../matter.js";
@@ -51,6 +52,9 @@ export const do_visibility = () => {
     ctx.save("see");
     clip_visibility_path(player, path, z);
     Shape.draw(z);
+    if (z === 0) {
+      Particle.draw_particles();
+    }
     ctx.restore("see");
   }
   // ctx.ctx.save();

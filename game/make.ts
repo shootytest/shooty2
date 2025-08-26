@@ -30,6 +30,7 @@ export interface maketype {
   health?: maketype_health;
   ability?: maketype_health;
   hide_health?: boolean;
+  hide_health_until?: number;
 
   // physics stuff
   angle?: number;
@@ -46,6 +47,7 @@ export interface maketype {
   shoot_mode_idle?: shoot_mode;
   move_mode_idle?: move_mode;
   face_mode_idle?: face_mode;
+  face_predict_amount?: number;
   move_hover_distance?: number;
   move_speed?: number;
   spin_speed?: number;
@@ -130,6 +132,7 @@ export interface shoot_stats {
 export interface bullet_death_type {
   type: string;
   stats?: shoot_stats;
+  stats_mult?: shoot_stats;
   angle?: number;
   offset?: vector;
   repeat?: number;
@@ -209,11 +212,12 @@ make.wall_tutorial_fake = {
   make_parent: ["wall"],
   style: "tutorial",
   style_: {
-    opacity: 0.7,
+    opacity: 0.65,
   },
   hide_health: true,
+  hide_health_until: 450,
   health: {
-    capacity: 500,
+    capacity: 700,
   },
 };
 
@@ -343,7 +347,7 @@ make.enemy_tutorial_block = {
     capacity: 500,
   },
   death: [
-    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1 }, repeat: 6, angle_increment: 60 },
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1.5 }, repeat: 6, angle_increment: 60 },
   ],
 };
 make_shapes.enemy_tutorial_block = [{
@@ -360,7 +364,7 @@ make.enemy_tutorial_rocky = {
     capacity: 400,
   },
   death: [
-    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1 }, repeat: 5, angle_increment: 72 },
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 2 }, repeat: 5, angle_increment: 72 },
     { type: "collect_coin", stats: { make: "collect_coin_5", speed: 0 }, repeat: 1 },
   ],
 };
@@ -436,13 +440,13 @@ make.enemy_tutorial_easy = {
   shoot_mode: "normal",
   move_mode: "direct",
   face_mode: "direct",
-  move_speed: 2.5,
+  move_speed: 3,
   enemy_detect_range: 500,
   health: {
     capacity: 250,
   },
   death: [
-    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.3, spread: -1 }, repeat: 2 },
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.6, spread: -1 }, repeat: 2 },
   ],
 };
 make_shapes.enemy_tutorial_easy = [{
@@ -491,6 +495,43 @@ make_shapes.enemy_tutorial_down = [{
   shoot: "enemy_block",
 }];
 
+make.enemy_tutorial_boss = {
+  make_parent: ["enemy_tutorial"],
+  shoot_mode: "normal",
+  move_mode: "static",
+  face_mode: "predict2",
+  // face_predict_amount: 0.7,
+  movable: false,
+  enemy_detect_range: 0,
+  health: {
+    capacity: 10000,
+  },
+  death: [
+    { type: "collect_coin", stats: { make: "collect_coin_10", speed: 5 }, repeat: 36, angle_increment: 10 },
+  ],
+};
+make_shapes.enemy_tutorial_boss = [{
+  type: "polygon",
+  sides: 7,
+  radius: 150,
+}, {
+  type: "line",
+  v2: vector.createpolar_deg(0, 150),
+  shoot: "enemy_tutorial_boss",
+}, {
+  type: "line",
+  style: "tutorial_boss",
+  v2: vector.createpolar_deg(-360/14, 136),
+  shoot: "enemy_tutorial_boss_split",
+  shoot_: { delay: 0.5, angle: -360/14, },
+}, {
+  type: "line",
+  style: "tutorial_boss",
+  v2: vector.createpolar_deg(360/14, 136),
+  shoot: "enemy_tutorial_boss_split",
+  shoot_: { delay: 0.5, angle: 360/14, },
+}];
+
 
 
 // bullets
@@ -498,6 +539,14 @@ make_shapes.enemy_tutorial_down = [{
 make.bullet = {
   movable: true,
   seethrough: true,
+};
+
+make.bullet_homing = {
+  make_parent: ["bullet"],
+  move_mode: "direct",
+  face_mode: "direct",
+  move_speed: 5,
+  enemy_detect_range: 1000,
 };
 
 
@@ -516,7 +565,7 @@ make.collect_coin = {
   team: -1,
   face_mode: "predict",
   move_mode: "direct",
-  move_speed: 2,
+  move_speed: 4.5,
   enemy_detect_range: 500,
 };
 
@@ -618,7 +667,7 @@ make_shoot.player = {
   make: "bullet",
   size: 9,
   reload: 30,
-  speed: 4,
+  speed: 8,
   spread: 0.03,
   friction: 0.0025,
   restitution: 1,
@@ -639,14 +688,14 @@ make_shoot.collect_coin = {
   speed: 2.5,
   spread: 0.03,
   spread_speed: 0.1,
-  friction: 0.04,
+  friction: 0.06,
 };
 
 make_shoot.enemy = {
   make: "bullet",
   size: 10,
   reload: 25,
-  speed: 4,
+  speed: 8,
   friction: 0,
   restitution: 1,
   recoil: 1,
@@ -659,7 +708,7 @@ make_shoot.enemy_easy = {
   size: 11,
   spread: 0.05,
   reload: 70,
-  speed: 2,
+  speed: 4,
   time: 120,
 };
 
@@ -668,7 +717,7 @@ make_shoot.enemy_block = {
   size: 13,
   spread: 0,
   reload: 3,
-  speed: 5,
+  speed: 10,
   time: 100,
   density: 999999,
   damage: 0,
@@ -678,9 +727,49 @@ make_shoot.enemy_4way = {
   parent: ["enemy"],
   size: 12,
   reload: 60,
-  speed: 2,
+  speed: 4,
   recoil: 0,
   time: 100,
+};
+
+make_shoot.enemy_tutorial_boss = {
+  parent: ["enemy"],
+  size: 17,
+  reload: 20,
+  speed: 10,
+  spread: 0.06,
+  damage: 300,
+  time: 500,
+  death: [{
+    type: "enemy_tutorial_boss",
+    stats: { make: "bullet_homing", death: [{type: "none"}], speed: 15, friction: 0.06, time: 120, damage: 200, },
+    repeat: 1,
+    angle: 180,
+    offset: vector.create(0, -10),
+  }],
+};
+
+make_shoot.enemy_tutorial_boss_split = {
+  parent: ["enemy"],
+  style: "tutorial_boss",
+  size: 24,
+  reload: 20,
+  speed: 20,
+  spread: 0.1,
+  damage: 300,
+  time: 50,
+  friction: 0.05,
+  death: [{ type: "enemy_tutorial_boss_splitted", repeat: 7, angle_increment: 360/7, }],
+};
+
+make_shoot.enemy_tutorial_boss_splitted = {
+  parent: ["enemy"],
+  size: 10,
+  speed: 20,
+  spread: 0.04,
+  damage: 100,
+  time: 60,
+  friction: 0.05,
 };
 
 
@@ -720,7 +809,11 @@ export const override_object = function(m_target: dictionary, m_override: dictio
   for (const [k, v] of Object.entries(m_override)) {
     if (Array.isArray(v)) {
       if (m_target[k] == undefined) m_target[k] = [];
-      for (const a of v) m_target[k].push(typeof a === "object" ? clone_object(a) : a);
+      for (const [i, a] of v.entries()) {
+        if (i >= m_target[k].length) m_target[k].push(typeof a === "object" ? clone_object(a) : a);
+        else if (typeof a === "object") override_object(m_target[k][i], a);
+        else m_target[k][i] = a;
+      }
     } else if (typeof v === "object") {
       if (m_target[k] == undefined) m_target[k] = {};
       override_object(m_target[k], v);
@@ -744,7 +837,11 @@ export const multiply_and_override_object = function(m_target: dictionary, m_ove
       m_target[k] = (m_target[k] ?? 1) * v;
     } else if (Array.isArray(v)) {
       if (m_target[k] == undefined) m_target[k] = [];
-      for (const a of v) m_target[k].push(typeof a === "object" ? clone_object(a) : a);
+      for (const [i, a] of v.entries()) {
+        if (i >= m_target[k].length) m_target[k].push(typeof a === "object" ? clone_object(a) : a);
+        else if (typeof a === "object") override_object(m_target[k][i], a);
+        else m_target[k][i] = a;
+      }
     } else if (typeof v === "object") {
       if (m_target[k] == undefined) m_target[k] = {};
       override_object(m_target[k], v);

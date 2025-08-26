@@ -141,8 +141,10 @@ export const detector = {
         }
         if (Math.floor(a.team) === 1 && b.options.switch) {
             const switch_id = b.spawner.id;
-            if (!save.check_switch(switch_id))
+            if (!save.check_switch(switch_id)) {
                 save.set_switch(switch_id);
+                save.set_switch_time(switch_id, b.thing_time);
+            }
             b.shapes[0].glowing = 1;
         }
         if (b.options.breakable)
@@ -206,9 +208,16 @@ export const detector = {
         ["tutorial room 1 door sensor"]: (thing) => {
             thing.lookup("tutorial room 1 arrow").shapes[0].style.stroke_opacity = 0;
         },
-        ["tutorial room 2.5 sensor"]: (thing) => {
+        ["tutorial room 2.5 sensor"]: (_thing) => {
             const centre = Vertices.centre(Spawner.spawners_lookup["tutorial room 2 breakables 4"].vertices);
             player.checkpoint = centre;
+        },
+        ["tutorial room 5 sensor"]: (thing) => {
+            const boss = Spawner.get_enemy("tutorial room 5 boss");
+            if (boss) {
+                boss.object.activated = true;
+                boss.options.enemy_detect_range = 2000;
+            }
         },
     },
     sensor_end_fns: {
@@ -263,6 +272,8 @@ export const detector = {
                     for (let i = 0; i < 3; i++) {
                         const shape = thing.lookup("tutorial room 2 warning" + (i > 0 ? " " + i : "")).shapes[0];
                         shape.offset = vector.clone(warning_offset);
+                        shape.style.stroke = STYLES.tutorial_enemy.stroke;
+                        shape.style.stroke_opacity = 0.6;
                         shape.init_computed();
                     }
                     thing.lookup("tutorial room 2 arrow 2").shapes[0].style.opacity = 1;
@@ -292,6 +303,9 @@ export const detector = {
         },
         ["tutorial rock 11"]: (door) => {
             switch_door(door, Spawner.check_progress("tutorial room 2 enemy shooter") > 0 || door.lookup("tutorial room 2.1 sensor").is_touching_player, "tutorial room 2.1 switch path", 1);
+        },
+        ["tutorial room 5 door"]: (door) => {
+            switch_door(door, Spawner.get_enemy("tutorial room 5 boss")?.object?.activated, "tutorial room 5 switch path", 6);
         },
     },
 };
@@ -327,20 +341,33 @@ const switch_door = (door, switch_ids, path_id, speed = [5], invert = [false]) =
         door.object.original_position = vector.clone(pos);
         door.object.step = step;
     }
-    const switch_id = switch_ids[step - 1];
+    let switch_id = switch_ids[step - 1];
     let triggered = typeof switch_id === "string" ? save.check_switch(switch_id) : switch_id;
     if (invert[step - 1] ?? false)
         triggered = !triggered;
+    // instant teleport?
+    while (typeof switch_id === "string" && save.get_switch_time(switch_id) === -1 && triggered) {
+        const target_dv = vector.sub(vs[step], vs[0]);
+        const door_dv = vector.sub(vector.add(door.object.original_position, target_dv), pos);
+        door.translate(door_dv);
+        step++;
+        door.object.step = step;
+        switch_id = switch_ids[step - 1];
+        triggered = typeof switch_id === "string" ? save.check_switch(switch_id) : switch_id;
+        if (invert[step - 1] ?? false)
+            triggered = !triggered;
+    }
+    // do normal stuff
     if (triggered) {
         const target_dv = vector.sub(vs[step], vs[0]);
         const door_dv = vector.sub(vector.add(door.object.original_position, target_dv), pos);
         const sped = speed[step] ?? speed[0];
         if (vector.length(door_dv) <= sped) {
-            door.translate(door_dv);
+            door.translate_wall(door_dv);
             door.object.step = step + 1;
         }
         else {
-            door.translate(vector.normalise(door_dv, sped));
+            door.translate_wall(vector.normalise(door_dv, sped));
         }
     }
 };
