@@ -100,8 +100,9 @@ export const m_ui = {
             camera.look_z += dz;
         });
         key.add_key_listener("Escape", () => {
-            if (m_ui.properties_selecting_parent) {
+            if (m_ui.properties_selecting_parent || m_ui.properties_selecting_connection) {
                 m_ui.properties_selecting_parent = "";
+                m_ui.properties_selecting_connection = "";
                 m_ui.update_directory();
                 m_ui.update_properties();
                 m_ui.open_properties();
@@ -596,7 +597,7 @@ export const m_ui = {
         m_ui.mouse.drag_target[0] = target;
         m_ui.color_directory_element(old_id, "");
         m_ui.color_directory_element(target.shape.id, "#ff000033");
-        m_ui.directory_elements[target.shape.id].scrollIntoView({
+        m_ui.directory_elements[target.shape.id].querySelector("span")?.scrollIntoView({
             behavior: "smooth",
             block: "center",
             inline: "nearest",
@@ -670,7 +671,7 @@ export const m_ui = {
         aside_directory.style.display = m_ui.right_sidebar_mode === "directory" ? "block" : "none";
         aside_properties.style.display = m_ui.right_sidebar_mode === "properties" ? "block" : "none";
     },
-    update_directory: () => {
+    update_directory: (rooms_only = false) => {
         const aside = document.getElementById("directory");
         if (aside == undefined)
             return console.error("[ui/update_directory] right sidebar directory <aside> not found!");
@@ -687,6 +688,8 @@ export const m_ui = {
         };
         const sorted_shapes = m_ui.map.shapes?.sort((s1, s2) => s1.computed?.depth - s2.computed?.depth);
         for (const shape of [m_ui.all_shape].concat(sorted_shapes ?? [])) {
+            if (rooms_only && m_ui.map.computed?.shape_room[shape.id])
+                continue;
             const id = shape.id;
             if (id !== "all") {
                 m_ui.all_shape.options.contains?.push(id);
@@ -782,6 +785,8 @@ export const m_ui = {
                     event.preventDefault();
                     if (m_ui.properties_selecting_parent && m_ui.properties_selecting_parent !== shape.id)
                         m_ui.select_parent(shape);
+                    else if (m_ui.properties_selecting_connection && m_ui.properties_selecting_connection !== shape.id)
+                        m_ui.select_connection(shape);
                     else
                         m_ui.open_properties(shape);
                 }
@@ -794,6 +799,7 @@ export const m_ui = {
     },
     properties_selected: {},
     properties_selecting_parent: "",
+    properties_selecting_connection: "",
     properties_options: {
         shape: {
             parent: {
@@ -847,6 +853,11 @@ export const m_ui = {
                 max: 2,
                 step: 0.1,
             },
+            sensor_dont_set_room: {
+                show: "sensor",
+                name: "don't set room",
+                type: "checkbox",
+            },
             is_spawner: {
                 name: "spawner",
                 type: "checkbox",
@@ -868,6 +879,15 @@ export const m_ui = {
                 show: "is_spawner",
                 name: "death is permanent",
                 type: "checkbox",
+            },
+            is_room: {
+                name: "room",
+                type: "checkbox",
+            },
+            room_connections: {
+                show: "is_room",
+                name: "room connections",
+                type: "button",
             },
         },
         /*parent: {
@@ -1050,14 +1070,14 @@ export const m_ui = {
                     else if (option.type === "button") {
                         if (option_key === "parent") {
                             const is_selecting = m_ui.properties_selected.id === m_ui.properties_selecting_parent;
+                            input.style.display = "none";
                             label.innerHTML += `
                 : ${(shape.options.parent === "all" ? "&lt;none&gt;" : (shape.options.parent ?? "&lt;none&gt;"))}
                 <button style="font-size: 0.8em;" id="edit_parent" title="${is_selecting ? "don't edit parent" : "edit parent"}">
                   <svg xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;" viewBox="0 0 24 24"><path fill="currentColor" d="${is_selecting ? SVG.edit_off : SVG.edit}"/></svg>
                 </button>
               `.trim();
-                            input.style.display = "none";
-                            label.querySelector("button")?.addEventListener("click", function (event) {
+                            label.querySelector("button")?.addEventListener("click", function (_event) {
                                 if (is_selecting) {
                                     m_ui.properties_selecting_parent = "";
                                     m_ui.directory_elements.all.style.backgroundColor = "";
@@ -1072,8 +1092,62 @@ export const m_ui = {
                                 }
                             });
                         }
+                        else if (option_key === "room_connections") {
+                            const is_selecting = m_ui.properties_selected.id === m_ui.properties_selecting_connection;
+                            input.style.display = "none";
+                            if (shape.options.room_connections == undefined)
+                                label.innerHTML += `: &lt;none&gt;&nbsp;`;
+                            else {
+                                label.innerHTML += ":<br>";
+                                let i = 1;
+                                for (const cid of shape.options.room_connections) {
+                                    label.innerHTML += `
+                    &nbsp; ${cid} <button style="font-size: 0.6em;" id="remove_connection_${i}" title="remove this connection">
+                      <svg xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.minus}"/></svg>
+                    </button> <br>
+                  `.trim();
+                                    i++;
+                                }
+                            }
+                            label.innerHTML += `
+                <button style="font-size: 0.8em;${is_selecting ? " rotate: 45deg;" : ""}" id="add_connection" title="${is_selecting ? "don't add connection" : "add connection"}">
+                  <svg xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;" viewBox="0 0 24 24"><path fill="currentColor" d="${SVG.add}"/></svg>
+                </button>
+              `.trim();
+                            let i = 1;
+                            for (const cid of shape.options.room_connections ?? []) {
+                                label.querySelector("#remove_connection_" + i)?.addEventListener("click", function (_event) {
+                                    const other = m_ui.map.computed?.shape_map[cid];
+                                    if (other) {
+                                        const index = other.options.room_connections?.indexOf(shape.id) ?? -1;
+                                        if (index >= 0)
+                                            other.options.room_connections?.splice(index, 1);
+                                    }
+                                    const index = shape.options.room_connections?.indexOf(cid) ?? -1;
+                                    if (index >= 0)
+                                        shape.options.room_connections?.splice(index, 1);
+                                    map_serialiser.compute(m_ui.map);
+                                    m_ui.update_properties();
+                                });
+                                i++;
+                            }
+                            label.querySelector("#add_connection")?.addEventListener("click", function (_event) {
+                                if (is_selecting) {
+                                    m_ui.properties_selecting_connection = "";
+                                    m_ui.directory_elements.all.style.backgroundColor = "";
+                                    m_ui.update_properties();
+                                }
+                                else {
+                                    m_ui.properties_selecting_connection = m_ui.properties_selected.id;
+                                    m_ui.right_sidebar_mode = "directory";
+                                    m_ui.update_directory(true);
+                                    m_ui.directory_elements.all.style.backgroundColor = "#11e1a955";
+                                    m_ui.update_right_sidebar();
+                                }
+                            });
+                        }
                         else {
-                            // why
+                            // how
                         }
                     }
                     div.appendChild(p);
@@ -1099,8 +1173,9 @@ export const m_ui = {
         m_ui.update_right_sidebar();
     },
     select_parent: (shape) => {
-        const child_id = m_ui.properties_selected.id;
-        const old_parent_id = m_ui.properties_selected.options.parent;
+        const selected_shape = m_ui.map.computed?.shape_map[m_ui.properties_selecting_parent] ?? m_ui.properties_selected;
+        const child_id = selected_shape.id;
+        const old_parent_id = selected_shape.options.parent;
         if (old_parent_id === shape.id || child_id === shape.id || child_id === undefined)
             return;
         if (m_ui.check_child(child_id, shape))
@@ -1108,9 +1183,9 @@ export const m_ui = {
         const old_parent = old_parent_id == undefined ? undefined :
             (old_parent_id === "all" ? m_ui.all_shape : m_ui.map.computed?.shape_map[old_parent_id]);
         if (shape.id === "all")
-            delete m_ui.properties_selected.options.parent;
+            delete selected_shape.options.parent;
         else
-            m_ui.properties_selected.options.parent = shape.id; // actually set the parent
+            selected_shape.options.parent = shape.id; // actually set the parent
         // make parent contain child
         if (shape.options.contains === undefined)
             shape.options.contains = [child_id];
@@ -1130,6 +1205,24 @@ export const m_ui = {
         m_ui.right_sidebar_mode = "directory";
         m_ui.update_right_sidebar();
         map_draw.change("edit property: parent", m_ui.properties_selected);
+    },
+    select_connection: (shape) => {
+        if (!shape.options.is_room)
+            return;
+        const selected_id = shape.id;
+        const set_shape = m_ui.map.computed?.shape_map[m_ui.properties_selecting_connection] ?? m_ui.properties_selected;
+        if (set_shape.options.room_connections == undefined)
+            set_shape.options.room_connections = [];
+        else if (set_shape.options.room_connections.includes(selected_id))
+            return;
+        set_shape.options.room_connections.push(selected_id);
+        m_ui.properties_selecting_connection = "";
+        map_serialiser.compute(m_ui.map);
+        m_ui.update_directory(false);
+        m_ui.update_properties();
+        m_ui.right_sidebar_mode = "properties";
+        m_ui.update_right_sidebar();
+        map_draw.change("add property: connection", m_ui.properties_selected);
     },
     // recursive
     check_child: (check_id, shape) => {
@@ -1151,7 +1244,7 @@ export const m_ui = {
         return false;
     },
 };
-window.addEventListener("resize", function (_) {
+window.addEventListener("resize", function (_event) {
     width = canvas.width;
     height = canvas.height;
 });

@@ -52,10 +52,10 @@ const tick_all = (timestamp_unused) => {
 };
 requestAnimationFrame(tick_all);
 map_serialiser.compute(MAP);
-/*for (const shape of TEST_MAP.shapes ?? []) {
-  const t = new Thing();
-  t.make_map(shape);
-}*/
+for (const shape of MAP.shapes ?? []) {
+    const room_id = MAP.computed?.shape_room[shape.id] ?? "";
+    shape.options.room_id = room_id;
+}
 player.position = vector3.create_(MAP.computed?.shape_map.start.vertices[0] ?? vector.create());
 player.old_position = player.position;
 player.checkpoint = player.position;

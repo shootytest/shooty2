@@ -128,7 +128,7 @@ export const map_draw = {
         const style = map_draw.get_style(shape);
         const open_loop = Boolean(shape.options.open_loop);
         ctx.save("draw_shape");
-        ctx.begin();
+        ctx.beginPath();
         ctx.lines_v(shape.computed.screen_vertices, !open_loop);
         ctx.lineCap = "square";
         if (open_loop && !style.stroke)
@@ -265,6 +265,18 @@ export const map_draw = {
                         }
                         map_draw.compute_shape(o.shape);
                     }
+                }
+            }
+            if (shape.options.is_room && shape.options.room_connections && m_ui.editor.layers.rooms) {
+                for (const cid of shape.options.room_connections) {
+                    const connection = m_ui.map.computed?.shape_map[cid];
+                    if (!connection)
+                        continue;
+                    const cv = camera.world3screen(vector3.create_(connection.vertices[0], connection.z));
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = color.white + "55";
+                    ctx.lineWidth = camera.sqrtscale * 5;
+                    ctx.line_v(v, cv);
                 }
             }
         }

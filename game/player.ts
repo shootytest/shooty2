@@ -1,3 +1,4 @@
+import { MAP } from "../index.js";
 import { camera } from "../util/camera.js";
 import { config } from "../util/config.js";
 import { keys } from "../util/key.js";
@@ -18,6 +19,7 @@ export class Player extends Thing {
   enemy_can_see: boolean = false;
   guns: string[] = [];
   xp: number = 0;
+  level: number = 0;
   stats: player_stats = {
     deaths: 0,
     pixels_walked: 0,
@@ -35,10 +37,6 @@ export class Player extends Thing {
 
     this.create_id("player");
     this.position = vector3.create();
-  }
-
-  get level(): number {
-    return 1;
   }
 
   create_player() {
@@ -162,7 +160,8 @@ export class Player extends Thing {
   }
 
   add_xp(xp: number) {
-
+    this.xp += xp;
+    this.level = 0; // todo level formula
   }
 
   collect(o: maketype_collect) {
@@ -176,6 +175,14 @@ export class Player extends Thing {
       save.add_currency(o.currency_name, o.currency_amount);
     }
   }
+
+  // todo
+  // active_rooms(depth: number = 2): string[] {
+  //   const result: string[] = [];
+  //   result.push(this.room_id);
+  //   result.push(...(MAP.computed?.shape_map[this.room_id]?.options.room_connections ?? []));
+  //   return result;
+  // }
 
 };
 

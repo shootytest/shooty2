@@ -16,6 +16,7 @@ export class Player extends Thing {
     enemy_can_see = false;
     guns = [];
     xp = 0;
+    level = 0;
     stats = {
         deaths: 0,
         pixels_walked: 0,
@@ -30,9 +31,6 @@ export class Player extends Thing {
         // this.make_shape("player_basic");
         this.create_id("player");
         this.position = vector3.create();
-    }
-    get level() {
-        return 1;
     }
     create_player() {
         this.create_body(this.create_body_options(filters.thing(this.team)));
@@ -157,6 +155,8 @@ export class Player extends Thing {
             override_object(this.stats, o.stats);
     }
     add_xp(xp) {
+        this.xp += xp;
+        this.level = 0; // todo level formula
     }
     collect(o) {
         if (o.restore_health)

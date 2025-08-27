@@ -111,6 +111,8 @@ export const detector = {
                 detector.sensor_start_fns[b.id]?.(b);
                 if (b.options.sensor_fov_mult != undefined)
                     player.fov_mult = b.options.sensor_fov_mult || 1;
+                if (!b.options.sensor_dont_set_room)
+                    player.room_id = b.room_id;
                 b.is_touching_player = true;
             }
             if (b.health && b_rittle && different_team) {
