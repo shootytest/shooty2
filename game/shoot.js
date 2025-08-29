@@ -108,19 +108,13 @@ export class Shoot {
         return bullet;
     }
     remove_bullet(bullet) {
-        const index = this.bullets.indexOf(bullet);
-        if (index >= 0) {
-            this.bullets.splice(index, 1);
-        }
+        this.bullets.remove(bullet);
     }
     remove() {
         for (const b of this.bullets) {
             this.remove_bullet(b);
         }
-        const index = this.thing.shoots.indexOf(this);
-        if (index >= 0) {
-            this.thing.shoots.splice(index, 1);
-        }
+        this.thing.shoots.remove(this);
     }
     update_shape(ratio = this.ratio) {
         if (!this.shape)

@@ -47,6 +47,7 @@ export const map_draw = {
     if (at_vertex_index > 0) { // splitting shape
       // wow 1 line, this works because the deleted vertices from the old shape are exactly the new shape
       new_shape.vertices = shape.vertices.splice(at_vertex_index, shape.vertices.length - at_vertex_index);
+      if (new_shape.vertices[0]) shape.vertices.push(vector3.clone_(new_shape.vertices[0])); // also duplicate the vertex at the split location
     } else {
       const move_vector = shape.computed ? vector.aabb2v(shape.computed?.aabb) : vector.create(10, 10);
       for (const v of new_shape.vertices) {
@@ -277,6 +278,7 @@ export const map_draw = {
           }
         }
       }
+      // draw room
       if (shape.options.is_room && shape.options.room_connections && m_ui.editor.layers.rooms) {
         for (const cid of shape.options.room_connections) {
           const connection = m_ui.map.computed?.shape_map[cid];
@@ -324,14 +326,12 @@ export const map_draw = {
     if (!key.shift()) {
       if (!confirm("ARE YOU SURE YOU WANT TO DELETE [" + shape.id + "]")) return;
     }
-    const remove_index = m_ui.map.shapes.indexOf(shape);
-    if (remove_index >= 0) m_ui.map.shapes.splice(remove_index, 1);
+    m_ui.map.shapes.remove(shape);
     // handle parent
     let contains: string[] | undefined = undefined;
     if (shape.options.parent && shape.options.parent !== "all") {
       contains = m_ui.map.computed?.shape_map[shape.options.parent].options.contains;
-      const contains_index = contains?.indexOf(shape.id) ?? -1;
-      if (contains_index >= 0) contains?.splice(contains_index, 1);
+      contains?.remove(shape.id);
     }
     // handle children
     if (shape.options.contains?.length) {

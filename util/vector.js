@@ -258,6 +258,13 @@ export const vector3 = {
     clone: (v) => {
         return vector3.create(v.x, v.y, v.z);
     },
+    clone_: (v) => {
+        return {
+            x: v.x,
+            y: v.y,
+            z: v.z,
+        };
+    },
     clone_list: (vs) => {
         const result = [];
         for (const v of vs) {

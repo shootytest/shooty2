@@ -197,11 +197,11 @@ export const draw_lighting = (centre, display_radius) => {
     const min_radius = display_radius * 0.2;
     const max_radius = display_radius;
     const gradient = ctx.createRadialGradient(x, y, min_radius, x, y, max_radius);
-    gradient.addColorStop(0, "#ffff1133");
-    gradient.addColorStop(0.3 - math.bounce(camera.time, 30) * 0.1, "#eeee1022");
-    gradient.addColorStop(0.7, "#dddd0911");
+    gradient.addColorStop(0, "#11ffff33");
+    gradient.addColorStop(0.3 - math.bounce(camera.time, 30) * 0.1, "#10eeee22");
+    gradient.addColorStop(0.7, "#09dddd11");
     gradient.addColorStop(1, color.blackground + "00");
-    ctx.fillStyle = gradient;
+    ctx.fillStyle = color.black + "00"; // gradient;
     ctx.beginPath();
     ctx.circle(x, y, max_radius);
     ctx.fill();
@@ -434,9 +434,7 @@ export const collide = {
                     }
                 }
                 else {
-                    let index = open_segments.indexOf(endpoint.segment);
-                    if (index > -1)
-                        open_segments.splice(index, 1);
+                    open_segments.remove(endpoint.segment);
                 }
                 if (open_segment !== open_segments[0]) {
                     if (pass === 1) {

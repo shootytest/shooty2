@@ -117,7 +117,7 @@ export const detector = {
       if (b.options.sensor) {
         detector.sensor_start_fns[b.id]?.(b);
         if (b.options.sensor_fov_mult != undefined) player.fov_mult = b.options.sensor_fov_mult || 1;
-        if (!b.options.sensor_dont_set_room) player.room_id = b.room_id;
+        if (!b.options.sensor_dont_set_room) player.change_room(b.room_id);
         b.is_touching_player = true;
       }
       if (b.health && b_rittle && different_team) {
@@ -127,7 +127,7 @@ export const detector = {
     if (a.is_bullet) {
       if (!b.options.sensor && !b.options.keep_bullets && !a.options.collectible && !b_rittle && different_team) {
         if (b.is_player) a.options.death = []; // clear bullets on death if it hits the player
-        a.remove();
+        a.die();
       } else if (b_rittle || (!different_team && a.team > 0)) {
         pair.isSensor = true;
         (ba as any).temporarySensor = true;
@@ -141,7 +141,7 @@ export const detector = {
       const collect = b.options.collectible;
       if (collect.allow_bullet_collect || a.is_player) {
         player.collect(collect);
-        b.remove();
+        b.die();
       }
     }
     if (Math.floor(a.team) === 1 && b.options.switch) {
@@ -172,7 +172,7 @@ export const detector = {
   sensor_during_fns: {
     ["tutorial room 1 sensor"]: (thing) => {
       thing.lookup("tutorial room 1 arrow").shapes[0].style.stroke_opacity = 1 - math.bound((player.position.x - thing.position.x) / 350, 0, 1);
-      player.checkpoint = vector.clone(MAP.computed?.shape_map["start"].vertices[0] ?? vector.create(100, -100));
+      player.set_checkpoint(vector.clone(MAP.computed?.shape_map["start"].vertices[0] ?? vector.create(100, -100)));
     },
     ["tutorial room 2 door sensor"]: (_thing) => {
       // const style = thing.lookup("tutorial room 2 arrow 1").shapes[0].style;
@@ -181,7 +181,7 @@ export const detector = {
     ["tutorial room 4 sensor"]: (thing) => {
       const center = vector.clone(MAP.computed?.shape_map["tutorial room 4 gun"].vertices[0] ?? vector.create());
       const d = vector.length(vector.sub(player.position, center));
-      if (d < 100) player.checkpoint = center;
+      if (d < 100) player.set_checkpoint(center);
       player.fov_mult = 1.25 - 0.5 * math.bound(1 - d / 500, 0, 1);
       // hmmm
       let i = 0;
@@ -217,7 +217,7 @@ export const detector = {
     },
     ["tutorial room 2.5 sensor"]: (_thing) => {
       const centre = Vertices.centre(Spawner.spawners_lookup["tutorial room 2 breakables 4"].vertices);
-      player.checkpoint = centre;
+      player.set_checkpoint(centre);
     },
     ["tutorial room 5 sensor"]: (thing) => {
       const boss = Spawner.get_enemy("tutorial room 5 boss");
@@ -258,13 +258,13 @@ export const detector = {
   spawner_calc_fns: {
     ["tutorial room 3 enemy 1"]: (spawner) => {
       if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 2") > 0) {
-        spawner.thing_lookup("tutorial window 1").remove();
+        spawner.thing_lookup("tutorial window 1").die();
         spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
       }
     },
     ["tutorial room 3 enemy 2"]: (spawner) => {
       if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 1") > 0) {
-        spawner.thing_lookup("tutorial window 1").remove();
+        spawner.thing_lookup("tutorial window 1").die();
         spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
       }
     },
@@ -312,6 +312,9 @@ export const detector = {
     },
     ["tutorial room 2 door 2"]: (door) => {
       do_door(door, "tutorial room 2 door sensor");
+    },
+    ["tutorial room 3 door"]: (door) => {
+      do_door(door, "tutorial room 3 door sensor");
     },
     ["tutorial rock 7"]: (door) => {
       switch_door(door, "tutorial room 2 switch", "tutorial room 2 switch path", 1);

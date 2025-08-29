@@ -385,10 +385,7 @@ export class Shape {
   remove() {
     for (const array of [Shape.shapes, this.thing.shapes]) {
       // remove this from array
-      const index = array?.indexOf(this);
-      if (index != undefined && index > -1) {
-        array?.splice(index, 1);
-      }
+      array?.remove(this);
     }
   }
 

@@ -17,10 +17,11 @@ export class Enemy extends Thing {
         this.spawner = spawner;
         this.is_enemy = true;
     }
-    make_enemy(key, position, id) {
+    make_enemy(key, position, room_id, id) {
         if (make[key] == undefined)
             return console.error(`[enemy/make_enemy] no such enemy: '${key}'`);
         this.make(key);
+        this.create_room(room_id);
         if (id)
             this.create_id(id);
         else {
@@ -59,19 +60,15 @@ export class Enemy extends Thing {
         super.shoot();
     }
     remove() {
-        const index = this.spawner.enemies.indexOf(this);
-        if (index != undefined && index > -1) {
-            this.spawner.enemies.splice(index, 1);
-        }
-        this.spawner.calc_progress();
+        this.remove_spawner();
         super.remove();
     }
-    remove_static() {
-        const index = this.spawner.enemies.indexOf(this);
-        if (index != undefined && index > -1) {
-            this.spawner.enemies.splice(index, 1);
-        }
+    remove_spawner() {
+        this.spawner.enemies.remove(this);
         this.spawner.calc_progress();
+    }
+    remove_static() {
+        this.remove_spawner();
         if (this.is_removed)
             return;
         this.remove_death();
@@ -84,11 +81,7 @@ export class Enemy extends Thing {
         this.remove_shoots();
     }
     remove_deco() {
-        const index = this.spawner.enemies.indexOf(this);
-        if (index != undefined && index > -1) {
-            this.spawner.enemies.splice(index, 1);
-        }
-        this.spawner.calc_progress();
+        this.remove_spawner();
         if (this.is_removed)
             return;
         delete this.health;
@@ -129,6 +122,7 @@ export class Spawner {
     enemies = [];
     delays = [];
     permanent = false;
+    removed = false;
     constructor() {
         Spawner.spawners.push(this);
     }
@@ -175,7 +169,7 @@ export class Spawner {
     }
     spawn_enemy(key, position) {
         const e = new Enemy(this);
-        e.make_enemy(key, position ?? this.random_position());
+        e.make_enemy(key, position ?? this.random_position(), this.room_id);
         e.create_room(this.room_id);
         this.enemies.push(e);
         return e;
@@ -183,6 +177,8 @@ export class Spawner {
     do_waves() {
     }
     calc_progress() {
+        if (this.removed)
+            return;
         if (this.spawn) {
             this.wave_progress = (this.enemies.length <= 0) ? 1 : 0;
         }
@@ -202,10 +198,8 @@ export class Spawner {
         return math.rand_point_in_polygon(this.vertices);
     }
     remove() {
-        const index = Spawner.spawners.indexOf(this);
-        if (index != undefined && index > -1) {
-            Spawner.spawners.splice(index, 1);
-        }
+        this.removed = true;
+        Spawner.spawners.remove(this);
         delete Spawner.spawners_lookup[this.id];
     }
     check_progress(spawner_id) {

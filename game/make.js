@@ -365,7 +365,7 @@ make.collect_coin = {
     movable: true,
     keep_bullets: true,
     team: -1,
-    face_mode: "predict",
+    face_mode: "direct",
     move_mode: "direct",
     move_speed: 4.5,
     enemy_detect_range: 500,
@@ -517,7 +517,7 @@ make_shoot.enemy_tutorial_boss = {
     reload: 20,
     speed: 10,
     spread: 0.06,
-    damage: 300,
+    damage: 200,
     time: 500,
     death: [{
             type: "enemy_tutorial_boss",
@@ -534,7 +534,7 @@ make_shoot.enemy_tutorial_boss_split = {
     reload: 20,
     speed: 20,
     spread: 0.1,
-    damage: 300,
+    damage: 200,
     time: 50,
     friction: 0.05,
     death: [{ type: "enemy_tutorial_boss_splitted", repeat: 7, angle_increment: 360 / 7, }],
@@ -555,7 +555,7 @@ const calculated_shoot_keys = [];
 //   else m.make_parent.unshift("default");
 // }
 // clone functions
-export const clone_array = function (arr) {
+export const shallow_clone_array = function (arr) {
     const result = [];
     for (const a of arr)
         result.push(a);

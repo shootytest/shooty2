@@ -1,9 +1,11 @@
+import { make_from_map_shape, MAP } from "../index.js";
 import { camera } from "../util/camera.js";
 import { config } from "../util/config.js";
 import { keys } from "../util/key.js";
 import { vector, vector3 } from "../util/vector.js";
 import { filters } from "./detector.js";
-import { override_object } from "./make.js";
+import { Spawner } from "./enemy.js";
+import { override_object, shallow_clone_array } from "./make.js";
 import { save } from "./save.js";
 import { Thing } from "./thing.js";
 export class Player extends Thing {
@@ -12,6 +14,7 @@ export class Player extends Thing {
     autosave_time = -1;
     old_position = vector.create();
     checkpoint = vector.create();
+    checkpoint_room = "";
     current_gun = "";
     enemy_can_see = false;
     guns = [];
@@ -23,6 +26,7 @@ export class Player extends Thing {
         enemies_killed: 0,
         currencies_total: {},
     };
+    room_list = [];
     constructor() {
         super();
         this.is_player = true;
@@ -78,8 +82,12 @@ export class Player extends Thing {
         this.stats.deaths++;
         this.reset_velocity();
         this.teleport_to(this.checkpoint);
-        this.health?.heal_all();
-        this.health?.set_invincible(config.game.invincibility_time);
+        if (this.health) {
+            this.health.heal_all();
+            this.health.display = this.health.value;
+            this.health.set_invincible(config.game.invincibility_time);
+        }
+        this.reload_all_rooms();
     }
     hit(damage) {
         super.hit(damage);
@@ -115,6 +123,7 @@ export class Player extends Thing {
         this.autosave_time = Thing.time + config.game.autosave_interval;
         const o = {
             position: this.position,
+            room_id: this.room_id,
             fov_mult: this.fov_mult,
             health: this.health?.value ?? 0,
             ability: this.ability?.value ?? 0,
@@ -135,8 +144,11 @@ export class Player extends Thing {
             this.reset_velocity();
             this.teleport_to(o.position);
         }
+        this.change_room(o.room_id ?? MAP.computed?.shape_map.start.options.room_connections?.[0] ?? "");
         if (o.checkpoint)
             this.checkpoint = o.checkpoint;
+        if (o.checkpoint_room)
+            this.checkpoint_room = o.checkpoint_room;
         if (o.fov_mult)
             this.fov_mult = o.fov_mult;
         if (o.xp)
@@ -169,6 +181,65 @@ export class Player extends Thing {
         }
         if (o.currency_name) {
             save.add_currency(o.currency_name, o.currency_amount);
+        }
+    }
+    set_checkpoint(position, room_id) {
+        this.checkpoint = position;
+        this.checkpoint_room = room_id ?? this.room_id;
+    }
+    set_checkpoint_to_thing(thing) {
+        this.checkpoint = thing.position;
+        this.checkpoint_room = thing.room_id;
+    }
+    change_room(room_id) {
+        if (!room_id)
+            return;
+        const old_room_id = this.room_id;
+        this.room_id = room_id;
+        this.set_rooms(this.connected_rooms());
+    }
+    connected_rooms() {
+        const result = [];
+        result.push(this.room_id);
+        result.push(...(MAP.computed?.shape_map[this.room_id]?.options.room_connections ?? []));
+        return result;
+    }
+    set_rooms(rooms) {
+        for (const room_id of rooms) {
+            if (!this.room_list.includes(room_id))
+                this.load_room(room_id);
+        }
+        for (const room_id of shallow_clone_array(this.room_list)) {
+            if (!rooms.includes(room_id))
+                this.unload_room(room_id);
+        }
+    }
+    load_room(room_id) {
+        console.log("loading room " + room_id);
+        for (const id of MAP.computed?.room_map[room_id] ?? []) {
+            const s = MAP.computed?.shape_map[id];
+            if (s)
+                make_from_map_shape(s);
+        }
+        this.room_list.push(room_id);
+    }
+    unload_room(room_id) {
+        console.log("unloading room " + room_id);
+        for (const spawner of shallow_clone_array(Spawner.spawners_rooms[room_id] ?? [])) {
+            spawner.remove();
+        }
+        for (const thing of shallow_clone_array(Thing.things_rooms[room_id] ?? [])) {
+            thing.remove();
+        }
+        this.room_list.remove(room_id);
+    }
+    reload_room(room_id) {
+        this.unload_room(room_id);
+        this.load_room(room_id);
+    }
+    reload_all_rooms() {
+        for (const room_id of shallow_clone_array(this.room_list)) {
+            this.reload_room(room_id);
         }
     }
 }

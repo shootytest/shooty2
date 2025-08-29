@@ -6,7 +6,7 @@ import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
 import { Health } from "./health.js";
-import { make, make_shapes, override_object, make_shoot, clone_array, clone_object, multiply_object } from "./make.js";
+import { make, make_shapes, override_object, make_shoot, shallow_clone_array, clone_object, multiply_object } from "./make.js";
 import { save } from "./save.js";
 import { Polygon, Shape } from "./shape.js";
 import { Shoot } from "./shoot.js";
@@ -50,6 +50,7 @@ export class Thing {
         Thing.body_list = result;
         return result;
     }
+    ;
     uid = ++Thing.cumulative_id;
     id = "generic thing #" + this.uid;
     body = undefined; // physics body
@@ -144,7 +145,7 @@ export class Thing {
         this.make_shoot(this.options.shoots);
         this.make_the_rest();
         if (this.options.spawn_permanent && save.check_switch(this.id)) {
-            this.remove();
+            this.remove(); // or die?
         }
     }
     make(key, reset = false) {
@@ -159,7 +160,7 @@ export class Thing {
     }
     make_shape(key, reset = false) {
         if (reset)
-            for (const shape of clone_array(this.shapes))
+            for (const shape of shallow_clone_array(this.shapes))
                 shape.remove();
         const shapes = make_shapes[key] ?? [];
         for (const o of shapes) {
@@ -168,7 +169,7 @@ export class Thing {
     }
     make_shoot(shoots = [], reset = false) {
         if (reset)
-            for (const shoot of clone_array(this.shoots))
+            for (const shoot of shallow_clone_array(this.shoots))
                 shoot.remove();
         for (const shoot_key of shoots) {
             const S = make_shoot[shoot_key];
@@ -301,13 +302,13 @@ export class Thing {
         const bypass_remove = detector.before_death_fns[id]?.(this);
         if (bypass_remove)
             return;
+        this.remove_death();
+        this.remove_break();
         this.remove();
     }
     remove() {
         if (this.is_removed)
             return;
-        this.remove_death();
-        this.remove_break();
         this.remove_list();
         this.remove_body();
         this.remove_children();
@@ -316,6 +317,8 @@ export class Thing {
         this.is_removed = true;
     }
     remove_death() {
+        if (this.is_removed)
+            return;
         if (this.options.death != undefined) {
             for (const d of this.options.death) {
                 if (d.type === "none")
@@ -352,17 +355,20 @@ export class Thing {
         }
     }
     remove_break() {
+        if (this.is_removed)
+            return;
         const v = this.options.breakable ? this.target.velocity : this.velocity;
         // v.z = 0.025;
         this.shapes[0]?.break({ type: "fade", velocity: vector.create(), opacity_mult: 0.5 });
     }
     remove_list() {
-        for (const array of [Thing.things, this.bullet_shoot?.bullets]) {
+        for (const array of [
+            Thing.things,
+            Thing.things_rooms[this.room_id],
+            this.bullet_shoot?.bullets
+        ]) {
             // remove this from array
-            const index = array?.indexOf(this);
-            if (index != undefined && index > -1) {
-                array?.splice(index, 1);
-            }
+            array?.remove(this);
         }
         delete Thing.things_lookup[this.id];
     }
@@ -384,7 +390,7 @@ export class Thing {
     remove_children() {
         for (const shoot of this.shoots) {
             // if (this.keep_children) return;
-            for (const c of clone_array(shoot.bullets)) {
+            for (const c of shallow_clone_array(shoot.bullets)) {
                 if (c.bullet_keep)
                     continue;
                 c.remove();
@@ -392,7 +398,7 @@ export class Thing {
         }
     }
     remove_shapes() {
-        for (const shape of clone_array(this.shapes)) {
+        for (const shape of shallow_clone_array(this.shapes)) {
             shape.remove();
         }
         this.shapes = [];
@@ -460,7 +466,7 @@ export class Thing {
         }
         const player_size = player.shapes[0]?.radius ?? 0;
         const checks = [
-            player.position,
+            vector3.clone(player.position),
             vector3.add(player.position, vector3.create(player_size, 0, 0)),
             vector3.add(player.position, vector3.create(0, player_size, 0)),
             vector3.add(player.position, vector3.create(-player_size, 0, 0)),
@@ -586,10 +592,7 @@ export class Bullet extends Thing {
     tick() {
         super.tick();
         if (this.bullet_time >= 0 && this.bullet_time <= Thing.time) {
-            this.remove();
+            this.die();
         }
-    }
-    remove() {
-        super.remove();
     }
 }

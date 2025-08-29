@@ -75,15 +75,16 @@ export const save = {
         if (slot === undefined)
             slot = save.current_slot;
         const s = save.saves[slot];
-        player.load(s.player);
         save.save = s;
         save.current_slot = slot;
+        player.load(s.player);
         console.log("loaded game from slot " + slot + "!");
     },
     load_from_storage: () => {
         const raw = localStorage.getItem("saves");
         if (!raw) {
             console.log("new game loaded!");
+            player.load({});
             return;
         }
         const o = zipson.parse(raw);

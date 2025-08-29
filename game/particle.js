@@ -125,10 +125,7 @@ export class Particle {
         }
     }
     remove() {
-        const index = Particle.particles.indexOf(this);
-        if (index != undefined && index > -1) {
-            Particle.particles.splice(index, 1);
-        }
+        Particle.particles.remove(this);
     }
 }
 ;

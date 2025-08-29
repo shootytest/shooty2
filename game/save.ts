@@ -15,11 +15,13 @@ export interface save_type {
 
 export interface player_save {
   position?: vector;
+  room_id?: string;
   health?: number;
   ability?: number;
   fov_mult?: number;
   xp?: number;
   checkpoint?: vector3_;
+  checkpoint_room?: string;
   current_gun?: string;
   guns?: string[];
   stats?: player_stats;
@@ -116,9 +118,9 @@ export const save = {
   load_from_slot: (slot?: number) => {
     if (slot === undefined) slot = save.current_slot;
     const s = save.saves[slot];
-    player.load(s.player);
     save.save = s;
     save.current_slot = slot;
+    player.load(s.player);
     console.log("loaded game from slot " + slot + "!");
   },
 
@@ -126,6 +128,7 @@ export const save = {
     const raw = localStorage.getItem("saves");
     if (!raw) {
       console.log("new game loaded!");
+      player.load({});
       return;
     }
     const o = zipson.parse(raw);

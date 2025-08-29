@@ -388,7 +388,7 @@ export const m_ui = {
           }
           if (insert_index >= 0) m_ui.map.shapes.splice(insert_index, 0, new_shape);
           m_ui.update_directory();
-          // map_draw.change("split shape at vertex " + target.index, new_shape);
+          map_draw.change("split shape at vertex " + target.index, new_shape);
         },
         enabled: (): boolean => {
           const target = m_ui.circle_menu.target;
@@ -1123,6 +1123,7 @@ export const m_ui = {
                   if (index >= 0) shape.options.room_connections?.splice(index, 1);
                   map_serialiser.compute(m_ui.map);
                   m_ui.update_properties();
+                  map_draw.change(`remove room connection "${cid}"`, shape);
                 });
                 i++;
               }
