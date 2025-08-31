@@ -217,7 +217,7 @@ export const detector = {
     },
     ["tutorial room 2.5 sensor"]: (_thing) => {
       const centre = Vertices.centre(Spawner.spawners_lookup["tutorial room 2 breakables 4"].vertices);
-      player.set_checkpoint(centre);
+      player.set_checkpoint(centre); // todo remove
     },
     ["tutorial room 5 sensor"]: (thing) => {
       const boss = Spawner.get_enemy("tutorial room 5 boss");

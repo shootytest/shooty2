@@ -170,6 +170,7 @@ export class Spawner {
     spawn_enemy(key, position) {
         const e = new Enemy(this);
         e.make_enemy(key, position ?? this.random_position(), this.room_id);
+        e.wave_number = this.wave_progress + 1;
         e.create_room(this.room_id);
         this.enemies.push(e);
         return e;

@@ -453,7 +453,11 @@ export class Thing {
     }
     // behaviour functions
     tick_behaviour() {
+        const player = Thing.things_lookup["player"];
         this.can_see_player();
+        if (this.is_seeing_player && this.options.focus_camera) {
+            player.camera_target_target = this.position;
+        }
         this.do_shoot(this.is_seeing_player ? (this.options.shoot_mode ?? "none") : (this.options.shoot_mode_idle ?? "none"));
         this.do_face(this.is_seeing_player ? (this.options.face_mode ?? "none") : (this.options.face_mode_idle ?? "none"));
         this.do_move(this.is_seeing_player ? (this.options.move_mode ?? "none") : (this.options.move_mode_idle ?? "none"));

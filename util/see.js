@@ -59,6 +59,8 @@ export const do_visibility = () => {
         ctx.ctx.restore();
     }
     // do translucent walls
+    ctx.save("see");
+    clip_visibility_path(player, path, 0);
     const other_vertices = Shape.get_other_vertices();
     for (const other_key in other_vertices) {
         const other_list = other_vertices[other_key];
@@ -74,6 +76,7 @@ export const do_visibility = () => {
             clip_path(player, inverted, z, true);
         }
     }
+    ctx.restore("see");
     /* // not so good
     ctx.globalAlpha = 0.1;
     for (let i = 0; i < 3; i++) {
@@ -192,6 +195,7 @@ const clip_inverted_path = (center, inverted, z) => {
 };
 // call this function after clipping
 export const draw_lighting = (centre, display_radius) => {
+    return;
     const x = centre.x;
     const y = centre.y;
     const min_radius = display_radius * 0.2;

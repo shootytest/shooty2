@@ -29,6 +29,8 @@ export class Player extends Thing {
     currencies_total: {},
   };
 
+  camera_target: vector3_ = vector.create();
+  camera_target_target: vector3_ = vector.create();
   room_list: string[] = [];
 
   constructor() {
@@ -50,6 +52,10 @@ export class Player extends Thing {
 
   tick() {
     super.tick();
+    if (vector.equal(this.camera_target_target, this.position)) {
+      this.camera_target = this.position;
+    }
+    this.camera_target_target = this.position;
     const controls = {
       up: keys["ArrowUp"] === true || (keys["KeyW"] === true),
       down: keys["ArrowDown"] === true || (keys["KeyS"] === true),
@@ -102,7 +108,9 @@ export class Player extends Thing {
   }
 
   camera_position() {
-    return vector.add(this.position, vector.mult(camera.mouse_v, 1 / 30 * camera.scale));
+    this.camera_target = vector.lerp(this.camera_target, this.camera_target_target, 0.05);
+    const position = vector.lerp(this.camera_target, this.position, 0.5);
+    return vector.add(position, vector.mult(camera.mouse_v, 1 / 30 * camera.scale));
     // todo remove
     // let v = vector.sub(this.target.facing, camera.world2screen(this.position));
     // v = vector.normalise(v, vector.length(v) / 30 * camera.scale);
@@ -201,27 +209,34 @@ export class Player extends Thing {
     if (!room_id) return;
     const old_room_id = this.room_id;
     this.room_id = room_id;
-    this.set_rooms(this.connected_rooms());
+    this.set_rooms(this.connected_rooms(1), this.connected_rooms(2));
   }
 
-  connected_rooms(): string[] {
+  connected_rooms(depth: number = 1, room_id?: string): string[] {
+    if (!room_id) room_id = this.room_id;
+    if (depth === 0) return [room_id];
     const result: string[] = [];
-    result.push(this.room_id);
-    result.push(...(MAP.computed?.shape_map[this.room_id]?.options.room_connections ?? []));
+    result.push(room_id);
+    for (const id of (MAP.computed?.shape_map[room_id]?.options.room_connections ?? [])) {
+      for (const i of this.connected_rooms(depth - 1, id)) {
+        if (result.includes(i)) continue;
+        result.push(i);
+      }
+    }
     return result;
   }
 
-  set_rooms(rooms: string[]) {
-    for (const room_id of rooms) {
+  set_rooms(add_rooms: string[], dont_remove_rooms: string[] = add_rooms) {
+    for (const room_id of add_rooms) {
       if (!this.room_list.includes(room_id)) this.load_room(room_id);
     }
     for (const room_id of shallow_clone_array(this.room_list)) {
-      if (!rooms.includes(room_id)) this.unload_room(room_id);
+      if (!dont_remove_rooms.includes(room_id)) this.unload_room(room_id);
     }
   }
 
   load_room(room_id: string) {
-    console.log("loading room " + room_id);
+    // console.log("loading room " + room_id);
     for (const id of MAP.computed?.room_map[room_id] ?? []) {
       const s = MAP.computed?.shape_map[id];
       if (s) make_from_map_shape(s);
@@ -230,7 +245,7 @@ export class Player extends Thing {
   }
 
   unload_room(room_id: string) {
-    console.log("unloading room " + room_id);
+    // console.log("unloading room " + room_id);
     for (const spawner of shallow_clone_array(Spawner.spawners_rooms[room_id] ?? [])) {
       spawner.remove();
     }
@@ -244,8 +259,9 @@ export class Player extends Thing {
     this.unload_room(room_id);
     this.load_room(room_id);
   }
-
+  
   reload_all_rooms() {
+    // console.log("reloading all rooms");
     for (const room_id of shallow_clone_array(this.room_list)) {
       this.reload_room(room_id);
     }

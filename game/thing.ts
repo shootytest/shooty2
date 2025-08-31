@@ -8,6 +8,7 @@ import { vector, vector3, vector3_ } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
 import { Health } from "./health.js";
 import { make, make_shapes, shoot_stats, override_object, make_shoot, shallow_clone_array, multiply_and_override_object, clone_object, maketype_shape, shoot_mode, face_mode, move_mode, multiply_object } from "./make.js";
+import type { Player } from "./player.js";
 import { save } from "./save.js";
 import { Polygon, Shape } from "./shape.js";
 import { Shoot } from "./shoot.js";
@@ -460,14 +461,18 @@ export class Thing {
   // behaviour functions
   
   tick_behaviour() {
+    const player = Thing.things_lookup["player"] as Player;
     this.can_see_player();
+    if (this.is_seeing_player && this.options.focus_camera) {
+      player.camera_target_target = this.position;
+    }
     this.do_shoot(this.is_seeing_player ? (this.options.shoot_mode ?? "none") : (this.options.shoot_mode_idle ?? "none"));
     this.do_face(this.is_seeing_player ? (this.options.face_mode ?? "none") : (this.options.face_mode_idle ?? "none"));
     this.do_move(this.is_seeing_player ? (this.options.move_mode ?? "none") : (this.options.move_mode_idle ?? "none"));
   }
 
   can_see_player() {
-    const player = Thing.things_lookup["player"];
+    const player = Thing.things_lookup["player"] as Player;
     if (this.options.enemy_detect_range === 0 || vector.length2(vector.sub(this.position, player.position)) > (this.options.enemy_detect_range ?? 1000) ** 2) {
       this.is_seeing_player = false;
       return false;
