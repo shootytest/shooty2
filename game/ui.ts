@@ -36,7 +36,7 @@ export const ui = {
     ui.draw_health();
   },
 
-  draw_health: () => {
+  draw_health: function() {
     const health_value = player.health?.value;
     const health_ratio = player.health?.display_ratio;
     

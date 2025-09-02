@@ -67,6 +67,7 @@ export class Thing {
         angle: 0,
         facing: vector.create(),
         velocity: vector.create(),
+        vz: 0,
     };
     is_player = false;
     is_touching_player = false;
@@ -95,7 +96,10 @@ export class Thing {
         return this.position.y;
     }
     get z() {
-        return this.position.z;
+        return math.round_dp(this.target.position.z, 3);
+    }
+    set z(z) {
+        this.target.position.z = z;
     }
     get angle() {
         return (this.body) ? this.body.angle : this.target.angle;

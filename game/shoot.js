@@ -62,6 +62,7 @@ export class Shoot {
         const position = vector.add(this.thing.position, Vector.rotate(vector.create((this.offset.x ?? 0) + (this.stats.offset?.x ?? 0), (this.offset.y ?? 0) + (this.stats.offset?.y ?? 0)), this.thing.angle));
         const bullet = new Bullet();
         bullet.position = position;
+        bullet.z = this.thing.z;
         bullet.is_bullet = true;
         bullet.damage = S.damage ?? 0;
         bullet.make(S.make ?? "bullet", true);

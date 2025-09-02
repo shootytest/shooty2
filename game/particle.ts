@@ -126,7 +126,7 @@ export class Particle {
       const vs: vector3[] = [];
       for (const vertex of this.vertices) {
         const world_v = vector3.create2(vector.add(vertex, this.offset), this.z + (this.offset.z ?? 0));
-        const v = camera.world3screen(world_v, player);
+        const v = camera.world3screen(world_v, this.vertices[1]);
         vs.push(vector3.create2(v, world_v.z - camera.look_z));
       }
       if (this.is_circle) {

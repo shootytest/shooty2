@@ -2,6 +2,7 @@ import { make_from_map_shape, MAP } from "../index.js";
 import { camera } from "../util/camera.js";
 import { config } from "../util/config.js";
 import { keys } from "../util/key.js";
+import { math } from "../util/math.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { filters } from "./detector.js";
 import { Spawner } from "./enemy.js";
@@ -61,8 +62,9 @@ export class Player extends Thing {
       down: keys["ArrowDown"] === true || (keys["KeyS"] === true),
       left: keys["ArrowLeft"] === true || (keys["KeyA"] === true),
       right: keys["ArrowRight"] === true || (keys["KeyD"] === true),
+      jump: false && keys["Space"] === true,
+      shoot: keys["Mouse"] === true,
       toggle_autoshoot: keys["KeyF"] === true,
-      shoot: keys["Mouse"] === true || (keys["Space"] === true),
       rshoot: keys["MouseRight"] === true || ((keys["ShiftLeft"] === true || keys["ShiftRight"] === true)),
       facingx: Math.floor(camera.mouse_v.x),
       facingy: Math.floor(camera.mouse_v.y),
@@ -71,6 +73,7 @@ export class Player extends Thing {
     this.target.facing = vector.add(vector.sub(camera.mouse_v, camera.world2screen(this.position)), this.position);
     const move_x = (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
     const move_y = (controls.down ? 1 : 0) - (controls.up ? 1 : 0);
+    const move_z = (this.target.vz < 0 && this.z < math.epsilon) ? (controls.jump ? 1 : 0) : 0;
     const move_v = vector.normalise(vector.create(move_x, move_y));
     if (this.body) {
       this.push_by(vector.mult(move_v, this.options.move_speed ?? config.physics.player_speed));
@@ -78,6 +81,9 @@ export class Player extends Thing {
     }
     this.stats.pixels_walked += Math.floor(vector.length(vector.sub(this.position, this.old_position)));
     this.old_position = this.position;
+    if (move_z > 0) this.target.vz = move_z * 0.03;
+    this.target.position.z = math.bound(this.target.position.z + this.target.vz, 0, 0.5);
+    this.target.vz = this.target.vz - 0.0015;
     if (controls.toggle_autoshoot) {
       this.autoshoot = !this.autoshoot;
     }

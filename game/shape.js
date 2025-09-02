@@ -22,7 +22,7 @@ export class Shape {
     static from_map(thing, o) {
         const s = new Shape(thing);
         // s.map_shape_type_object = o;
-        s.z = o.z;
+        s.offset.z = o.z;
         // booleans
         s.closed_loop = !(thing.options.open_loop);
         s.seethrough = Boolean(thing.options.seethrough);
@@ -48,11 +48,12 @@ export class Shape {
     ;
     static from_make(thing, o) {
         let s;
+        const offset = vector3.create(o.offset?.x ?? 0, o.offset?.y ?? 0, o.z);
         if (o.type === "polygon") {
-            s = Shape.polygon(thing, o.radius ?? 0, o.sides ?? 0, o.angle ?? 0, o.z, o.offset);
+            s = Shape.polygon(thing, o.radius ?? 0, o.sides ?? 0, o.angle ?? 0, offset);
         }
         else if (o.type === "circle") {
-            s = Shape.circle(thing, o.radius ?? 0, o.z, o.offset);
+            s = Shape.circle(thing, o.radius ?? 0, offset);
         }
         else if (o.type === "line") {
             s = Shape.line(thing, o.v1 ?? vector.create(), o.v2 ?? vector.create(), o.z);
@@ -83,19 +84,19 @@ export class Shape {
         }
         return s;
     }
-    static polygon(thing, radius, sides, angle = 0, z = 0, offset) {
-        return Polygon.make(thing, radius, sides, angle, z, offset);
+    static polygon(thing, radius, sides, angle = 0, offset) {
+        return Polygon.make(thing, radius, sides, angle, offset);
     }
     ;
-    static circle(thing, radius, z = 0, offset) {
-        return Polygon.make(thing, radius, 0, 0, z, offset);
+    static circle(thing, radius, offset) {
+        return Polygon.make(thing, radius, 0, 0, offset);
     }
     ;
     static line(thing, v1, v2 = vector.create(), z = 0) {
         const s = new Shape(thing);
         s.closed_loop = false;
         s.vertices = vector3.create_many([v1, v2], z);
-        s.z = z;
+        s.offset.z = z;
         s.calculate();
         s.init_computed();
         return s;
@@ -109,7 +110,7 @@ export class Shape {
                 continue;
             s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position);
             if (memo_aabb3[s.z] == undefined) {
-                const z_scale = camera.zscale_inverse(s.z ?? 0);
+                const z_scale = camera.zscale_inverse(s.z >= 0 ? 0 : s.z);
                 memo_aabb3[s.z] = vector3.aabb_scale(screen_aabb, vector3.create(z_scale, z_scale, 1));
             }
             const inside = vector3.aabb_intersect(s.computed_aabb, memo_aabb3[s.z]);
@@ -130,8 +131,11 @@ export class Shape {
         Shape.draw_shapes = Shape.filter(screen_aabb);
         Shape.draw_zs = [0];
         for (const s of Shape.draw_shapes) {
-            if (s.z !== 0 && !Shape.draw_zs.includes(s.z))
-                Shape.draw_zs.push(s.z);
+            if (s.z !== 0) {
+                const z = math.round_to(s.z, 0.001);
+                if (!Shape.draw_zs.includes(z))
+                    Shape.draw_zs.push(z);
+            }
             if (s.computed == undefined) {
                 s.init_computed();
             }
@@ -144,6 +148,8 @@ export class Shape {
     }
     ;
     static draw(z) {
+        if (z)
+            z = math.round_dp(z, 3);
         // hope this doesn't take too long per tick...
         Shape.draw_shapes.sort((s1, s2) => {
             if (s1.thing.options.decoration && !s2.thing.options.decoration)
@@ -207,9 +213,8 @@ export class Shape {
     id = ++Shape.cumulative_id;
     thing;
     index = -1;
-    z = 0;
     vertices = [];
-    offset = vector.create();
+    offset = vector3.create();
     scale = vector.create(1, 1);
     opacity = 1;
     activate_scale = false;
@@ -217,6 +222,9 @@ export class Shape {
     translucent = 0;
     blinking = false;
     glowing = 0;
+    get z() {
+        return math.round_dp(this.offset.z + this.thing.z, 3);
+    }
     get seethrough() {
         return !(this.translucent >= 1 - math.epsilon);
     }
@@ -404,6 +412,7 @@ export class Shape {
         const p = new Particle();
         p.style = style;
         p.time = Thing.time + time;
+        p.offset.z = this.z;
         if (o.type === "triangulate" && this.computed.vertices.length <= 2) {
             console.error(`[shape/break] can't triangulate less than 2 vertices!`);
             o.type = "fade";
@@ -427,13 +436,12 @@ export class Shape {
 }
 export class Polygon extends Shape {
     static type = "polygon";
-    static make(thing, radius, sides, angle, z = 0, offset = vector.create()) {
+    static make(thing, radius, sides, angle, offset = vector.create()) {
         const s = new Polygon(thing);
         s.closed_loop = true;
         s.radius = radius;
         s.sides = sides;
         s.angle = angle;
-        s.z = z;
         s.offset.x = offset.x;
         s.offset.y = offset.y;
         s.calculate();
@@ -483,7 +491,7 @@ export class Polygon extends Shape {
             r = vector3.add(r, vector3.create2(this.thing.position));
             const vs = [];
             for (const world_v of [c, r]) {
-                const v = camera.world3screen(world_v, player);
+                const v = camera.world3screen(world_v, c);
                 vs.push(vector3.create2(v, world_v.z - camera.look_z));
             }
             vs[1] = vector3.sub(vs[1], vs[0]);

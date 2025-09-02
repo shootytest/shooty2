@@ -83,6 +83,13 @@ make.sensor = {
     seethrough: true,
     keep_bullets: true,
 };
+make.sensor_path = {
+    style: "sensor_path",
+    decoration: true,
+    invisible: true,
+    seethrough: true,
+    keep_bullets: true,
+};
 make.switch = {
     style: "switch",
     team: 0,
@@ -94,13 +101,17 @@ make_shapes.switch = [{
         type: "circle",
         radius: 15,
     }];
-make.sensor_path = {
-    style: "sensor_path",
-    decoration: true,
-    invisible: true,
+make.checkpoint = {
+    style: "switch",
+    team: 0,
+    switch: true,
     seethrough: true,
-    keep_bullets: true,
+    restitution: 0,
 };
+make_shapes.checkpoint = [{
+        type: "circle",
+        radius: 50,
+    }];
 // @decorations
 make.icon = {
     decoration: true,

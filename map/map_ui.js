@@ -178,7 +178,7 @@ export const m_ui = {
         if (dz !== 1)
             camera.scale_by(camera.halfscreen, dz);
     },
-    draw: () => {
+    draw: function () {
         m_ui.draw_clear();
         m_ui.draw_grid();
         m_ui.draw_map();
@@ -395,7 +395,7 @@ export const m_ui = {
             },
         ],
     },
-    draw_clear: () => {
+    draw_clear: function () {
         // draw all
         ctx.clear();
         ctx.fillStyle = color.black;
@@ -403,7 +403,7 @@ export const m_ui = {
         ctx.rect(0, 0, width, height);
         ctx.fill();
     },
-    draw_top: () => {
+    draw_top: function () {
         const top = m_ui.editor.settings ? m_ui.top_settings : m_ui.top;
         size = height * 0.065;
         ctx.fillStyle = color.white + "be";
@@ -442,7 +442,7 @@ export const m_ui = {
                 m_ui.click.new(button.action);
         }
     },
-    draw_left: () => {
+    draw_left: function () {
         ctx.save("draw_left");
         ctx.lineCap = "round";
         size = 60; // math.bound(Math.min(width, height * 2) * 0.065, 50, 70);
@@ -508,13 +508,13 @@ export const m_ui = {
         // respond to mousedrag
         ctx.restore("draw_left");
     },
-    draw_map: () => {
+    draw_map: function () {
         m_ui.draw_a_map(m_ui.map);
     },
-    draw_a_map: (map) => {
+    draw_a_map: function (map) {
         map_draw.draw(ctx, map);
     },
-    draw_circle_menu: () => {
+    draw_circle_menu: function () {
         if (m_ui.circle_menu.active || (m_ui.circle_menu.target?.id && (m_ui.time - m_ui.circle_menu.active_time <= 20))) {
             const target = m_ui.circle_menu.target;
             const v = target.shape.computed?.screen_vertices ? (target.shape.computed?.screen_vertices[target.index] ?? target.vertex) : target.vertex;
@@ -556,11 +556,11 @@ export const m_ui = {
             }
         }
     },
-    draw_overlay: () => {
+    draw_overlay: function () {
     },
-    draw_selection: (map) => {
+    draw_selection: function (map) {
     },
-    draw_grid: () => {
+    draw_grid: function () {
         const grid_size = camera.scale * 10;
         if (grid_size >= 50)
             m_ui.draw_a_grid(grid_size / 5, color.darkgrey, camera.sqrtscale * 0.1);
@@ -576,7 +576,7 @@ export const m_ui = {
             m_ui.click.new(m_ui.deselect_shape);
         }
     },
-    draw_a_grid: (grid_size, color, line_width) => {
+    draw_a_grid: function (grid_size, color, line_width) {
         let xx = (-camera.position.x * camera.scale);
         let yy = (-camera.position.y * camera.scale);
         let x = xx % grid_size;
@@ -592,7 +592,7 @@ export const m_ui = {
             y += grid_size;
         }
     },
-    select_shape: (target, dont_open_properties = false) => {
+    select_shape: function (target, dont_open_properties = false) {
         const old_id = m_ui.mouse.drag_target[0]?.shape?.id;
         m_ui.mouse.drag_target[0] = target;
         m_ui.color_directory_element(old_id, "");
@@ -611,11 +611,11 @@ export const m_ui = {
         else
             m_ui.properties_selected = target.shape;
     },
-    deselect_shape: () => {
+    deselect_shape: function () {
         m_ui.color_directory_element(m_ui.mouse.drag_target[0]?.shape?.id, "");
         m_ui.mouse.drag_target[0] = {};
     },
-    draw_mouse: () => {
+    draw_mouse: function () {
         const size = camera.sqrtscale * 15;
         const mode = m_ui.editor.mode;
         let v = vector.clone(mouse.position);
@@ -628,7 +628,7 @@ export const m_ui = {
         ctx.fillStyle = color.white;
         ctx.svg(m_ui.editor.mode, v.x, v.y, size * 2);
     },
-    update_camera: () => {
+    update_camera: function () {
         if (m_ui.mouse.click && m_ui.mouse.drag_target[0]?.id == undefined) {
             camera.move_by_mouse();
         }
@@ -656,12 +656,12 @@ export const m_ui = {
         style: {},
         options: { contains: [], },
     },
-    color_directory_element: (shape_id, color) => {
+    color_directory_element: function (shape_id, color) {
         if (m_ui.directory_elements[shape_id]?.querySelector("span")) {
             m_ui.directory_elements[shape_id].querySelector("span").style.backgroundColor = color;
         }
     },
-    update_right_sidebar: () => {
+    update_right_sidebar: function () {
         const aside_directory = document.getElementById("directory");
         const aside_properties = document.getElementById("properties");
         if (aside_directory == undefined)
@@ -671,7 +671,7 @@ export const m_ui = {
         aside_directory.style.display = m_ui.right_sidebar_mode === "directory" ? "block" : "none";
         aside_properties.style.display = m_ui.right_sidebar_mode === "properties" ? "block" : "none";
     },
-    update_directory: (rooms_only = false) => {
+    update_directory: function (rooms_only = false) {
         const aside = document.getElementById("directory");
         if (aside == undefined)
             return console.error("[ui/update_directory] right sidebar directory <aside> not found!");
@@ -900,7 +900,7 @@ export const m_ui = {
             name: "Shape",
         },
     },
-    update_properties: () => {
+    update_properties: function () {
         const aside = document.getElementById("properties");
         if (aside == undefined)
             return console.error("[ui/update_properties] right sidebar properties <aside> not found!");
@@ -1156,7 +1156,7 @@ export const m_ui = {
             }
         }
     },
-    open_properties: (shape) => {
+    open_properties: function (shape) {
         if (shape) {
             m_ui.properties_selected = shape;
             if (m_ui.mouse.drag_target[0]?.shape?.id !== shape.id)
@@ -1173,7 +1173,7 @@ export const m_ui = {
         m_ui.update_properties();
         m_ui.update_right_sidebar();
     },
-    select_parent: (shape) => {
+    select_parent: function (shape) {
         const selected_shape = m_ui.map.computed?.shape_map[m_ui.properties_selecting_parent] ?? m_ui.properties_selected;
         const child_id = selected_shape.id;
         const old_parent_id = selected_shape.options.parent;
@@ -1207,7 +1207,7 @@ export const m_ui = {
         m_ui.update_right_sidebar();
         map_draw.change("edit property: parent", m_ui.properties_selected);
     },
-    select_connection: (shape) => {
+    select_connection: function (shape) {
         if (!shape.options.is_room)
             return;
         const selected_id = shape.id;
@@ -1226,7 +1226,7 @@ export const m_ui = {
         map_draw.change("add property: connection", m_ui.properties_selected);
     },
     // recursive
-    check_child: (check_id, shape) => {
+    check_child: function (check_id, shape) {
         if ((shape.options.parent?.length ?? 0) <= 0 || shape.options.parent === "all")
             return false;
         let s = shape;

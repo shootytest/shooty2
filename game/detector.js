@@ -2,7 +2,7 @@ import { engine, MAP } from "../index.js";
 import { Events, Vertices } from "../matter.js";
 import { STYLES } from "../util/color.js";
 import { math } from "../util/math.js";
-import { vector } from "../util/vector.js";
+import { vector, vector3 } from "../util/vector.js";
 import { Spawner } from "./enemy.js";
 import { clone_object } from "./make.js";
 import { player } from "./player.js";
@@ -197,7 +197,7 @@ export const detector = {
                     mouse.object.moved = true;
                     mouse_icon.activate_scale = true;
                     mouse_icon.scale.x = -1;
-                    mouse_icon.offset = vector.create(630, 200);
+                    mouse_icon.offset = vector3.create(630, 200, 0);
                     mouse_icon.init_computed();
                 }
                 mouse_icon.style.fill = mouse_icon.style.stroke;
@@ -273,7 +273,7 @@ export const detector = {
                     const warning_offset = vector.create(160, 500);
                     for (let i = 0; i < 3; i++) {
                         const shape = thing.lookup("tutorial room 2 warning" + (i > 0 ? " " + i : "")).shapes[0];
-                        shape.offset = vector.clone(warning_offset);
+                        shape.offset = vector3.create2(warning_offset);
                         shape.style.stroke = STYLES.tutorial_enemy.stroke;
                         shape.style.stroke_opacity = 0.6;
                         shape.init_computed();

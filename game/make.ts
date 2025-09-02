@@ -54,7 +54,6 @@ export interface maketype {
   face_smoothness?: number;
   enemy_detect_range?: number;
   focus_camera?: boolean;
-  focus_camera_range?: number;
   death?: bullet_death_type[];
 
 };
@@ -248,6 +247,14 @@ make.sensor = {
   keep_bullets: true,
 };
 
+make.sensor_path = {
+  style: "sensor_path",
+  decoration: true,
+  invisible: true,
+  seethrough: true,
+  keep_bullets: true,
+};
+
 make.switch = {
   style: "switch",
   team: 0, // "team: 1" keeps bullets...
@@ -260,13 +267,17 @@ make_shapes.switch = [{
   radius: 15,
 }];
 
-make.sensor_path = {
-  style: "sensor_path",
-  decoration: true,
-  invisible: true,
+make.checkpoint = {
+  style: "switch",
+  team: 0,
+  switch: true,
   seethrough: true,
-  keep_bullets: true,
+  restitution: 0,
 };
+make_shapes.checkpoint = [{
+  type: "circle",
+  radius: 50,
+}];
 
 // @decorations
 
