@@ -423,6 +423,13 @@ export const vector3 = {
         }
         return vector3.div(mean, vertices.length);
     },
+    meanz: (vertices) => {
+        let mean = 0;
+        for (const v of vertices) {
+            mean += v.z;
+        }
+        return mean / vertices.length;
+    },
     centroid: (vertices) => {
         const first = vertices[0], last = vertices[vertices.length - 1];
         if (first.x != last.x || first.y != last.y)

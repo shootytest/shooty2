@@ -127,7 +127,7 @@ export const detector = {
             }
             else if (b_rittle || (!different_team && a.team > 0)) {
                 pair.isSensor = true;
-                ba.temporarySensor = true;
+                // (ba as any).temporarySensor = true;
             }
         }
         if (a.damage > 0 && b.health && b.health.capacity > 0 && different_team) {

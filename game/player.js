@@ -35,6 +35,8 @@ export class Player extends Thing {
         this.is_player = true;
         this.team = 1;
         this.make("player", true);
+        if (this.health)
+            this.health.display = 0; // start smooth animation from 0 instead of full
         // this.make_shape("player_basic");
         this.create_id("player");
         this.position = vector3.create();
@@ -97,7 +99,6 @@ export class Player extends Thing {
         this.teleport_to(this.checkpoint);
         if (this.health) {
             this.health.heal_all();
-            this.health.display = this.health.value;
             this.health.set_invincible(config.game.invincibility_time);
         }
         this.reload_all_rooms();

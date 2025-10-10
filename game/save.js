@@ -49,6 +49,7 @@ export const save = {
         // if (big) console.log("saving... ", save.save);
         save.save_to_slot(save.current_slot);
         save.save_to_storage();
+        return true;
     },
     new_save: () => {
         return {

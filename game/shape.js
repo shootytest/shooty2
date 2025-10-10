@@ -96,7 +96,6 @@ export class Shape {
         const s = new Shape(thing);
         s.closed_loop = false;
         s.vertices = vector3.create_many([v1, v2], z);
-        s.offset.z = z;
         s.calculate();
         s.init_computed();
         return s;
@@ -253,7 +252,7 @@ export class Shape {
         const calc_vertices = vector3.add_list(this.vertices, this.offset), vertices = vector3.clone_list(this.vertices);
         if (this.activate_scale)
             vector3.scale_to_list(calc_vertices, this.scale);
-        const aabb = vector.make_aabb(calc_vertices), aabb3 = vector3.make_aabb(calc_vertices), mean = this.closed_loop ? vector3.create2(Vertices.centre(calc_vertices), this.z) : vector3.mean(calc_vertices); // don't use mean...
+        const aabb = vector.make_aabb(calc_vertices), aabb3 = vector3.make_aabb(calc_vertices), mean = this.closed_loop ? vector3.create2(Vertices.centre(calc_vertices), vector3.meanz(calc_vertices)) : vector3.mean(calc_vertices); // don't use mean...
         if (this.computed == undefined) {
             this.computed = { aabb, aabb3, mean, vertices };
         }
@@ -387,7 +386,7 @@ export class Shape {
             }
         }
         // translate by thing position
-        vector3.add_to_list(this.computed.vertices, vector3.clone(this.thing.position));
+        vector3.add_to_list(this.computed.vertices, this.thing.position);
         // no need to compute distance to camera centre... maybe next time for optimisation?
         // this.computed.distance2 = vector.length2(vector.sub(this.computed.mean, camera.location3));
         const vs = [];
@@ -427,16 +426,17 @@ export class Shape {
         }
         else if (o.type === "fade") {
             p.vertices = this.computed.vertices;
-            p.fade = time;
+            p.fade_time = time;
         }
         if (o.velocity)
             p.velocity = o.velocity;
         return p;
     }
 }
+;
 export class Polygon extends Shape {
     static type = "polygon";
-    static make(thing, radius, sides, angle, offset = vector.create()) {
+    static make(thing, radius, sides, angle, offset = vector3.create()) {
         const s = new Polygon(thing);
         s.closed_loop = true;
         s.radius = radius;
@@ -444,6 +444,8 @@ export class Polygon extends Shape {
         s.angle = angle;
         s.offset.x = offset.x;
         s.offset.y = offset.y;
+        if (offset.z)
+            s.offset.z = offset.z;
         s.calculate();
         s.init_computed();
         return s;
@@ -462,8 +464,8 @@ export class Polygon extends Shape {
         const y = this.offset.y;
         let a = this.angle;
         for (let i = 0; i < sides + 1; ++i) {
+            this.vertices.push(vector3.create(x + r * Math.cos(a), y + r * Math.sin(a), 0));
             a += Math.PI * 2 / sides;
-            this.vertices.push(vector3.create(x + r * Math.cos(a), y + r * Math.sin(a), this.z));
         }
     }
     draw_path() {
@@ -481,17 +483,16 @@ export class Polygon extends Shape {
         if (this.sides === 0) {
             if (this.computed?.mean == undefined)
                 return;
-            let c = vector3.add(this.computed.mean, vector3.create2(this.offset));
+            let c = vector3.clone(this.computed.mean);
+            let r = vector3.create(this.radius, 0, 0);
             const rotated = vector.rotate(vector.create(), c, this.thing.angle);
             c.x = rotated.x;
             c.y = rotated.y;
-            if (this.thing)
-                c = vector3.add(c, vector3.clone(this.thing.position));
-            let r = vector3.create(this.radius, 0, this.z);
-            r = vector3.add(r, vector3.create2(this.thing.position));
+            c = vector3.add(c, this.thing.position);
+            r = vector3.add(r, c);
             const vs = [];
             for (const world_v of [c, r]) {
-                const v = camera.world3screen(world_v, c);
+                const v = camera.world3screen(world_v, player);
                 vs.push(vector3.create2(v, world_v.z - camera.look_z));
             }
             vs[1] = vector3.sub(vs[1], vs[0]);
@@ -505,3 +506,4 @@ export class Polygon extends Shape {
         }
     }
 }
+;

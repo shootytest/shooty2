@@ -152,6 +152,8 @@ export const map_draw = {
     draw_shape_ui: (ctx, shape) => {
         if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0)
             return;
+        if (shape.z !== camera.look_z)
+            return;
         const style = map_draw.get_style(shape);
         const id_prefix = shape.id + "__";
         const selected = shape.id === m_ui.mouse.drag_target[0]?.shape?.id;

@@ -169,6 +169,11 @@ make.wall = {
   wall_filter: "wall",
 };
 
+make.wall_home = {
+  make_parent: ["wall"],
+  style: "home",
+};
+
 make.wall_tutorial = {
   make_parent: ["wall"],
   style: "tutorial",
@@ -205,9 +210,10 @@ make.wall_tutorial_spike = {
 make.wall_tutorial_rock_breakable = {
   make_parent: ["wall_tutorial"],
   hide_health: true,
+  hide_health_until: 450,
   team: 7,
   health: {
-    capacity: 500,
+    capacity: 1000,
   },
 };
 
@@ -277,6 +283,11 @@ make.checkpoint = {
 make_shapes.checkpoint = [{
   type: "circle",
   radius: 50,
+}, {
+  type: "circle",
+  radius: 200,
+  z: 0.1,
+  style_: { stroke_opacity: 0, }
 }];
 
 // @decorations
@@ -311,7 +322,7 @@ for (let i = 0; i < 10; i++) {
     sides: 7,
     angle: 0.175 * i,
     radius: 330 - i * 30,
-    z: -0.5 + i * 0.05,
+    z: -0.3 + i * 0.03,
   });
 }
 

@@ -47,9 +47,9 @@ export class Particle {
     target;
     smoothness;
     opacity = 1;
-    fade = -1;
     style = {};
     time = -1;
+    fade_time = -1;
     constructor() {
         Particle.particles.push(this);
     }
@@ -75,8 +75,8 @@ export class Particle {
         if (Thing.time > this.time) {
             this.remove();
         }
-        else if (this.fade > 0) {
-            this.opacity = (this.time - Thing.time) / this.fade;
+        else if (this.fade_time > 0) {
+            this.opacity = (this.time - Thing.time) / this.fade_time;
         }
     }
     draw() {

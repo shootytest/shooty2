@@ -55,9 +55,9 @@ export class Particle {
   target?: vector3_;
   smoothness?: number;
   opacity: number = 1;
-  fade: number = -1;
   style: style_type = {};
   time: number = -1;
+  fade_time: number = -1;
 
 
   constructor() {
@@ -86,8 +86,8 @@ export class Particle {
     }
     if (Thing.time > this.time) {
       this.remove();
-    } else if (this.fade > 0) {
-      this.opacity = (this.time - Thing.time) / this.fade;
+    } else if (this.fade_time > 0) {
+      this.opacity = (this.time - Thing.time) / this.fade_time;
     }
   }
 

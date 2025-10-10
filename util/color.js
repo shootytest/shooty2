@@ -65,6 +65,10 @@ export const STYLES = {
         fill: "#eeeeee",
         fill_opacity: 0.4,
     },
+    home: {
+        stroke: "#eeeeee",
+        stroke_opacity: 1,
+    },
     tutorial: {
         stroke: "#7f77ea",
         stroke_opacity: 1,
