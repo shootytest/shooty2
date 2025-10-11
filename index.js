@@ -43,17 +43,20 @@ const tick_all = (timestamp_unused) => {
     camera.scale_target = player.camera_scale();
     camera.location_target = player.camera_position();
     camera.scale_adjust2(camera.halfscreen);
-    mouse.tick();
-    Thing.tick_things();
+    if (player.paused)
+        player.tick();
+    else
+        Thing.tick_things();
     Spawner.tick_spawners();
     Particle.tick_particles();
-    if (Thing.time > 10)
+    if (!player.paused && Thing.time > 10)
         Engine.update(engine);
     // ctx.clear();
     ctx.fill_screen(color.black);
     do_visibility(); // draw all shapes
     ui.tick();
     ui.draw();
+    mouse.tick();
     requestAnimationFrame(tick_all);
 };
 requestAnimationFrame(tick_all);

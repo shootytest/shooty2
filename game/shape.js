@@ -285,15 +285,16 @@ export class Shape {
         this.draw_path();
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
+        const override_pause_opacity = this.thing.is_player && this.index >= 1 && player.paused;
         if (style.stroke) {
             ctx.strokeStyle = style.stroke;
-            ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1);
+            ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
             ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * config.graphics.linewidth_mult * (this.translucent <= math.epsilon ? 1 : 1.8);
             ctx.stroke();
         }
         if (style.fill && this.closed_loop) {
             ctx.fillStyle = style.fill;
-            ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1);
+            ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
             ctx.fill();
         }
     }
@@ -345,6 +346,8 @@ export class Shape {
     }
     draw_blink() {
         if (!this.blinking && (!this.thing.health?.invincible))
+            return;
+        if (this.thing.is_player && player.paused)
             return;
         const style_mult = {
             stroke_opacity: math.bounce(Thing.time, 10) * 0.5,

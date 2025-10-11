@@ -389,6 +389,10 @@ export class Context {
     this.ctx.restore();
   }
 
+  svg_v(type: string, v: vector, r: number) {
+    return this.svg(type, v.x, v.y, r);
+  }
+
   measureText(s: string) {
     return this.ctx.measureText(s);
   }

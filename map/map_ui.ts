@@ -60,7 +60,10 @@ export const m_ui = {
     },
     tick: function() {
       for (let button = 0; button < 3; button++) {
-        m_ui.click.new_fns[button]();
+        if (m_ui.click.new_fns_exist[button]) {
+          m_ui.click.new_fns[button]();
+          keys[["Mouse", "MouseRight", "MouseWheel"][button]] = false;
+        }
       }
       m_ui.click.new_fns_exist = [false, false, false];
     },
@@ -715,7 +718,13 @@ export const m_ui = {
       options: { contains: [], },
     };
 
-    const sorted_shapes = m_ui.map.shapes?.sort((s1, s2) => s1.computed?.depth! - s2.computed?.depth!);
+    const sorted_shapes = m_ui.map.shapes?.sort((s1, s2) => {
+      const d1 = s1.computed?.depth!, d2 = s2.computed?.depth!;
+      if (d1 === d2) {
+        // const n1 = +(s1.id.split(" ").pop() ?? -1), n2 = +(s2.id.split(" ").pop() ?? -1);
+        return s1.id.localeCompare(s2.id, "en", { numeric: true });
+      } else return d1 - d2;
+    });
 
     for (const shape of [m_ui.all_shape].concat(sorted_shapes ?? [])) {
       if (rooms_only && m_ui.map.computed?.shape_room[shape.id]) continue;

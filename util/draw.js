@@ -300,6 +300,9 @@ export class Context {
         this.ctx.fill(path2d);
         this.ctx.restore();
     }
+    svg_v(type, v, r) {
+        return this.svg(type, v.x, v.y, r);
+    }
     measureText(s) {
         return this.ctx.measureText(s);
     }

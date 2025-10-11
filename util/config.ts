@@ -17,5 +17,7 @@ export const config = {
     shadowblur: 75,
     health_display_smoothness: 0.07,
     health_rotate_speed: 0.1,
+    camera_mouse_look_factor: 0.075,
+    pause_opacity: 0.25,
   },
 };

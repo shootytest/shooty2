@@ -34,6 +34,8 @@ export class Player extends Thing {
   camera_target_target: vector3_ = vector.create();
   room_list: string[] = [];
 
+  paused: boolean = false;
+
   constructor() {
     super();
 
@@ -65,11 +67,9 @@ export class Player extends Thing {
       right: keys["ArrowRight"] === true || (keys["KeyD"] === true),
       jump: false && keys["Space"] === true,
       shoot: keys["Mouse"] === true,
-      toggle_autoshoot: keys["KeyF"] === true,
       rshoot: keys["MouseRight"] === true || ((keys["ShiftLeft"] === true || keys["ShiftRight"] === true)),
       facingx: Math.floor(camera.mouse_v.x),
       facingy: Math.floor(camera.mouse_v.y),
-      exit: (keys["KeyP"] === true),
     };
     this.target.facing = vector.add(vector.sub(camera.mouse_v, camera.world2screen(this.position)), this.position);
     const move_x = (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
@@ -77,7 +77,7 @@ export class Player extends Thing {
     const move_z = (this.target.vz < 0 && this.z < math.epsilon) ? (controls.jump ? 1 : 0) : 0;
     const move_v = vector.normalise(vector.create(move_x, move_y));
     if (this.body) {
-      this.push_by(vector.mult(move_v, this.options.move_speed ?? config.physics.player_speed));
+      if (!this.paused) this.push_by(vector.mult(move_v, this.options.move_speed ?? config.physics.player_speed));
       this.update_angle();
     }
     this.stats.pixels_walked += Math.floor(vector.length(vector.sub(this.position, this.old_position)));
@@ -85,10 +85,7 @@ export class Player extends Thing {
     if (move_z > 0) this.target.vz = move_z * 0.03;
     this.target.position.z = math.bound(this.target.position.z + this.target.vz, 0, 0.5);
     this.target.vz = this.target.vz - 0.0015;
-    if (controls.toggle_autoshoot) {
-      this.autoshoot = !this.autoshoot;
-    }
-    if (controls.shoot || this.autoshoot) {
+    if ((controls.shoot || this.autoshoot) && !this.paused) {
       this.shoot();
     }
     if (Thing.time >= this.autosave_time) {
@@ -116,7 +113,8 @@ export class Player extends Thing {
   camera_position() {
     this.camera_target = vector.lerp(this.camera_target, this.camera_target_target, 0.05);
     const position = vector.lerp(this.camera_target, this.position, 0.5);
-    return vector.add(position, vector.mult(camera.mouse_v, 1 / 30 * camera.scale));
+    // if (this.paused) return position;
+    return vector.add(position, vector.mult(vector.sub(camera.mouse_v, camera.halfscreen), config.graphics.camera_mouse_look_factor / camera.scale));
     // todo remove
     // let v = vector.sub(this.target.facing, camera.world2screen(this.position));
     // v = vector.normalise(v, vector.length(v) / 30 * camera.scale);
@@ -125,7 +123,9 @@ export class Player extends Thing {
 
   camera_scale() {
     const v = camera.halfscreen;
-    return Math.sqrt(v.x * v.y) / 500 / this.fov_mult;
+    let s = Math.sqrt(v.x * v.y) / 500 / this.fov_mult;
+    if (this.paused) s *= 10;
+    return s;
   }
 
   remake_shoot(shoot_id?: string) {

@@ -1,8 +1,10 @@
+import { camera } from "../util/camera.js";
 import { canvas, ctx } from "../util/canvas.js";
 import { color } from "../util/color.js";
 import { config } from "../util/config.js";
-import { mouse } from "../util/key.js";
+import { key, keys, mouse } from "../util/key.js";
 import { math } from "../util/math.js";
+import { vector } from "../util/vector.js";
 import { player } from "./player.js";
 export const ui = {
     time: 0,
@@ -22,19 +24,34 @@ export const ui = {
         },
         tick: function () {
             for (let button = 0; button < 3; button++) {
-                ui.click.new_fns[button]();
+                if (ui.click.new_fns_exist[button]) {
+                    ui.click.new_fns[button]();
+                    // also cancel shooting or other player actions
+                    keys[["Mouse", "MouseRight", "MouseWheel"][button]] = false;
+                }
             }
             ui.click.new_fns_exist = [false, false, false];
         },
     },
     init: function () {
+        const pause_fn = () => {
+            player.paused = !player.paused;
+            ui.pause.start_time = player.paused ? ui.time : -1;
+        };
+        key.add_key_listener("KeyP", pause_fn);
+        key.add_key_listener("Escape", pause_fn);
+        key.add_key_listener("KeyF", () => {
+            player.autoshoot = !player.autoshoot;
+        });
     },
     tick: function () {
         ui.time++;
-        ui.click.tick();
     },
     draw: function () {
         ui.draw_health();
+        if (player.paused)
+            ui.draw_pause_menu();
+        ui.click.tick();
     },
     draw_health: function () {
         if (!player.health)
@@ -43,7 +60,7 @@ export const ui = {
         const health_display = player.health.display / 100;
         const health_ipart = Math.floor(health_display + math.epsilon_bigger);
         const health_fpart = health_display - health_ipart;
-        let size = ui.size;
+        const size = ui.size;
         let x = size * 7;
         let y = size * 5;
         let r = size * 1.25;
@@ -83,6 +100,78 @@ export const ui = {
         ctx.rectangle(x + r * 0.625 + w / 2, y, w, r * 3);
         ctx.fill();
         if (player.enemy_can_see) {
+        }
+    },
+    pause: {
+        start_time: -1,
+        get time() {
+            return ui.time - this.start_time;
+        },
+        menu: [
+            {
+                logo: "x",
+                color: color.green,
+                fn: function () {
+                    player.paused = false;
+                },
+            },
+            {
+                logo: "settings",
+                color: color.blue,
+                fn: function () {
+                },
+            },
+            {
+                logo: "logout",
+                color: color.red,
+                fn: function () {
+                },
+            },
+            {
+                logo: "map",
+                color: color.gold,
+                fn: function () {
+                },
+            },
+            {
+                logo: "info",
+                color: color.dimgrey,
+                fn: function () {
+                },
+            },
+            {
+                logo: "load",
+                color: color.purple,
+                fn: function () {
+                },
+            },
+        ],
+    },
+    draw_pause_menu: function () {
+        const size = ui.size;
+        const centre = camera.world2screen(player.position);
+        let r = 8 * camera.scale;
+        const length = ui.pause.menu.length;
+        ctx.strokeStyle = color.white;
+        for (let i = 0; i < length; i++) {
+            const a = ((i - 1) * 360 / (length - 1) + 0.1 * ui.pause.time) % 360;
+            const v = i === 0 ? centre : vector.add(centre, vector.createpolar_deg(a, r * 1.5));
+            const o = ui.pause.menu[i];
+            ctx.fillStyle = color.white;
+            ctx.svg_v(o.logo, v, r);
+            ctx.beginPath();
+            ctx.circle_v(v, r * 0.7);
+            const hovering = ctx.point_in_path_v(mouse.position);
+            if (hovering)
+                ui.click.new(o.fn);
+            ctx.beginPath();
+            ctx.circle_v(v, r * 0.64);
+            ctx.fillStyle = (hovering ? o.color : color.white) + "22";
+            ctx.fill();
+            if (hovering)
+                ctx.stroke();
+            if (i === 0)
+                r *= 1.25;
         }
     },
 };
