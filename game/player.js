@@ -24,7 +24,9 @@ export class Player extends Thing {
     stats = {
         deaths: 0,
         pixels_walked: 0,
-        enemies_killed: 0,
+        clicks: [0, 0, 0],
+        enemies_killed: {},
+        bullets_shot: {},
         currencies_total: {},
     };
     camera_target = vector.create();
@@ -168,8 +170,6 @@ export class Player extends Thing {
             this.checkpoint_room = o.checkpoint_room;
         if (o.fov_mult)
             this.fov_mult = o.fov_mult;
-        if (o.xp)
-            this.xp = o.xp;
         if (this.health && o.health)
             this.health.value = o.health;
         if (this.ability && o.ability)
@@ -180,16 +180,22 @@ export class Player extends Thing {
             this.current_gun = o.current_gun;
             this.remake_shoot();
         }
+        if (o.xp) {
+            this.xp = 0;
+            this.add_xp(o.xp);
+        }
         if (o.stats)
             override_object(this.stats, o.stats);
     }
     add_xp(xp) {
         this.xp += xp;
-        this.level = 0; // todo level formula
+        this.level = Math.floor((Math.sqrt(this.xp * 8 / config.game.level_1_xp + 1) - 1) / 2); // [△] 1000 + 2000 + 3000 + ...
     }
     collect(o) {
-        if (o.restore_health)
+        if (o.restore_all_health)
             this.health?.heal_all();
+        else if (o.restore_health)
+            this.health?.heal(o.restore_health);
         if (o.gun) {
             if (!this.guns.includes(o.gun))
                 this.guns.push(o.gun);

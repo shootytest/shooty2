@@ -3,6 +3,7 @@ export const config = {
     version: "0.1.0",
     invincibility_time: 90,
     autosave_interval: 60, // 1 second
+    level_1_xp: 1000,
   },
   physics: {
     wall_width: 3,

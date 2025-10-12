@@ -19,9 +19,8 @@ export interface maketype {
   movable?: boolean; // dynamic physics object
   seethrough?: boolean; // visibility
   keep_bullets?: boolean; // don't delete bullets if they collide
-  wall_filter?: wall_filter_type; // normal wall (nothing can pass) / window (players can't pass but bullets can) / curtain (bullets can't pass but players can)
   switch?: boolean;
-  collectible?: maketype_collect;
+  wall_filter?: wall_filter_type; // normal wall (nothing can pass) / window (players can't pass but bullets can) / curtain (bullets can't pass but players can)
 
   shoots?: string[];
 
@@ -54,7 +53,11 @@ export interface maketype {
   face_smoothness?: number;
   enemy_detect_range?: number;
   focus_camera?: boolean;
+
+  // special drops
+  xp?: number;
   death?: bullet_death_type[];
+  collectible?: maketype_collect;
 
 };
 
@@ -77,7 +80,8 @@ export interface maketype_collect {
   currency_amount?: number;
   gun?: string;
   allow_bullet_collect?: boolean;
-  restore_health?: boolean;
+  restore_health?: number;
+  restore_all_health?: boolean;
 };
 
 export interface maketype_shape {
@@ -215,6 +219,7 @@ make.wall_tutorial_rock_breakable = {
   health: {
     capacity: 1000,
   },
+  xp: 0,
 };
 
 make.wall_tutorial_fake = {
@@ -228,6 +233,7 @@ make.wall_tutorial_fake = {
   health: {
     capacity: 700,
   },
+  xp: 150,
 };
 
 // @floors
@@ -401,6 +407,7 @@ make.enemy_tutorial_block = {
   death: [
     { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1.5 }, repeat: 6, angle_increment: 60 },
   ],
+  xp: 10,
 };
 make_shapes.enemy_tutorial_block = [{
   type: "polygon",
@@ -419,6 +426,7 @@ make.enemy_tutorial_rocky = {
     { type: "collect_coin", stats: { make: "collect_coin_1", speed: 2 }, repeat: 5, angle_increment: 72 },
     { type: "collect_coin", stats: { make: "collect_coin_5", speed: 0 }, repeat: 1 },
   ],
+  xp: 100,
 };
 make_shapes.enemy_tutorial_rocky = [{
   type: "polygon",
@@ -462,6 +470,7 @@ make.enemy_tutorial_4way = {
   health: {
     capacity: 750,
   },
+  xp: 200,
 };
 make_shapes.enemy_tutorial_4way = [{
   type: "polygon",
@@ -501,6 +510,7 @@ make.enemy_tutorial_easy = {
   death: [
     { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.6, spread: -1 }, repeat: 2 },
   ],
+  xp: 50,
 };
 make_shapes.enemy_tutorial_easy = [{
   type: "polygon",
@@ -521,6 +531,7 @@ make.enemy_tutorial_bit = {
   style_: {
     opacity: 0.6,
   },
+  xp: 2,
 };
 make_shapes.enemy_tutorial_bit = [{
   type: "polygon",
@@ -563,6 +574,7 @@ make.enemy_tutorial_boss = {
   death: [
     { type: "collect_coin", stats: { make: "collect_coin_10", speed: 5 }, repeat: 36, angle_increment: 10 },
   ],
+  xp: 999999, // lol
 };
 make_shapes.enemy_tutorial_boss = [{
   type: "polygon",
@@ -676,7 +688,7 @@ make.collect_gun_basic = {
   enemy_detect_range: 0,
   collectible: {
     gun: "basic",
-    restore_health: true,
+    restore_all_health: true,
   },
 };
 make_shapes.collect_gun_basic = [{

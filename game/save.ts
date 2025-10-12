@@ -30,7 +30,9 @@ export interface player_save {
 export interface player_stats {
   deaths: number;
   pixels_walked: number;
-  enemies_killed: number;
+  clicks: [number, number, number];
+  enemies_killed: { [key: string]: number };
+  bullets_shot: { [key: string]: number };
   currencies_total: { [key: string]: number };
 };
 

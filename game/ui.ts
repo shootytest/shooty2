@@ -27,6 +27,9 @@ export const ui = {
     },
     tick: function() {
       for (let button = 0; button < 3; button++) {
+        if (mouse.down_buttons[button]) {
+          player.stats.clicks[button]++;
+        }
         if (ui.click.new_fns_exist[button]) {
           ui.click.new_fns[button]();
           // also cancel shooting or other player actions
