@@ -65,6 +65,13 @@ export const ui = {
     ui.click.tick();
   },
 
+  health: {
+    xp_ratio_display: 0,
+    xp_display: 0,
+    xp_change_display: 0,
+    xp_show: 0,
+  },
+
   draw_health: function() {
     if (!player.health) return;
     const total_health = player.health.capacity / 100;
@@ -101,13 +108,53 @@ export const ui = {
     ctx.beginPath();
     ctx.rectangle(x + w / 2, y, w, r * 3);
     ctx.fill();
-    w = size * 3.5 * health_display;
+    const w_ = size * 3.5 * health_display;
     ctx.beginPath();
-    ctx.rectangle(x + r * 0.625 + w / 2, y, w, r * 3);
+    ctx.rectangle(x + r * 0.625 + w_ / 2, y, w_, r * 3);
     ctx.fill();
     if (player.enemy_can_see) {
-      
+      // todo health ui is "scared" lol
     }
+    // xp
+    const is_showing = (player.thing_time - player.xp_time) < config.graphics.xp_display_time;
+    const show = math.lerp(ui.health.xp_show, Number(is_showing), config.graphics.xp_display_smoothness);
+    ui.health.xp_show = show;
+    const ratio = math.lerp(ui.health.xp_ratio_display, player.xp_ratio, config.graphics.xp_display_smoothness);
+    ui.health.xp_ratio_display = ratio;
+    const xp_display = math.lerp(ui.health.xp_display, player.xp - player.level2xp(player.level), config.graphics.xp_display_smoothness);
+    ui.health.xp_display = xp_display;
+    let xp_change = math.lerp(ui.health.xp_change_display, player.xp_change, config.graphics.xp_display_smoothness * (is_showing ? 3 : 1));
+    ui.health.xp_change_display = xp_change;
+    xp_change = Math.round(xp_change);
+    if (!is_showing && player.xp_change) player.xp_change = 0;
+    ctx.ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y + r * 1.5, w, ui.height);
+    ctx.clip();
+    ctx.lineWidth = config.graphics.linewidth_mult * 2;
+    ctx.strokeStyle = color.green + "bb";
+    y += r * 2 - r * 3.3 * (1 - show);
+    ctx.line(x, y, x + w * ratio, y);
+    ctx.strokeStyle = color.green + "22";
+    ctx.line(x, y, x + w, y);
+    ctx.fillStyle = color.green + "bb";
+    ctx.set_font_mono(r * 1.5, "bold");
+    ctx.textAlign = "left";
+    const level_text = "" + player.level;
+    ctx.text(level_text, x, y + r * 1.5);
+    ctx.textAlign = "right";
+    ctx.fillStyle = color.green + "77";
+    ctx.text("" + (player.level + 1), x + w, y + r * 1.5);
+    x += ctx.measureText(level_text).width;
+    ctx.set_font_mono(r * 1);
+    ctx.textAlign = "left";
+    ctx.fillStyle = color.green + "bb";
+    const xp_details_text =
+      Math.round(xp_display) + "/"
+      + ((player.level + 1) * config.game.level_1_xp)
+      + "  " + (xp_change ? "+" + xp_change : "");
+    ctx.text(xp_details_text, x + r, y + r * 1.5 + 2);
+    ctx.ctx.restore();
   },
 
   pause: {

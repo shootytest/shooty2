@@ -291,7 +291,11 @@ make_shapes.checkpoint = [{
   radius: 50,
 }, {
   type: "circle",
-  radius: 200,
+  radius: 50,
+  z: 0.2,
+}, {
+  type: "circle",
+  radius: 50,
   z: 0.1,
   style_: { stroke_opacity: 0, }
 }];

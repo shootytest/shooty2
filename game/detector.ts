@@ -125,8 +125,8 @@ export const detector = {
       }
     }
     if (a.is_bullet) {
-      if (!b.options.sensor && !b.options.keep_bullets && !a.options.collectible && !b_rittle && different_team) {
-        if (b.is_player) a.options.death = []; // clear bullets on death if it hits the player
+      if (!b.options.sensor && !b.options.keep_bullets && !a.options.collectible && !b_rittle && different_team && !b.health?.invincible) {
+        if (b.is_player) a.options.death = []; // please don't explode if it hits the player
         a.die();
       } else if (b_rittle || (!different_team && a.team > 0)) {
         pair.isSensor = true;

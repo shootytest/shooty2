@@ -316,6 +316,10 @@ export class Thing {
 
   die() {
     const id = this.id.split("#")[0].trim();
+    if (this.options.xp) { // add xp if needed
+      const player = Thing.things_lookup["player"] as Player;
+      player.add_xp(this.options.xp);
+    }
     const bypass_remove = detector.before_death_fns[id]?.(this);
     if (bypass_remove) return;
     this.remove_death();

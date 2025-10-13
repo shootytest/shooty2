@@ -23,6 +23,9 @@ export class Player extends Thing {
   guns: string[] = [];
   xp: number = 0;
   level: number = 0;
+  xp_ratio: number = 0;
+  xp_time: number = -1;
+  xp_change: number = 0;
   stats: player_stats = {
     deaths: 0,
     pixels_walked: 0,
@@ -67,7 +70,7 @@ export class Player extends Thing {
       down: keys["ArrowDown"] === true || (keys["KeyS"] === true),
       left: keys["ArrowLeft"] === true || (keys["KeyA"] === true),
       right: keys["ArrowRight"] === true || (keys["KeyD"] === true),
-      jump: false && keys["Space"] === true,
+      jump: keys["Space"] === true,
       shoot: keys["Mouse"] === true,
       rshoot: keys["MouseRight"] === true || ((keys["ShiftLeft"] === true || keys["ShiftRight"] === true)),
       facingx: Math.floor(camera.mouse_v.x),
@@ -185,13 +188,25 @@ export class Player extends Thing {
     if (o.xp) {
       this.xp = 0;
       this.add_xp(o.xp);
+      this.xp_change = 0;
     }
     if (o.stats) override_object(this.stats, o.stats);
   }
 
   add_xp(xp: number) { // todo actually add xp on kill
     this.xp += xp;
-    this.level = Math.floor((Math.sqrt(this.xp * 8 / config.game.level_1_xp + 1) - 1) / 2); // [△] 1000 + 2000 + 3000 + ...
+    this.level = this.xp2level(this.xp);
+    this.xp_ratio = (this.xp - this.level2xp(this.level)) / ((this.level + 1) * config.game.level_1_xp);
+    this.xp_time = Thing.time;
+    this.xp_change += xp;
+  }
+
+  xp2level(xp: number) {
+    return Math.floor((Math.sqrt(xp * 8 / config.game.level_1_xp + 1) - 1) / 2); // [△] 1 + 2 + 3 + ...
+  }
+
+  level2xp(level: number) {
+    return config.game.level_1_xp / 2 * level * (level + 1);
   }
 
   collect(o: maketype_collect) {

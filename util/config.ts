@@ -16,6 +16,8 @@ export const config = {
     shape_cull_padding: 100, // 16 should be ok, 100 is just to be safe
     linewidth_mult: 8,
     shadowblur: 75,
+    xp_display_smoothness: 0.07,
+    xp_display_time: 120,
     health_display_smoothness: 0.07,
     health_rotate_speed: 0.1,
     camera_mouse_look_factor: 0.075,
