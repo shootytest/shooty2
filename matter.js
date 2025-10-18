@@ -14,6 +14,26 @@ Matter.Common.earcut = earcut;
 import { breakIntersections, compute, computeViewport, convertToSegments, inPolygon, inViewport } from 'https://cdn.jsdelivr.net/npm/visibility-polygon@1.1.0/+esm';
 Matter.Common.visibilityPolygon = { breakIntersections, compute, computeViewport, convertToSegments, inPolygon, inViewport };
 
+import clipper2Wasm from 'https://cdn.jsdelivr.net/npm/clipper2-wasm@0.2.1/dist/es/clipper2z.js';
+clipper2Wasm().then((clipper2z) => {
+  const { MakePath64, Paths64, InflatePaths64, JoinType, EndType } = clipper2z;
+  Matter.Common.expand = function(vertices, width) { // might want to add some more options here
+    const precision_mult = 10;
+    const flattened = [];
+    for (const v of vertices) flattened.push(Math.floor(v.x * precision_mult), Math.floor(v.y * precision_mult));
+    const paths = new Paths64();
+    paths.push_back(MakePath64(flattened));
+    // input, inflate amount, join type (miter/square/bevel/round), end type (polygon for closed paths, joined/square/round/butt for open paths), miter limit, precision, arc tolerance
+    const inflated = InflatePaths64(paths, width, JoinType.Square, EndType.Polygon, 2, 0).get(0); // assume only 1 path in output...
+    const expanded = [];
+    for (let i = 0; i < inflated.size(); i++) {
+      const point = inflated.get(i);
+      expanded.push({ x: Number(point.x) / precision_mult, y: Number(point.y) / precision_mult });
+    }
+    return expanded;
+  };
+});
+
 export default Matter;
 
 export const Axes = Matter.Axes;

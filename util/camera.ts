@@ -2,6 +2,7 @@ import { math } from "./math.js";
 import { vector, vector3 } from "./vector.js";
 import { mouse } from "./key.js";
 import { canvas } from "./canvas.js";
+import { config } from "./config.js";
 
 export const ZEPSILON = 0.0001;
 
@@ -14,7 +15,7 @@ export const camera = {
   scale: 1,
   scale_target: 1,
   scaling_point: vector.create(0, 0),
-  lerp_factor: 0.1,
+  lerp_factor: config.graphics.camera_smoothness,
   get x(): number {
     return this.position.x;
   },
@@ -79,14 +80,14 @@ export const camera = {
     // initial camera properties here?
     this.location = vector.create();
   },
-  tick: function() {
-    this.time++;
+  tick: function(dt: number) {
+    this.time += dt;
     // lerp
     this.position = vector.lerp(this.position, this.position_target, this.lerp_factor);
     if (Math.abs(this.scale - this.scale_target) > math.epsilon) {
       this.scale = 1 / math.lerp(1 / this.scale, 1 / this.scale_target, this.lerp_factor);
     }
-    if (this.lerp_factor !== 0.1) this.lerp_factor = 0.1;
+    if (Math.abs(this.lerp_factor - config.graphics.camera_smoothness) < math.epsilon) this.lerp_factor = config.graphics.camera_smoothness;
   },
   position_jump: function() {
     this.position = this.position_target;

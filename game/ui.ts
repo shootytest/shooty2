@@ -10,6 +10,7 @@ import { player } from "./player.js";
 export const ui = {
 
   time: 0,
+  tick_time: 0,
   width: canvas.width,
   height: canvas.width,
   size: 0,
@@ -55,8 +56,9 @@ export const ui = {
 
   },
 
-  tick: function() {
-    ui.time++;
+  tick: function(dt: number) {
+    ui.tick_time++;
+    ui.time += dt;
   },
 
   draw: function() {
@@ -69,7 +71,7 @@ export const ui = {
     xp_ratio_display: 0,
     xp_display: 0,
     xp_change_display: 0,
-    xp_show: 0,
+    xp_y_ratio: 0,
   },
 
   draw_health: function() {
@@ -83,7 +85,7 @@ export const ui = {
     let y = size * 5;
     let r = size * 1.25;
     ctx.lineWidth = config.graphics.linewidth_mult;
-    const angle = -ui.time / 10 * config.graphics.health_rotate_speed;
+    const angle = -ui.time / config.seconds * config.graphics.health_rotate_speed;
     for (let i = 0; i < total_health; i++) {
       if (i < health_display - math.epsilon_bigger) {
         if (i === health_ipart && health_fpart < 0.1) ctx.globalAlpha = 0.5 + health_fpart * 5;
@@ -104,7 +106,7 @@ export const ui = {
     }
     let w = size * 3.5 * Math.floor(total_health - 1) + r * 4;
     x = size * 7 - r * 2;
-    ctx.fillStyle = color.white + "11";
+    ctx.fillStyle = (player.enemy_can_see ? color.red : color.white) + "11";
     ctx.beginPath();
     ctx.rectangle(x + w / 2, y, w, r * 3);
     ctx.fill();
@@ -112,16 +114,13 @@ export const ui = {
     ctx.beginPath();
     ctx.rectangle(x + r * 0.625 + w_ / 2, y, w_, r * 3);
     ctx.fill();
-    if (player.enemy_can_see) {
-      // todo health ui is "scared" lol
-    }
     // xp
     const is_showing = (player.thing_time - player.xp_time) < config.graphics.xp_display_time;
-    const show = math.lerp(ui.health.xp_show, Number(is_showing), config.graphics.xp_display_smoothness);
-    ui.health.xp_show = show;
+    const y_ratio = math.lerp(ui.health.xp_y_ratio, Number(is_showing), config.graphics.xp_display_smoothness);
+    ui.health.xp_y_ratio = y_ratio;
     const ratio = math.lerp(ui.health.xp_ratio_display, player.xp_ratio, config.graphics.xp_display_smoothness);
     ui.health.xp_ratio_display = ratio;
-    const xp_display = math.lerp(ui.health.xp_display, player.xp - player.level2xp(player.level), config.graphics.xp_display_smoothness);
+    const xp_display = math.lerp(ui.health.xp_display, player.xp - player.level2xp(player.level), config.graphics.xp_display_smoothness * 2);
     ui.health.xp_display = xp_display;
     let xp_change = math.lerp(ui.health.xp_change_display, player.xp_change, config.graphics.xp_display_smoothness * (is_showing ? 3 : 1));
     ui.health.xp_change_display = xp_change;
@@ -132,23 +131,22 @@ export const ui = {
     ctx.rect(x, y + r * 1.5, w, ui.height);
     ctx.clip();
     ctx.lineWidth = config.graphics.linewidth_mult * 2;
-    ctx.strokeStyle = color.green + "bb";
-    y += r * 2 - r * 3.3 * (1 - show);
-    ctx.line(x, y, x + w * ratio, y);
-    ctx.strokeStyle = color.green + "22";
-    ctx.line(x, y, x + w, y);
-    ctx.fillStyle = color.green + "bb";
     ctx.set_font_mono(r * 1.5, "bold");
+    ctx.strokeStyle = color.green + "aa";
+    y += r * 2 - r * 3.3 * (1 - y_ratio);
+    ctx.line(x, y, x + w * ratio, y);
+    ctx.strokeStyle = color.green + "33";
+    ctx.line(x, y, x + w, y);
+    ctx.textAlign = "right";
+    ctx.fillStyle = color.green + "33";
+    ctx.text("" + (player.level + 1), x + w, y + r * 1.5);
+    ctx.fillStyle = color.green + "aa";
     ctx.textAlign = "left";
     const level_text = "" + player.level;
     ctx.text(level_text, x, y + r * 1.5);
-    ctx.textAlign = "right";
-    ctx.fillStyle = color.green + "77";
-    ctx.text("" + (player.level + 1), x + w, y + r * 1.5);
     x += ctx.measureText(level_text).width;
     ctx.set_font_mono(r * 1);
     ctx.textAlign = "left";
-    ctx.fillStyle = color.green + "bb";
     const xp_details_text =
       Math.round(xp_display) + "/"
       + ((player.level + 1) * config.game.level_1_xp)
@@ -210,7 +208,7 @@ export const ui = {
     const length = ui.pause.menu.length;
     ctx.strokeStyle = color.white;
     for (let i = 0; i < length; i++) {
-      const a = ((i - 1) * 360 / (length - 1) + 0.1 * ui.pause.time) % 360;
+      const a = ((i - 1) * 360 / (length - 1) + ui.pause.time / 1000) % 360;
       const v = i === 0 ? centre : vector.add(centre, vector.createpolar_deg(a, r * 1.5));
       const o = ui.pause.menu[i];
       ctx.fillStyle = color.white;

@@ -214,6 +214,27 @@ export const math = {
         return result_left.concat(result_right.reverse());
     },
     expand_polygon: (vertices, width) => {
+        if (Common.expand) {
+            return Common.expand(vertices, width); // yay
+        }
+        else {
+            // fallback to polygonOffset
+            const points = [];
+            for (const v of vertices) {
+                points.push([v.x, v.y]);
+            }
+            const result = [];
+            const offset = new Common.polygonOffset();
+            for (const vs of offset.data(points).margin(width)) {
+                for (const v of vs) {
+                    result.push(vector.create(v[0], v[1]));
+                }
+            }
+            console.log(result);
+            return result;
+        }
+    },
+    expand_polygon_what_am_i_doing_this_definitely_wont_work: (vertices, width) => {
         const centre = vector.mean(vertices);
         const result = [];
         for (const v of vertices) {

@@ -13,7 +13,7 @@ const tick_all = (timestamp_unused: number) => {
 
   m_ui.tick();
   m_ui.draw();
-  camera.tick();
+  camera.tick(16); // don't care about dt for now
   mouse.tick();
 
   requestAnimationFrame(tick_all);

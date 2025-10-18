@@ -1,6 +1,7 @@
 import { engine, MAP } from "../index.js";
 import { Events, Vertices } from "../matter.js";
 import { STYLES } from "../util/color.js";
+import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { Spawner } from "./enemy.js";
@@ -201,7 +202,7 @@ export const detector = {
                     mouse_icon.init_computed();
                 }
                 mouse_icon.style.fill = mouse_icon.style.stroke;
-                mouse_icon.style.fill_opacity = math.bounce(thing.thing_time, 30) * 0.5;
+                mouse_icon.style.fill_opacity = math.bounce(thing.thing_time, config.graphics.blink_time * 2) * 0.5;
             }
         },
     },

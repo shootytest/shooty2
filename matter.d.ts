@@ -3557,6 +3557,8 @@ declare namespace Matter {
         };
 
         static earcut(polygon: number[], holes?: number[], dimensions?: number): number[];
+
+        static expand(polygon: Vector[], width: number): Vector[];
     }
     
     export declare type vp_Vector2D = [number, number];
@@ -3568,6 +3570,8 @@ declare namespace Matter {
     export class Offset {
         data(points: number[][]): {
             offsetLine(width: number): number[][][];
+            margin(width: number): number[][][];
+            padding(width: number): number[][][];
         };
     };
 

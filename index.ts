@@ -9,6 +9,7 @@ import { Engine } from "./matter.js";
 import { camera } from "./util/camera.js";
 import { ctx, init_canvas } from "./util/canvas.js";
 import { color } from "./util/color.js";
+import { config } from "./util/config.js";
 import { key, mouse } from "./util/key.js";
 import { map_serialiser, map_shape_type, TEST_MAP } from "./util/map_type.js";
 import { do_visibility } from "./util/see.js";
@@ -31,6 +32,7 @@ export const world = engine.world;
 
 engine.gravity.x = 0;
 engine.gravity.y = 0;
+engine.timing.timeScale = config.timescale;
 
 export let MAP = map_serialiser.load("auto");
 if (MAP.shapes.length <= 0) MAP = TEST_MAP;
@@ -49,22 +51,23 @@ window.addEventListener("load", init_all);
 let time = -1;
 const tick_all = (timestamp_unused: number) => {
 
-  const now = performance.now();
-  const _dt = (time > -1) ? now - time : 0;
+  const now = Math.round(performance.now() * 10); // make it an integer (multiple of 100 microseconds)
+  const real_dt = ((time > -1) ? now - time : 0);
+  const dt = real_dt * engine.timing.timeScale;
   time = now;
-  camera.tick();
+  camera.tick(dt);
   camera.scale_target = player.camera_scale();
   camera.location_target = player.camera_position();
   camera.scale_adjust2(camera.halfscreen);
-  if (player.paused) player.tick();
-  else Thing.tick_things();
+  if (player.paused) player.tick(real_dt);
+  else Thing.tick_things(dt);
   Spawner.tick_spawners();
   Particle.tick_particles();
-  if (!player.paused && Thing.time > 10) Engine.update(engine);
+  if (!player.paused && Thing.time > 500) Engine.update(engine, Math.min(30, real_dt / 10));
   // ctx.clear();
   ctx.fill_screen(color.black);
   do_visibility(); // draw all shapes
-  ui.tick();
+  ui.tick(real_dt);
   ui.draw();
   mouse.tick();
   requestAnimationFrame(tick_all);

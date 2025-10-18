@@ -322,7 +322,7 @@ export class Shape {
     const c = this.is_circle ? this.computed.screen_vertices[0] : vector.aabb_centre(vector.make_aabb(this.computed.screen_vertices));
     ctx.beginPath();
     ctx.moveTo(c.x, c.y);
-    const angle = -Thing.time / 10 * config.graphics.health_rotate_speed;
+    const angle = -Thing.time / config.seconds * config.graphics.health_rotate_speed;
     ctx.arc_v(c, 123456, angle % (Math.PI * 2), (angle + Math.PI * 2 * ratio) % (Math.PI * 2));
     ctx.lineTo(c.x, c.y);
     ctx.clip();
@@ -345,8 +345,8 @@ export class Shape {
     if (!this.blinking && (!this.thing.health?.invincible)) return;
     if (this.thing.is_player && player.paused) return;
     const style_mult: style_type = {
-      stroke_opacity: math.bounce(Thing.time, 10) * 0.5,
-      fill_opacity: math.bounce(Thing.time, 10) * 0.5,
+      stroke_opacity: math.bounce(Thing.time, config.graphics.blink_time) * 0.5,
+      fill_opacity: math.bounce(Thing.time, config.graphics.blink_time) * 0.5,
     };
     if (this.style.fill) style_mult.fill = color.blackground;
     if (this.style.stroke) style_mult.stroke = color.blackground;
@@ -408,7 +408,7 @@ export class Shape {
     if (this.computed?.vertices == undefined || !this.computed.on_screen) return;
     const style: style_type = clone_object(this.style);
     style.opacity = (style.opacity ?? 1) * (o.opacity_mult ?? 0.4);
-    const time = (o.time ?? 20);
+    const time = (o.time ?? 0.2) * config.seconds;
     const p = new Particle();
     p.style = style;
     p.time = Thing.time + time;

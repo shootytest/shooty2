@@ -59,8 +59,8 @@ export class Player extends Thing {
     if (this.body) this.body.label = "player";
   }
 
-  tick() {
-    super.tick();
+  tick(dt: number) {
+    if (!this.paused) super.tick(dt);
     if (vector.equal(this.camera_target_target, this.position)) {
       this.camera_target = this.position;
     }
@@ -87,13 +87,15 @@ export class Player extends Thing {
     }
     this.stats.pixels_walked += Math.floor(vector.length(vector.sub(this.position, this.old_position)));
     this.old_position = this.position;
-    if (move_z > 0) this.target.vz = move_z * 0.03;
-    this.target.position.z = math.bound(this.target.position.z + this.target.vz, 0, 0.5);
-    this.target.vz = this.target.vz - 0.0015;
-    if ((controls.shoot || this.autoshoot) && !this.paused) {
-      this.shoot();
+    if (!this.paused) {
+      if (move_z > 0) this.target.vz = move_z * 0.03;
+      this.target.position.z = math.bound(this.target.position.z + this.target.vz, 0, 0.5);
+      this.target.vz = this.target.vz - 0.0015;
+      if (controls.shoot || this.autoshoot) {
+        this.shoot();
+      }
     }
-    if (Thing.time >= this.autosave_time) {
+    if (Thing.time >= this.autosave_time && !this.paused) {
       if (this.autosave_time < 0) this.autosave_time = Thing.time + config.game.autosave_interval;
       else this.save();
     }
@@ -116,7 +118,7 @@ export class Player extends Thing {
   }
 
   camera_position() {
-    this.camera_target = vector.lerp(this.camera_target, this.camera_target_target, 0.05);
+    this.camera_target = vector.lerp(this.camera_target, this.camera_target_target, config.graphics.camera_target_smoothness);
     const position = vector.lerp(this.camera_target, this.position, 0.5);
     // if (this.paused) return position;
     return vector.add(position, vector.mult(vector.sub(camera.mouse_v, camera.halfscreen), config.graphics.camera_mouse_look_factor / camera.scale));
@@ -129,7 +131,7 @@ export class Player extends Thing {
   camera_scale() {
     const v = camera.halfscreen;
     let s = Math.sqrt(v.x * v.y) / 500 / this.fov_mult;
-    if (this.paused) s *= 10;
+    if (this.paused) s *= 10 * this.fov_mult;
     return s;
   }
 

@@ -47,7 +47,7 @@ export class Health {
     }
     if (o.value != undefined) this.value = o.value;
     if (o.regen != undefined) this.regen = o.regen;
-    if (o.regen_time != undefined) this.hit_clear = o.regen_time;
+    if (o.regen_time != undefined) this.hit_clear = o.regen_time * config.seconds;
     if (o.invincible != undefined) this.invincible = o.invincible;
   }
 

@@ -52,8 +52,8 @@ export class Enemy extends Thing {
     super.die();
   }
 
-  tick() {
-    super.tick();
+  tick(dt: number) {
+    super.tick(dt);
   }
 
   shoot() {

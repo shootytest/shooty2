@@ -17,17 +17,20 @@ import { Shoot } from "./shoot.js";
  */
 export class Thing {
     static time = 0;
+    static tick_time = 0;
     static things = [];
     static things_lookup = {};
     static things_rooms = {};
     static cumulative_id = 0;
-    static tick_things = () => {
+    static tick_things(dt) {
         this.update_body_list();
-        Thing.time++;
+        Thing.tick_time++;
+        Thing.time += dt;
         for (const thing of Thing.things) {
-            thing.tick();
+            thing.tick(dt);
         }
-    };
+    }
+    ;
     static body_list = [];
     static update_body_list() {
         const result = [];
@@ -245,6 +248,7 @@ export class Thing {
         }
         else { // just use vertices
             if (s.closed_loop && s.vertices.length > 2) {
+                // body = Bodies.fromVertices(s.offset.x, s.offset.y, [math.expand_polygon(s.vertices, config.physics.wall_width)], options);
                 body = Bodies.fromVertices(s.offset.x, s.offset.y, [s.vertices], options);
                 if (body.parts.length >= 2 || !(s instanceof Polygon)) {
                     for (const b of body.parts) {
@@ -414,13 +418,13 @@ export class Thing {
     remove_shoots() {
         this.shoots = [];
     }
-    tick() {
+    tick(dt) {
         detector.tick_fns[this.id]?.(this);
         if (this.is_touching_player && !this.is_player) {
             detector.sensor_during_fns[this.id]?.(this);
         }
         for (const shoot of this.shoots) {
-            shoot.tick();
+            shoot.tick(dt);
         }
         if (this.health?.is_zero) {
             this.die();
@@ -601,8 +605,8 @@ export class Bullet extends Thing {
     bullet_shoot;
     bullet_time = -1;
     bullet_keep = false;
-    tick() {
-        super.tick();
+    tick(dt) {
+        super.tick(dt);
         if (this.bullet_time >= 0 && this.bullet_time <= Thing.time) {
             this.die();
         }

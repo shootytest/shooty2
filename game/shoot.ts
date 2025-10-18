@@ -36,7 +36,8 @@ export class Shoot {
   }
 
   get ratio() {
-    return math.bound((this.time / (this.stats.reload ?? 1) - (this.stats.delay ?? 0) + 1) % (1 + math.epsilon), 0, 1);
+    if (this.time >= (this.stats.reload ?? 0)) return 1;
+    return math.bound((this.time / (this.stats.reload ?? 1) - (this.stats.delay ?? 0) + 1) % 1, 0, 1);
   }
 
   set_stats(new_stats: shoot_stats) {
@@ -46,9 +47,9 @@ export class Shoot {
     // }
   }
 
-  tick() {
+  tick(dt: number) {
     if (this.time < (this.stats.reload ?? 0)) {
-      this.time++;
+      this.time += dt / config.seconds;
       this.update_shape();
     }
     if (this.delayed > 0 && Thing.time >= this.delayed) {
@@ -59,7 +60,7 @@ export class Shoot {
 
   shoot() {
     const S = this.stats;
-    const reload = S.reload ?? 0;
+    const reload = (S.reload ?? 0);
     while (reload != undefined && this.time >= reload) {
       this.delayed = Thing.time + (S.delay ?? 0) * reload;
       this.time -= reload;
@@ -89,7 +90,7 @@ export class Shoot {
     if (speed !== 0 && thing_velocity !== 0) speed += thing_velocity * config.physics.velocity_shoot_boost * (S.boost_mult ?? 1);
     bullet.velocity = vector.createpolar(angle, speed);
     bullet.angle = angle;
-    bullet.bullet_time = Thing.time + (S.time ?? 1000000);
+    bullet.bullet_time = Thing.time + (S.time ?? 1000000) * config.seconds;
     bullet.target.facing = vector.clone(this.thing.target.facing);
     this.bullets.push(bullet);
 

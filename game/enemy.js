@@ -51,8 +51,8 @@ export class Enemy extends Thing {
             return;
         super.die();
     }
-    tick() {
-        super.tick();
+    tick(dt) {
+        super.tick(dt);
     }
     shoot() {
         if (this.is_seeing_player)

@@ -179,6 +179,7 @@ make.player = {
 make_shapes.player = [{
         type: "circle",
         radius: 31,
+        z: 0.01,
     }];
 make_shapes.player_basic = [{
         type: "line",
@@ -219,7 +220,7 @@ make.enemy_tutorial_block = {
     death: [
         { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1.5 }, repeat: 6, angle_increment: 60 },
     ],
-    xp: 10,
+    xp: 100,
 };
 make_shapes.enemy_tutorial_block = [{
         type: "polygon",
@@ -274,7 +275,7 @@ make.enemy_tutorial_4way = {
     move_mode: "static",
     face_mode: "static",
     angle: -360 / 14,
-    enemy_detect_range: 400,
+    enemy_detect_range: 360,
     focus_camera: true,
     health: {
         capacity: 750,
@@ -476,6 +477,7 @@ make.collect_gun_basic = {
         gun: "basic",
         restore_all_health: true,
     },
+    xp: 500,
 };
 make_shapes.collect_gun_basic = [{
         type: "circle",
@@ -489,14 +491,14 @@ make_shapes.collect_gun_basic = [{
 make_shoot.player = {
     make: "bullet",
     size: 9,
-    reload: 30,
+    reload: 0.5,
     speed: 8,
     spread: 0.03,
     friction: 0.0025,
     restitution: 1,
     recoil: 1,
     damage: 100,
-    time: 50,
+    time: 0.8,
 };
 make_shoot.half_reload = {
     reload: 0.5,
@@ -513,48 +515,48 @@ make_shoot.collect_coin = {
 make_shoot.enemy = {
     make: "bullet",
     size: 10,
-    reload: 25,
+    reload: 0.42,
     speed: 8,
     friction: 0,
     restitution: 1,
     recoil: 1,
     damage: 100,
-    time: 60,
+    time: 1,
 };
 make_shoot.enemy_easy = {
     parent: ["enemy"],
     size: 11,
     spread: 0.05,
-    reload: 70,
+    reload: 1.1,
     speed: 4,
-    time: 120,
+    time: 2,
 };
 make_shoot.enemy_block = {
     parent: ["enemy"],
     size: 13,
     spread: 0,
-    reload: 3,
+    reload: 0.05,
     speed: 10,
-    time: 100,
+    time: 1.6,
     density: 999999,
     damage: 0,
 };
 make_shoot.enemy_4way = {
     parent: ["enemy"],
     size: 12,
-    reload: 60,
+    reload: 1,
     speed: 4,
     recoil: 0,
-    time: 100,
+    time: 1.7,
 };
 make_shoot.enemy_tutorial_boss = {
     parent: ["enemy"],
     size: 17,
-    reload: 20,
+    reload: 0.35,
     speed: 10,
     spread: 0.06,
     damage: 200,
-    time: 500,
+    time: 10,
     death: [{
             type: "enemy_tutorial_boss",
             stats: { make: "bullet_homing", death: [{ type: "none" }], speed: 15, friction: 0.06, time: 120, damage: 200, },
@@ -567,11 +569,11 @@ make_shoot.enemy_tutorial_boss_split = {
     parent: ["enemy"],
     style: "tutorial_boss",
     size: 24,
-    reload: 20,
+    reload: 0.35,
     speed: 20,
     spread: 0.1,
     damage: 200,
-    time: 50,
+    time: 0.8,
     friction: 0.05,
     death: [{ type: "enemy_tutorial_boss_splitted", repeat: 7, angle_increment: 360 / 7, }],
 };
@@ -581,7 +583,7 @@ make_shoot.enemy_tutorial_boss_splitted = {
     speed: 20,
     spread: 0.04,
     damage: 100,
-    time: 60,
+    time: 0.9,
     friction: 0.05,
 };
 const calculated_keys = ["default"];
