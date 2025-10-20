@@ -229,7 +229,7 @@ export const collide = {
             console.error(new Error("somehow radius is undefined, why"));
             return false;
         }
-        // check to see if start or end points lie within circle 
+        // check to see if start or end points lie within circle
         if (collide.point_circle(line_a, circle.x, circle.y, radius)) {
             if (nearest) {
                 nearest.x = line_a.x;

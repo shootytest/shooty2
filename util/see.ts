@@ -162,7 +162,7 @@ const calc_visibility_path_2 = (v: vector, vertices_list: vector3[][]): Path2D =
 
   const viewport_1 = camera.screen2world(vector.create(-Math.round(w) * 999, -Math.round(h) * 999));
   const viewport_2 = camera.screen2world(vector.create(Math.round(w) * 1000, Math.round(h) * 1000));
-  
+
   const result = collide.get_visibility_polygon(start, vertices_list, viewport_1, viewport_2);
 
   // clip
@@ -225,13 +225,13 @@ const clip_inverted_path = (center: vector, inverted: Path2D, z: number) => {
 export const draw_lighting = (centre: vector, display_radius: number) => {
 
   return;
- 
+
   const x = centre.x;
   const y = centre.y;
 
   const min_radius = display_radius * 0.2;
   const max_radius = display_radius;
-  
+
   const gradient = ctx.createRadialGradient(x, y, min_radius, x, y, max_radius);
   gradient.addColorStop(0, "#11ffff33");
   gradient.addColorStop(0.3 - math.bounce(camera.time, 30) * 0.1, "#10eeee22");
@@ -263,14 +263,14 @@ export const collide = {
   },
 
   line_circle: (line_a: vector, line_b: vector, circle: circle, radius?: number, nearest?: vector): boolean => {
-    
+
     radius = radius || circle.r;
     if (radius == undefined) {
       console.error(new Error("somehow radius is undefined, why"));
       return false;
     }
 
-    // check to see if start or end points lie within circle 
+    // check to see if start or end points lie within circle
     if (collide.point_circle(line_a, circle.x, circle.y, radius)) {
       if (nearest) {
         nearest.x = line_a.x;
@@ -384,7 +384,7 @@ export const collide = {
   },
 
   make_segment: (source: vector, p1: vector, p2: vector) => {
-    
+
     // copy of calculate_segment_angles
     const x = source.x;
     const y = source.y;
@@ -394,7 +394,7 @@ export const collide = {
     const d = (dx * dx) + (dy * dy);
     const p1a = Math.atan2(p1.y - y, p1.x - x);
     const p2a = Math.atan2(p2.y - y, p2.x - x);
-    
+
     let angle = p2a - p1a;
     if (angle <= -PI) angle += 2 * PI;
     if (angle > PI) angle -= 2 * PI;
@@ -439,7 +439,7 @@ export const collide = {
     const A1 = collide.left_of(seg1, collide.lerp_vector(seg2.p1, seg2.p2, 0.0001));
     const A2 = collide.left_of(seg1, collide.lerp_vector(seg2.p2, seg2.p1, 0.0001));
     const A3 = collide.left_of(seg1, relative_point);
-    
+
     const B1 = collide.left_of(seg2, collide.lerp_vector(seg1.p1, seg1.p2, 0.0001));
     const B2 = collide.left_of(seg2, collide.lerp_vector(seg1.p2, seg1.p1, 0.0001));
     const B3 = collide.left_of(seg2, relative_point);
@@ -460,7 +460,7 @@ export const collide = {
     ) / (
       (p4.y - p3.y) * (p2.x - p1.x) -
       (p4.x - p3.x) * (p2.y - p1.y)
-    );  
+    );
     return vector.create(
       p1.x + s * (p2.x - p1.x),
       p1.y + s * (p2.y - p1.y)
@@ -512,7 +512,7 @@ export const collide = {
         const open_segment = open_segments[0];
 
         if (!endpoint.segment) continue;
-        
+
         if (endpoint.begin) {
           let index = 0;
           let segment = open_segments[index];
@@ -529,7 +529,7 @@ export const collide = {
         } else {
           open_segments.remove(endpoint.segment);
         }
-        
+
         if (open_segment !== open_segments[0]) {
           if (pass === 1) {
             const triangle_points = collide.triangle_points(origin, begin_angle, endpoint.angle, open_segment);
@@ -545,7 +545,7 @@ export const collide = {
     return output;
 
   },
-  
+
   _flat_map: (cb: (arg0: segment) => segment_point[], array: segment[]) => {
     return array.reduce((flat_array: segment_point[], item) => flat_array.concat(cb(item)), []);
   },
@@ -559,7 +559,7 @@ export const collide = {
 
     let segments = Common.visibilityPolygon.convertToSegments(
       [[[-BIG_NUMBER, -BIG_NUMBER], [BIG_NUMBER, -BIG_NUMBER], [BIG_NUMBER, BIG_NUMBER], [-BIG_NUMBER, BIG_NUMBER]]]);
-    
+
     for (const vs of vertices) {
       for (let i = 0; i < vs.length - 1; i++) {
         segments.push([[Math.round(vs[i].x), Math.round(vs[i].y)], [Math.round(vs[i + 1].x), Math.round(vs[i + 1].y)]]);

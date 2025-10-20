@@ -205,6 +205,11 @@ export const detector = {
                 mouse_icon.style.fill_opacity = math.bounce(thing.thing_time, config.graphics.blink_time * 2) * 0.5;
             }
         },
+        ["tutorial window 1 sensor"]: (thing) => {
+            console.log("window");
+            thing.lookup("tutorial window 1").die();
+            thing.lookup("tutorial window 1 sensor").shapes[0].style.stroke_opacity = 0;
+        },
     },
     sensor_start_fns: {
         // nothing for now
@@ -214,6 +219,11 @@ export const detector = {
         ["tutorial room 2.5 sensor"]: (_thing) => {
             const centre = Vertices.centre(Spawner.spawners_lookup["tutorial room 2 breakables 4"].vertices);
             player.set_checkpoint(centre); // todo remove
+        },
+        ["tutorial window 1 sensor"]: (thing) => {
+            console.log("window");
+            thing.lookup("tutorial window 1").die();
+            thing.lookup("tutorial window 1 sensor").shapes[0].style.stroke_opacity = 0;
         },
         ["tutorial room 5 sensor"]: (thing) => {
             const boss = Spawner.get_enemy("tutorial room 5 boss");
@@ -247,13 +257,13 @@ export const detector = {
         ["tutorial room 3 enemy 1"]: (spawner) => {
             if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 2") > 0) {
                 spawner.thing_lookup("tutorial window 1").die();
-                spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
+                spawner.thing_lookup("tutorial window 1 sensor").shapes[0].style.stroke_opacity = 0;
             }
         },
         ["tutorial room 3 enemy 2"]: (spawner) => {
             if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 1") > 0) {
                 spawner.thing_lookup("tutorial window 1").die();
-                spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
+                spawner.thing_lookup("tutorial window 1 sensor").shapes[0].style.stroke_opacity = 0;
             }
         },
     },

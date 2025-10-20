@@ -36,10 +36,10 @@ const init_all = () => {
     ui.init();
 };
 window.addEventListener("load", init_all);
-let time = -1;
-const tick_all = (timestamp_unused) => {
-    const now = Math.round(performance.now() * 10); // make it an integer (multiple of 100 microseconds)
-    const real_dt = ((time > -1) ? now - time : 0);
+let time = Number(document.timeline.currentTime ?? 0);
+const tick_all = (timestamp) => {
+    const now = Math.round(timestamp * 10);
+    const real_dt = Math.min(300, ((time > -1) ? now - time : 0));
     const dt = real_dt * engine.timing.timeScale;
     time = now;
     camera.tick(dt);
@@ -53,7 +53,7 @@ const tick_all = (timestamp_unused) => {
     Spawner.tick_spawners();
     Particle.tick_particles();
     if (!player.paused && Thing.time > 500)
-        Engine.update(engine, Math.min(30, real_dt / 10));
+        Engine.update(engine, real_dt / 10);
     // ctx.clear();
     ctx.fill_screen(color.black);
     do_visibility(); // draw all shapes

@@ -25,12 +25,6 @@ type ctx_save = {
   transform: DOMMatrix,
 };
 
-class Drawer {
-
-  
-
-}
-
 const images: { [key: string]: HTMLImageElement } = {};
 
 export class Context {
@@ -290,7 +284,7 @@ export class Context {
       this.ctx.rect(x, y, w, h);
     }
   }
-  
+
   rectangle(x: number, y: number, w: number, h: number, a?: number) {
     this.rect(x - w / 2, y - h / 2, w, h, a);
   }
@@ -310,7 +304,7 @@ export class Context {
   circle_v(v: vector, r: number, clockwise = false) {
     this.arc(v.x, v.y, r, 0, 2 * Math.PI, clockwise);
   }
-  
+
   // r1 > r2
   donut(x: number, y: number, r1: number, r2: number) {
     this.arc(x, y, r1, 0, 2 * Math.PI, false); // Math.max(r1, r2)
@@ -336,7 +330,7 @@ export class Context {
     this.ctx.lineTo(y1.x, y1.y);
     this.ctx.stroke();
   }
-  
+
   lines(xs: number[], ys: number[], close_loop = true) {
     if (xs.length <= 1 || ys.length <= 1) {
       console.warn("[draw/lines] list length < 0");
@@ -353,7 +347,7 @@ export class Context {
     }
     if (close_loop) this.ctx.lineTo(xs[0], ys[0]);
   }
-  
+
   lines_v(vectors: vector[], close_loop = true) {
     if (vectors.length <= 1) {
       return;
@@ -458,19 +452,19 @@ export class Context {
     // const pixel_ratio = window.devicePixelRatio;
     // this.ctx.scale(pixel_ratio, pixel_ratio);
   }
-  
+
   translate(x: number, y: number) {
     this.ctx.translate(x, y);
   }
-  
+
   translate_v(v: vector) {
     this.ctx.translate(v.x, v.y);
   }
-  
+
   rotate(angle: number) {
     this.ctx.rotate(angle);
   }
-  
+
   scale(scale_x: number, scale_y: number = scale_x) {
     this.ctx.scale(scale_x, scale_y);
   }

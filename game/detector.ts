@@ -12,9 +12,9 @@ import { Polygon } from "./shape.js";
 import type { Thing } from "./thing.js";
 
 /**
- * 
+ *
  * Collisions between two bodies will obey the following rules:
- * 
+ *
  *  - If the two bodies have the same non-zero value of `collisionFilter.group`,
  *    they will always collide if the value is positive, and they will never collide
  *    if the value is negative.
@@ -32,9 +32,9 @@ import type { Thing } from "./thing.js";
  * Using the category/mask rules, two bodies `A` and `B` collide if each includes the other's
  * category in its mask, i.e. `(categoryA & maskB) !== 0` and `(categoryB & maskA) !== 0`
  * are both true.
- * 
+ *
  * ~ matter.js api docs
- * 
+ *
  */
 
 export const filter_groups = {
@@ -208,6 +208,11 @@ export const detector = {
         mouse_icon.style.fill_opacity = math.bounce(thing.thing_time, config.graphics.blink_time * 2) * 0.5;
       }
     },
+    ["tutorial window 1 sensor"]: (thing) => {
+      console.log("window");
+      thing.lookup("tutorial window 1").die();
+      thing.lookup("tutorial window 1 sensor").shapes[0].style.stroke_opacity = 0;
+    },
   } as { [thing_id: string]: (thing: Thing) => void },
 
 
@@ -220,6 +225,11 @@ export const detector = {
       const centre = Vertices.centre(Spawner.spawners_lookup["tutorial room 2 breakables 4"].vertices);
       player.set_checkpoint(centre); // todo remove
     },
+    ["tutorial window 1 sensor"]: (thing) => {
+      console.log("window");
+      thing.lookup("tutorial window 1").die();
+      thing.lookup("tutorial window 1 sensor").shapes[0].style.stroke_opacity = 0;
+    },
     ["tutorial room 5 sensor"]: (thing) => {
       const boss = Spawner.get_enemy("tutorial room 5 boss");
       if (boss) {
@@ -228,12 +238,12 @@ export const detector = {
       }
     },
   } as { [thing_id: string]: (thing: Thing) => void },
-  
+
 
   sensor_end_fns: {
     // nothing for now
   } as { [thing_id: string]: (thing: Thing) => void },
-  
+
 
   before_death_fns: {
     // nothing for now
@@ -260,17 +270,17 @@ export const detector = {
     ["tutorial room 3 enemy 1"]: (spawner) => {
       if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 2") > 0) {
         spawner.thing_lookup("tutorial window 1").die();
-        spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
+        spawner.thing_lookup("tutorial window 1 sensor").shapes[0].style.stroke_opacity = 0;
       }
     },
     ["tutorial room 3 enemy 2"]: (spawner) => {
       if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 1") > 0) {
         spawner.thing_lookup("tutorial window 1").die();
-        spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
+        spawner.thing_lookup("tutorial window 1 sensor").shapes[0].style.stroke_opacity = 0;
       }
     },
   } as { [spawner_id: string]: (spawner: Spawner) => void },
-  
+
 
   tick_fns: {
     ["tutorial room 1 door 1"]: (door) => {

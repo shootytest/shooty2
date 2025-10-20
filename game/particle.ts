@@ -4,7 +4,6 @@ import { ctx } from "../util/canvas.js";
 import { config } from "../util/config.js";
 import { style_type } from "../util/map_type.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
-import { player } from "./player.js";
 import { Thing } from "./thing.js";
 
 

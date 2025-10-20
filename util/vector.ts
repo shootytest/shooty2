@@ -171,7 +171,7 @@ export const vector = {
         p1 = vertices[i];
         p2 = vertices[j];
         f = p1.x * p2.y - p2.x * p1.y;
-        twice_area += f;          
+        twice_area += f;
         x += (p1.x + p2.x) * f;
         y += (p1.y + p2.y) * f;
     }

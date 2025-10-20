@@ -5,7 +5,9 @@ import { config } from "../util/config.js";
 import { key, keys, mouse } from "../util/key.js";
 import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
+import { shallow_clone_array } from "./make.js";
 import { player } from "./player.js";
+import { save } from "./save.js";
 export const ui = {
     time: 0,
     tick_time: 0,
@@ -58,11 +60,41 @@ export const ui = {
             ui.draw_pause_menu();
         ui.click.tick();
     },
-    health: {
-        xp_ratio_display: 0,
-        xp_display: 0,
-        xp_change_display: 0,
-        xp_y_ratio: 0,
+    xp: {
+        ratio: 0,
+        ratio_display: 0,
+        value: 0,
+        value_display: 0,
+        change: 0,
+        change_display: 0,
+        time: -1,
+        y_ratio: 0,
+        add(xp) {
+            ui.xp.value = player.xp - player.level2xp(player.level);
+            ui.xp.ratio = ui.xp.value / ((player.level + 1) * config.game.level_1_xp);
+            ui.xp.time = ui.time;
+            ui.xp.change += xp;
+        },
+    },
+    collect: {
+        queue: [],
+        add(key, number = 1) {
+            let exists = false;
+            const time = ui.time + config.graphics.collect_display_time;
+            for (const o of ui.collect.queue) {
+                // if (o.key === key) {
+                //   o.number += number;
+                //   o.time = time;
+                //   exists = true;
+                //   return;
+                // }
+            }
+            if (!exists)
+                ui.collect.queue.push({
+                    key, number, time,
+                    display: 0,
+                });
+        },
     },
     draw_health: function () {
         if (!player.health)
@@ -111,29 +143,40 @@ export const ui = {
         ctx.rectangle(x + r * 0.625 + w_ / 2, y, w_, r * 3);
         ctx.fill();
         // xp
-        const is_showing = (player.thing_time - player.xp_time) < config.graphics.xp_display_time;
-        const y_ratio = math.lerp(ui.health.xp_y_ratio, Number(is_showing), config.graphics.xp_display_smoothness);
-        ui.health.xp_y_ratio = y_ratio;
-        const ratio = math.lerp(ui.health.xp_ratio_display, player.xp_ratio, config.graphics.xp_display_smoothness);
-        ui.health.xp_ratio_display = ratio;
-        const xp_display = math.lerp(ui.health.xp_display, player.xp - player.level2xp(player.level), config.graphics.xp_display_smoothness * 2);
-        ui.health.xp_display = xp_display;
-        let xp_change = math.lerp(ui.health.xp_change_display, player.xp_change, config.graphics.xp_display_smoothness * (is_showing ? 3 : 1));
-        ui.health.xp_change_display = xp_change;
+        const is_showing = (ui.time - ui.xp.time) < config.graphics.xp_display_time;
+        const y_ratio = math.lerp(ui.xp.y_ratio, Number(is_showing), config.graphics.xp_display_smoothness);
+        ui.xp.y_ratio = y_ratio;
+        const ratio = math.lerp(ui.xp.ratio_display, ui.xp.ratio, config.graphics.xp_display_smoothness);
+        ui.xp.ratio_display = ratio;
+        const xp_display_value = math.lerp(ui.xp.value_display, ui.xp.value, config.graphics.xp_display_smoothness * 2);
+        ui.xp.value_display = xp_display_value;
+        let xp_change = math.lerp(ui.xp.change_display, ui.xp.change, config.graphics.xp_display_smoothness * (is_showing ? 3 : 1));
+        ui.xp.change_display = xp_change;
         xp_change = Math.round(xp_change);
-        if (!is_showing && player.xp_change)
-            player.xp_change = 0;
-        ctx.ctx.save();
-        ctx.beginPath();
-        ctx.rect(x, y + r * 1.5, w, ui.height);
-        ctx.clip();
+        if (!is_showing && ui.xp.change)
+            ui.xp.change = 0;
+        const old_x = x, old_y = y;
         ctx.lineWidth = config.graphics.linewidth_mult * 2;
         ctx.set_font_mono(r * 1.5, "bold");
         ctx.strokeStyle = color.green + "aa";
-        y += r * 2 - r * 3.3 * (1 - y_ratio);
+        y += r * 2;
+        if (config.graphics.xp_hide_bar) {
+            ctx.ctx.save();
+            ctx.beginPath();
+            ctx.rect(0, y - r * 0.5, ui.width, ui.height);
+            ctx.clip();
+            y -= r * 3.3 * (1 - y_ratio);
+        }
         ctx.line(x, y, x + w * ratio, y);
         ctx.strokeStyle = color.green + "33";
         ctx.line(x, y, x + w, y);
+        if (!config.graphics.xp_hide_bar) {
+            ctx.ctx.save();
+            ctx.beginPath();
+            ctx.rect(0, y + r * 0.65, ui.width, ui.height);
+            ctx.clip();
+            y -= r * 1.5 * (1 - y_ratio);
+        }
         ctx.textAlign = "right";
         ctx.fillStyle = color.green + "33";
         ctx.text("" + (player.level + 1), x + w, y + r * 1.5);
@@ -144,10 +187,33 @@ export const ui = {
         x += ctx.measureText(level_text).width;
         ctx.set_font_mono(r * 1);
         ctx.textAlign = "left";
-        const xp_details_text = Math.round(xp_display) + "/"
+        const xp_details_text = Math.round(xp_display_value) + "/"
             + ((player.level + 1) * config.game.level_1_xp)
             + "  " + (xp_change ? "+" + xp_change : "");
-        ctx.text(xp_details_text, x + r, y + r * 1.5 + 2);
+        ctx.text(xp_details_text, x + r, y + r * 1.5 + 1.5); // weird 1.5-pixel offset to centralise
+        ctx.beginPath();
+        x = old_x;
+        y = Math.max(old_y, y);
+        ctx.rect(0, y + r * 1.5, ui.width, ui.height);
+        ctx.clip();
+        x += r * 1.5;
+        y += r * 3.5;
+        for (const o of shallow_clone_array(ui.collect.queue)) {
+            if (ui.time > o.time) {
+                ui.collect.queue.remove(o);
+                continue;
+            }
+            const item = ui.items[o.key];
+            const opacity = Math.min(1, (o.time - ui.time) / config.seconds);
+            if (config.graphics.collect_display_fancy_slide)
+                x = old_x + r * (1.5 - 30 * (1 - opacity) ** 2.5);
+            o.display = math.lerp(o.display, o.number, config.graphics.xp_display_smoothness * 1.5);
+            ctx.globalAlpha = opacity;
+            item.draw(x, y, r * 0.5);
+            ctx.fillStyle = item.fill;
+            ctx.text(save.get_currency(o.key) + " (+" + math.round_to(o.display, (item.multiple ?? 1)) + ")", x + r, y);
+            y += r * 1.5 * opacity;
+        }
         ctx.ctx.restore();
     },
     pause: {
@@ -220,6 +286,20 @@ export const ui = {
                 ctx.stroke();
             if (i === 0)
                 r *= 1.25;
+        }
+    },
+    items: {
+        coin: {
+            key: "coin",
+            name: "coin",
+            fill: color.coin,
+            multiple: 1,
+            draw: function (x, y, r) {
+                ctx.fillStyle = color.coin;
+                ctx.beginPath();
+                ctx.donut(x, y, r * 0.6, r);
+                ctx.fill();
+            },
         }
     },
 };

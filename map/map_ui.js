@@ -759,7 +759,7 @@ export const m_ui = {
                 // is a leaf
                 const span = document.createElement("span");
                 span.classList.add("file");
-                span.style.backgroundImage = `url("/shape.svg")`;
+                span.style.backgroundImage = `url("shape.svg")`;
                 span.innerHTML = `<span title="${id}: #${m_ui.map.shapes.indexOf(shape)}">${shortened_id}</span>`;
                 li.appendChild(span);
                 if (!m_ui.directory_elements[parent])

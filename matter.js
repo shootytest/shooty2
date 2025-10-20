@@ -14,6 +14,10 @@ Matter.Common.earcut = earcut;
 import { breakIntersections, compute, computeViewport, convertToSegments, inPolygon, inViewport } from 'https://cdn.jsdelivr.net/npm/visibility-polygon@1.1.0/+esm';
 Matter.Common.visibilityPolygon = { breakIntersections, compute, computeViewport, convertToSegments, inPolygon, inViewport };
 
+import heap from 'https://cdn.jsdelivr.net/npm/heap-js@2.7.1/+esm';
+Matter.Common.heap = heap;
+export const Heap = heap;
+
 import clipper2Wasm from 'https://cdn.jsdelivr.net/npm/clipper2-wasm@0.2.1/dist/es/clipper2z.js';
 clipper2Wasm().then((clipper2z) => {
   const { MakePath64, Paths64, InflatePaths64, JoinType, EndType } = clipper2z;

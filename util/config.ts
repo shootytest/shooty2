@@ -20,8 +20,11 @@ export const config = {
     shape_cull_padding: 100, // 16 should be ok, 100 is just to be safe
     linewidth_mult: 8,
     shadowblur: 75,
+    xp_hide_bar: false,
     xp_display_smoothness: 0.08,
     xp_display_time: 2 * SECONDS,
+    collect_display_time: 3 * SECONDS,
+    collect_display_fancy_slide: true,
     health_display_smoothness: 0.07,
     health_rotate_speed: 0.8,
     blink_time: 0.15 * SECONDS,

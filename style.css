@@ -1,5 +1,7 @@
+/*
 @import url('https://fonts.googleapis.com/css?family=Roboto+Mono&display=swap');
 @import url('https://fonts.googleapis.com/css?family=Roboto+Condensed&display=swap');
+*/
 
 :root {
   interpolate-size: allow-keywords;
@@ -14,7 +16,7 @@ html {
 body {
   background-color: #111111;
   color: white;
-  font-family: "Roboto Mono";
+  font-family: "Roboto Mono", "Courier New", Courier, monospace;
   font-size: 14px;
   text-align: center;
 }
@@ -66,8 +68,8 @@ input[type=number] {
   text-align: left;
   width: calc(90% - 4em);
 }
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { 
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
   -webkit-appearance: none;
 }
 

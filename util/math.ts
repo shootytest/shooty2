@@ -39,7 +39,7 @@ export const math = {
   dist_v: (p1: vector, p2: vector) => {
     return Math.sqrt(math.dist2_v(p1, p2));
   },
-  
+
   atan2_v: (v: vector): number => {
     return Math.atan2(v.y, v.x);
   },

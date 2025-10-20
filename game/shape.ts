@@ -26,7 +26,7 @@ export class Shape {
 
   static from_map(thing: Thing, o: map_shape_type): Shape {
     const s = new Shape(thing);
-    
+
     // s.map_shape_type_object = o;
     s.offset.z = o.z;
 
@@ -197,7 +197,7 @@ export class Shape {
     }
     return result;
   };
-  
+
   id: number = ++Shape.cumulative_id;
   public thing: Thing;
   index = -1;

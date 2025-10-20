@@ -833,8 +833,8 @@ const calculated_shoot_keys: string[] = [];
 
 // clone functions
 
-export const shallow_clone_array = function(arr: any[]) {
-  const result: any[] = [];
+export const shallow_clone_array = function<T>(arr: T[]): T[] {
+  const result: T[] = [];
   for (const a of arr) result.push(a);
   return result;
 };

@@ -26,7 +26,7 @@ export class Thing {
   static things: Thing[] = [];
   static things_lookup: { [key: string]: Thing } = {};
   static things_rooms: { [room_key: string]: Thing[] } = {};
-  
+
   static cumulative_id = 0;
 
   static tick_things(dt: number) {
@@ -57,7 +57,7 @@ export class Thing {
     Thing.body_list = result;
     return result;
   };
-  
+
   uid: number = ++Thing.cumulative_id;
   id: string = "generic thing #" + this.uid;
 
@@ -68,12 +68,12 @@ export class Thing {
 
   shapes: Shape[] = [];
   shoots: Shoot[] = [];
-  
+
   team = 0;
   damage = 0;
   health?: Health;
   ability?: Health;
-  
+
   target: {
     position: vector3,
     angle: number,
@@ -102,7 +102,7 @@ export class Thing {
   constructor() {
     Thing.things.push(this);
   }
-  
+
   get position(): vector3 {
     return (this.body) ? vector3.create2(vector.sub(this.body.position, this.body.offset ?? vector.create()), this.target.position.z) : vector3.clone(this.target.position);
   }
@@ -125,7 +125,7 @@ export class Thing {
   set z(z: number) {
     this.target.position.z = z;
   }
-  
+
   get angle() {
     return (this.body) ? this.body.angle : this.target.angle;
   }
@@ -472,7 +472,7 @@ export class Thing {
 
 
   // behaviour functions
-  
+
   tick_behaviour() {
     const player = Thing.things_lookup["player"] as Player;
     this.can_see_player();
@@ -560,7 +560,7 @@ export class Thing {
   }
 
   // physics body functions
-  
+
   translate_wall(vector: vector) {
     if (!this.body) return;
     this.translate(vector);
@@ -569,17 +569,17 @@ export class Thing {
       Body.setPosition(wall, Vector.add(wall.position, vector));
     }
   }
-  
+
   translate(v: vector) {
     if (!this.body) return;
     Body.setPosition(this.body, Vector.add(this.body.position, v));
   }
-  
+
   teleport_to(v: vector) {
     if (!this.body) return;
     Body.setPosition(this.body, v);
   }
-  
+
   reset_velocity() {
     if (!this.body) return;
     Body.setVelocity(this.body, vector.create());
@@ -626,5 +626,5 @@ export class Bullet extends Thing {
       this.die();
     }
   }
-  
+
 }

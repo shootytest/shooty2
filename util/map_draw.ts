@@ -128,7 +128,7 @@ export const map_draw = {
         i++;
       }
     }
-    
+
   },
 
 
@@ -169,7 +169,7 @@ export const map_draw = {
     const style = map_draw.get_style(shape);
     const id_prefix = shape.id + "__";
     const selected = shape.id === m_ui.mouse.drag_target[0]?.shape?.id;
-    
+
     for (const [i, v] of shape.computed.screen_vertices.entries()) {
       const id_ = id_prefix + i;
       const vertex_size = (shape.id === "start") ? camera.scale * 30 : camera.sqrtscale * 5;
@@ -347,6 +347,6 @@ export const map_draw = {
     m_ui.update_directory();
     map_draw.change("delete shape", shape);
   }
-  
+
 
 };

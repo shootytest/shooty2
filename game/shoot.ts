@@ -82,7 +82,7 @@ export class Shoot {
     bullet.create_room(this.thing.room_id);
     if (bullet.team === 0) bullet.team = this.thing.team;
     // bullet.is_bullet = bullet.team > 0;
-    
+
     const angle = S.spread === -1 ? math.rand(0, Math.PI * 2) : math.randgauss(this.thing.angle + (vector.deg_to_rad(S.angle ?? 0)), S.spread ?? 0);
     const spreadv = S.spread_speed ?? 0;
     let speed = spreadv === 0 ? (S.speed ?? 0) : math.randgauss(S.speed ?? 0, spreadv);

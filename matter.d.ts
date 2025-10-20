@@ -3559,6 +3559,8 @@ declare namespace Matter {
         static earcut(polygon: number[], holes?: number[], dimensions?: number): number[];
 
         static expand(polygon: Vector[], width: number): Vector[];
+
+        static heap = Heap;
     }
     
     export declare type vp_Vector2D = [number, number];
@@ -3573,6 +3575,14 @@ declare namespace Matter {
             margin(width: number): number[][][];
             padding(width: number): number[][][];
         };
+    };
+
+    export class Heap<T> extends Array<T> {
+        constructor(comparator?: (a: T, b: T) => number);
+        init(list: T[]);
+        push(value: T);
+        peek(): T;
+        pop(): T;
     };
 
     export interface IEvent<T> {

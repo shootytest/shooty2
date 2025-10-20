@@ -5,8 +5,6 @@ export interface map_shape_type {
   id: string,
   z: number,
   vertices: vector3_[],
-  // all other stuff
-  // todo move style into options
   options: map_shape_options_type,
   // computed attributes, not part of definition
   computed?: map_shape_compute_type,
@@ -24,13 +22,13 @@ export interface map_shape_compute_type {
   options?: map_shape_options_type,
 };
 
-export interface map_shape_options_type extends maketype {  
+export interface map_shape_options_type extends maketype {
   // important options
   parent?: string,
   contains?: string[], // calculated
   make_id?: string,
   room_id?: string, // calculated
-  
+
   // actual shape options
   open_loop?: boolean, // is the shape loop not closed? (e.g. this is true if the vertices are actually a list of 1d walls instead of a 2d shape)
   merge?: boolean, // merge shape with its parent? (use the same thing object)
@@ -38,7 +36,7 @@ export interface map_shape_options_type extends maketype {
   // sensor options
   sensor_fov_mult?: number,
   sensor_dont_set_room?: boolean,
-  
+
   // spawner options
   is_spawner?: boolean,
   spawn_enemy?: string,

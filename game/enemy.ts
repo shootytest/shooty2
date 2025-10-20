@@ -116,11 +116,11 @@ export class Spawner {
   static spawners: Spawner[] = [];
   static spawners_lookup: { [key: string]: Spawner } = {};
   static spawners_rooms: { [key: string]: Spawner[] } = {};
-  
+
   static cumulative_id = 0;
 
   static tick_spawners() {
-    for (const spawner of Spawner.spawners) { 
+    for (const spawner of Spawner.spawners) {
       spawner.tick();
     }
   }
@@ -229,7 +229,7 @@ export class Spawner {
     Spawner.spawners.remove(this);
     delete Spawner.spawners_lookup[this.id];
   }
-  
+
   check_progress(spawner_id: string): number {
     return Spawner.check_progress(spawner_id);
   }

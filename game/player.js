@@ -9,6 +9,7 @@ import { Spawner } from "./enemy.js";
 import { override_object, shallow_clone_array } from "./make.js";
 import { save } from "./save.js";
 import { Thing } from "./thing.js";
+import { ui } from "./ui.js";
 export class Player extends Thing {
     autoshoot = false;
     fov_mult = 1;
@@ -21,9 +22,6 @@ export class Player extends Thing {
     guns = [];
     xp = 0;
     level = 0;
-    xp_ratio = 0;
-    xp_time = -1;
-    xp_change = 0;
     stats = {
         deaths: 0,
         pixels_walked: 0,
@@ -142,7 +140,7 @@ export class Player extends Thing {
     }
     save() {
         if (this.enemy_can_see) {
-            this.enemy_can_see = false;
+            this.enemy_can_see = false; // hmmm
             return false;
         }
         this.autosave_time = Thing.time + config.game.autosave_interval;
@@ -189,7 +187,7 @@ export class Player extends Thing {
         if (o.xp) {
             this.xp = 0;
             this.add_xp(o.xp);
-            this.xp_change = 0;
+            ui.xp.change = 0;
         }
         if (o.stats)
             override_object(this.stats, o.stats);
@@ -197,9 +195,7 @@ export class Player extends Thing {
     add_xp(xp) {
         this.xp += xp;
         this.level = this.xp2level(this.xp);
-        this.xp_ratio = (this.xp - this.level2xp(this.level)) / ((this.level + 1) * config.game.level_1_xp);
-        this.xp_time = Thing.time;
-        this.xp_change += xp;
+        ui.xp.add(xp);
     }
     xp2level(xp) {
         return Math.floor((Math.sqrt(xp * 8 / config.game.level_1_xp + 1) - 1) / 2); // [△] 1 + 2 + 3 + ...
@@ -220,6 +216,7 @@ export class Player extends Thing {
         }
         if (o.currency_name) {
             save.add_currency(o.currency_name, o.currency_amount);
+            ui.collect.add(o.currency_name, o.currency_amount);
         }
     }
     set_checkpoint(position, room_id) {
