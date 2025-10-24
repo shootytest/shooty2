@@ -56,9 +56,9 @@ export class Enemy extends Thing {
     super.tick(dt);
   }
 
-  shoot() {
+  shoot(index: number | number[] = -1) {
     if (this.is_seeing_player) player.enemy_can_see = true;
-    super.shoot();
+    return super.shoot(index);
   }
 
   remove() {
@@ -237,6 +237,8 @@ export class Spawner {
   // useful
   thing_lookup(thing_id: string) {
     return Thing.things_lookup[thing_id];
+    // if (!thing) console.error("[enemy/thing_lookup] thing id not found: " + thing_id);
+    // return thing;
   }
 
 };

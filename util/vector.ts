@@ -391,6 +391,16 @@ export const vector3 = {
     }
     return;
   },
+  round_list: (vs: vector3_[], multiple: number): vector3_[] => {
+    const rounded = [];
+    for (const v of vs) {
+      rounded.push({
+        x: math.round_to(v.x, multiple),
+        y: math.round_to(v.y, multiple)
+      });
+    }
+    return rounded;
+  },
   sub: (v1: vector3, v2: vector3): vector3 => {
     return {
       x: v1.x - v2.x,

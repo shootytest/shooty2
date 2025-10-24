@@ -7,7 +7,7 @@ import { math } from "../util/math.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
 import { Health } from "./health.js";
-import { make, make_shapes, shoot_stats, override_object, make_shoot, shallow_clone_array, multiply_and_override_object, clone_object, maketype_shape, shoot_mode, face_mode, move_mode, multiply_object } from "./make.js";
+import { make, make_shapes, shoot_stats, override_object, make_shoot, shallow_clone_array, multiply_and_override_object, clone_object, maketype_shape, shoot_mode, face_mode, move_mode, multiply_object, maketype_behaviour } from "./make.js";
 import type { Player } from "./player.js";
 import { save } from "./save.js";
 import { Polygon, Shape } from "./shape.js";
@@ -95,6 +95,20 @@ export class Thing {
   is_enemy: boolean = false;
   is_removed: boolean = false;
 
+  behaviour: {
+    type: string;
+    map: { [key: string]: maketype_behaviour };
+    time: number;
+    move_target: vector3;
+    shoot_count: number;
+  } = {
+    type: "",
+    map: {},
+    time: 0,
+    shoot_count: 0,
+    move_target: vector3.create(),
+  };
+
   random_number = math.rand();
   player_position: vector3 = vector3.create();
   is_seeing_player = false;
@@ -150,10 +164,6 @@ export class Thing {
   }
   set room_id(room_id: string) {
     this.options.room_id = room_id;
-  }
-
-  get has_behaviour(): boolean {
-    return this.options.shoot_mode != undefined || this.options.shoot_mode_idle != undefined || this.options.move_mode != undefined || this.options.move_mode_idle != undefined || this.options.face_mode != undefined || this.options.face_mode_idle != undefined;
   }
 
   make_map(o: map_shape_type) {
@@ -246,6 +256,7 @@ export class Thing {
       density: this.options.density ?? 1,
     };
     if (filter) result.collisionFilter = filter;
+    // else if (this.options.sensor) result.collisionFilter = filters.all;
     else if (this.options.wall_filter) result.collisionFilter = filters[this.options.wall_filter];
     return result;
   }
@@ -376,7 +387,9 @@ export class Thing {
     if (this.is_removed) return;
     const v: vector3_ = this.options.breakable ? this.target.velocity : this.velocity;
     // v.z = 0.025;
-    this.shapes[0]?.break({ type: "fade", velocity: vector.create(), opacity_mult: 0.5 });
+    for (const shape of this.shapes ?? []) {
+      shape.break({ type: "fade", velocity: vector.create(), opacity_mult: 0.5 });
+    }
   }
 
   remove_list() {
@@ -441,17 +454,25 @@ export class Thing {
       this.health?.tick();
       this.ability?.tick();
     }
-    if (this.has_behaviour) this.tick_behaviour();
+    this.tick_behaviour();
   }
 
-  shoot(index = -1) {
-    if (index >= 0) {
-      if (index < this.shoots.length) this.shoots[index].shoot();
-      else console.error(`[thing/shoot] in thing '${this.id}': index ${index} out of range`);
-    } else {
-      for (const shoot of this.shoots) {
-        shoot.shoot();
+  shoot(index: number | number[] = -1) {
+    if (Array.isArray(index)) {
+      let number_of_shoots = 0;
+      for (const i of index) {
+        number_of_shoots += this.shoots[i].shoot();
       }
+      return number_of_shoots;
+    } else if (index >= 0) {
+      if (index < this.shoots.length) return this.shoots[index].shoot();
+      else { console.error(`[thing/shoot] in thing '${this.id}': index ${index} out of range`); return 0; }
+    } else {
+      let number_of_shoots = 0;
+      for (const shoot of this.shoots) {
+        number_of_shoots += shoot.shoot();
+      }
+      return number_of_shoots;
     }
   }
 
@@ -474,14 +495,32 @@ export class Thing {
   // behaviour functions
 
   tick_behaviour() {
+    if (!this.options.behaviour) return;
     const player = Thing.things_lookup["player"] as Player;
     this.can_see_player();
-    if (this.is_seeing_player && this.options.focus_camera) {
-      player.camera_target_target = this.position;
+    if (this.is_seeing_player) {
+      if (this.behaviour.type !== "normal") {
+        this.behaviour.time = 0;
+        this.behaviour.type = "normal";
+      }
+      if (this.options.focus_camera) {
+        player.camera_target_target = this.position;
+      }
+    } else {
+      if (this.behaviour.type !== "idle") {
+        this.behaviour.time = 0;
+        this.behaviour.type = "idle";
+      }
     }
-    this.do_shoot(this.is_seeing_player ? (this.options.shoot_mode ?? "none") : (this.options.shoot_mode_idle ?? "none"));
-    this.do_face(this.is_seeing_player ? (this.options.face_mode ?? "none") : (this.options.face_mode_idle ?? "none"));
-    this.do_move(this.is_seeing_player ? (this.options.move_mode ?? "none") : (this.options.move_mode_idle ?? "none"));
+    if (this.behaviour.time >= 0 && this.behaviour.time < Thing.time) this.switch_behaviour();
+    let b = this.behaviour.map[this.behaviour.type];
+    if (!b) return;
+    if (b.shoot_mode) this.do_shoot(b);
+    if (b.face_mode) this.do_face(b);
+    if (b.move_mode) this.do_move(b);
+    // this.do_shoot(this.is_seeing_player ? (this.options.shoot_mode ?? "none") : (this.options.shoot_mode_idle ?? "none"));
+    // this.do_face(this.is_seeing_player ? (this.options.face_mode ?? "none") : (this.options.face_mode_idle ?? "none"));
+    // this.do_move(this.is_seeing_player ? (this.options.move_mode ?? "none") : (this.options.move_mode_idle ?? "none"));
   }
 
   can_see_player() {
@@ -509,53 +548,82 @@ export class Thing {
     return false;
   }
 
-  do_shoot(shoot_mode: shoot_mode) {
+  switch_behaviour(): void {
+    if (!this.options.behaviour) return;
+    let result = this.options.behaviour[this.behaviour.type];
+    if (Array.isArray(result)) {
+      if (result[0].chance) {
+        const chances = result.map(a => a.chance!);
+        result = math.randpick_weighted(result, chances);
+      } else {
+        result = math.randpick(result);
+      }
+    } else if (!result) return;
+    this.behaviour.map[this.behaviour.type] = result;
+    if (result.time == undefined || result.time < 0) this.behaviour.time = -1;
+    else this.behaviour.time = Thing.time + Math.round((result.time + (result.shoot_cooldown ?? 0)) * config.seconds);
+    this.behaviour.shoot_count = 0;
+  }
+
+  do_shoot(b: maketype_behaviour) {
+    if (this.id.includes("boss")) console.log(b);
+    const shoot_mode = b.shoot_mode;
+    if (b.shoot_cooldown && this.behaviour.time - Math.round(b.shoot_cooldown * config.seconds) < Thing.time) return;
     if (shoot_mode === "none") {
 
     } else if (shoot_mode === "normal") {
-      this.shoot();
+      this.shoot(b.shoot_index);
+    } else if (shoot_mode === "single") {
+      if (this.behaviour.shoot_count < (b.shoot_single_limit ?? 1)) {
+        this.behaviour.shoot_count += this.shoot(b.shoot_index);
+      }
+    } else if (shoot_mode === "burst") {
+      this.shoot(b.shoot_index);
     }
+    return;
   }
 
-  do_face(face_mode: face_mode) {
+  do_face(b: maketype_behaviour) {
+    const face_mode = b.face_mode;
     const player = Thing.things_lookup["player"];
     if (face_mode === "none") {
 
     } else if (face_mode === "static") {
 
     } else if (face_mode === "predict2") {
-      const predict_amount = (this.options.face_predict_amount ?? 1);
+      const predict_amount = (b.face_predict_amount ?? 1);
       this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, (vector.length(vector.sub(this.position, this.player_position)) ** 0.5) * 3 * predict_amount));
-      this.update_angle(this.options.face_smoothness ?? 0.3);
+      this.update_angle(b.face_smoothness ?? 0.3);
     } else if (face_mode === "predict") {
-      const predict_amount = (this.options.face_predict_amount ?? 1);
+      const predict_amount = (b.face_predict_amount ?? 1);
       this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, vector.length(vector.sub(this.position, this.player_position)) * 0.3 * predict_amount));
-      this.update_angle(this.options.face_smoothness ?? 0.3);
+      this.update_angle(b.face_smoothness ?? 0.3);
     } else if (face_mode === "spin") {
-      this.target.angle = this.angle + (this.options.spin_speed ?? 0.01) * (this.random_number >= 0.5 ? 1 : -1);
+      this.target.angle = this.target.angle + (b.spin_speed ?? 0.01) * (this.random_number >= 0.5 ? 1 : -1);
       this.target.facing = vector.add(this.position, vector.createpolar(this.target.angle));
       if (this.body) Body.setAngle(this.body, this.target.angle);
     } else if (face_mode === "direct") {
       this.target.facing = this.player_position;
-      this.update_angle(this.options.face_smoothness ?? 1);
+      this.update_angle(b.face_smoothness ?? 1);
     }
   }
 
-  do_move(move_mode: move_mode) {
+  do_move(b: maketype_behaviour) {
+    const move_mode = b.move_mode;
     if (move_mode === "none") {
 
     } else if (move_mode === "static") {
 
     } else if (move_mode === "hover") {
       const dist2 = vector.length2(vector.sub(this.position, this.player_position));
-      this.push_to(this.target.facing, (this.options.move_speed ?? 1) * ((dist2 < (this.options.move_hover_distance ?? 300) ** 2) ? -1 : 1));
+      this.push_to(this.target.facing, (b.move_speed ?? 1) * ((dist2 < (b.move_hover_distance ?? 300) ** 2) ? -1 : 1));
     } else if (move_mode === "direct") {
-      this.push_to(this.target.facing, (this.options.move_speed ?? 1));
+      this.push_to(this.target.facing, (b.move_speed ?? 1));
     } else if (move_mode === "spiral") {
       const v = vector.rotate(vector.create(), vector.sub(this.position, this.player_position), vector.deg_to_rad(80));
-      this.push_to(vector.add(this.target.facing, vector.mult(v, 0.5)), (this.options.move_speed ?? 1));
+      this.push_to(vector.add(this.target.facing, vector.mult(v, 0.5)), (b.move_speed ?? 1));
     } else if (move_mode === "circle") {
-      this.push_to(this.target.facing, (this.options.move_speed ?? 1));
+      this.push_to(this.target.facing, (b.move_speed ?? 1));
     }
   }
 

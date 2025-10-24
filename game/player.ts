@@ -68,8 +68,8 @@ export class Player extends Thing {
       down: keys["ArrowDown"] === true || (keys["KeyS"] === true),
       left: keys["ArrowLeft"] === true || (keys["KeyA"] === true),
       right: keys["ArrowRight"] === true || (keys["KeyD"] === true),
-      jump: keys["Space"] === true,
-      shoot: keys["Mouse"] === true,
+      jump: false && keys["Space"] === true,
+      shoot: keys["Mouse"] === true || keys["Space"] === true,
       rshoot: keys["MouseRight"] === true || ((keys["ShiftLeft"] === true || keys["ShiftRight"] === true)),
       facingx: Math.floor(camera.mouse_v.x),
       facingy: Math.floor(camera.mouse_v.y),
@@ -80,7 +80,7 @@ export class Player extends Thing {
     const move_z = (this.target.vz < 0 && this.z < math.epsilon) ? (controls.jump ? 1 : 0) : 0;
     const move_v = vector.normalise(vector.create(move_x, move_y));
     if (this.body) {
-      if (!this.paused) this.push_by(vector.mult(move_v, this.options.move_speed ?? config.physics.player_speed));
+      if (!this.paused) this.push_by(vector.mult(move_v, config.physics.player_speed));
       this.update_angle();
     }
     this.stats.pixels_walked += Math.floor(vector.length(vector.sub(this.position, this.old_position)));

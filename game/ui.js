@@ -82,12 +82,12 @@ export const ui = {
             let exists = false;
             const time = ui.time + config.graphics.collect_display_time;
             for (const o of ui.collect.queue) {
-                // if (o.key === key) {
-                //   o.number += number;
-                //   o.time = time;
-                //   exists = true;
-                //   return;
-                // }
+                if (o.key === key) {
+                    o.number += number;
+                    o.time = time;
+                    exists = true;
+                    return;
+                }
             }
             if (!exists)
                 ui.collect.queue.push({
@@ -170,6 +170,8 @@ export const ui = {
         ctx.line(x, y, x + w * ratio, y);
         ctx.strokeStyle = color.green + "33";
         ctx.line(x, y, x + w, y);
+        if (ctx.point_in_stroke_v(mouse.position))
+            ui.xp.time = ui.time;
         if (!config.graphics.xp_hide_bar) {
             ctx.ctx.save();
             ctx.beginPath();
@@ -190,13 +192,13 @@ export const ui = {
         const xp_details_text = Math.round(xp_display_value) + "/"
             + ((player.level + 1) * config.game.level_1_xp)
             + "  " + (xp_change ? "+" + xp_change : "");
-        ctx.text(xp_details_text, x + r, y + r * 1.5 + 1.5); // weird 1.5-pixel offset to centralise
+        ctx.text(xp_details_text, x + r, y + r * 1.5 + 1.5); // weird y offset to centralise
         ctx.beginPath();
         x = old_x;
         y = Math.max(old_y, y);
         ctx.rect(0, y + r * 1.5, ui.width, ui.height);
         ctx.clip();
-        x += r * 1.5;
+        x += r * 1;
         y += r * 3.5;
         for (const o of shallow_clone_array(ui.collect.queue)) {
             if (ui.time > o.time) {
@@ -204,9 +206,9 @@ export const ui = {
                 continue;
             }
             const item = ui.items[o.key];
-            const opacity = Math.min(1, (o.time - ui.time) / config.seconds);
+            const opacity = Math.min(1, Math.min((config.graphics.collect_display_fancy_slide ? (config.graphics.collect_display_time + ui.time - o.time) / (0.3 * config.seconds) : 1000), (o.time - ui.time) / config.seconds));
             if (config.graphics.collect_display_fancy_slide)
-                x = old_x + r * (1.5 - 30 * (1 - opacity) ** 2.5);
+                x = old_x + r * (1 - 30 * (1 - opacity) ** 2.5);
             o.display = math.lerp(o.display, o.number, config.graphics.xp_display_smoothness * 1.5);
             ctx.globalAlpha = opacity;
             item.draw(x, y, r * 0.5);

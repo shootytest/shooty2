@@ -6,7 +6,7 @@ export const config = {
   game: {
     version: "0.1.0",
     invincibility_time: 1.5 * SECONDS,
-    autosave_interval: 1 * SECONDS, // second
+    autosave_interval: 1 * SECONDS,
     level_1_xp: 1000,
   },
   physics: {

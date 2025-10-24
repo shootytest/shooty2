@@ -11,7 +11,7 @@ export interface maketype {
   // display options
   style?: string;
   style_?: style_type; // consider renaming to style_override (not really)
-  
+
   // game booleans
   decoration?: boolean; // this won't add a physics object
   sensor?: boolean; // invisible physics sensor
@@ -40,17 +40,7 @@ export interface maketype {
 
   // enemy stuff
   breakable?: boolean;
-  shoot_mode?: shoot_mode;
-  move_mode?: move_mode;
-  face_mode?: face_mode;
-  shoot_mode_idle?: shoot_mode;
-  move_mode_idle?: move_mode;
-  face_mode_idle?: face_mode;
-  face_predict_amount?: number;
-  move_hover_distance?: number;
-  move_speed?: number;
-  spin_speed?: number;
-  face_smoothness?: number;
+  behaviour?: { [key: string]: maketype_behaviour | maketype_behaviour[] };
   enemy_detect_range?: number;
   focus_camera?: boolean;
 
@@ -61,11 +51,29 @@ export interface maketype {
 
 };
 
-export type shoot_mode = "none" | "normal" | "always";
+export type shoot_mode = "none" | "normal" | "single" | "burst";
 export type move_mode = "none" | "static" | "hover" | "direct" | "spiral" | "circle";
 export type face_mode = "none" | "static" | "predict" | "predict2" | "direct" | "spin";
 export type wall_filter_type = "wall" | "window" | "curtain";
-// not to be confused with typeface
+
+export interface maketype_behaviour {
+  chance?: number;
+  time?: number;
+
+  shoot_mode?: shoot_mode;
+  shoot_index?: number | number[];
+  shoot_cooldown?: number;
+  shoot_single_limit?: number;
+
+  face_mode?: face_mode;
+  face_smoothness?: number;
+  face_predict_amount?: number;
+  spin_speed?: number;
+
+  move_mode?: move_mode;
+  move_hover_distance?: number;
+  move_speed?: number;
+};
 
 export interface maketype_health {
   value?: number;
@@ -113,9 +121,12 @@ export interface shoot_stats {
   duration_reload?: number;
   speed?: number;
   angle?: number;
-  spread?: number;
+  spread_angle?: number;
+  random_angle?: number;
   spread_size?: number;
+  random_size?: number;
   spread_speed?: number;
+  random_speed?: number;
   damage?: number;
   health?: number;
   time?: number;
@@ -351,7 +362,6 @@ make.player = {
   friction: 0.2,
   friction_contact: 0,
   restitution: 0.1,
-  move_speed: 10,
   health: {
     capacity: 500,
     regen: 0,
@@ -465,10 +475,14 @@ make_shapes.enemy_tutorial_rock_room4 = [{
 make.enemy_tutorial_4way = {
   make_parent: ["enemy_tutorial"],
   movable: false,
-  shoot_mode: "normal",
-  shoot_mode_idle: "normal",
-  move_mode: "static",
-  face_mode: "static",
+  behaviour: {
+    normal: {
+      shoot_mode: "normal",
+    },
+    idle: {
+      shoot_mode: "normal",
+    },
+  },
   angle: -360 / 14,
   enemy_detect_range: 360,
   focus_camera: true,
@@ -504,16 +518,25 @@ make_shapes.enemy_tutorial_4way = [{
 
 make.enemy_tutorial_easy = {
   make_parent: ["enemy_tutorial"],
-  shoot_mode: "normal",
-  move_mode: "direct",
-  face_mode: "direct",
-  move_speed: 3,
+  behaviour: {
+    normal: {
+      shoot_mode: "normal",
+      move_mode: "direct",
+      face_mode: "direct",
+      move_speed: 3,
+    },
+    idle: {
+      face_mode: "spin",
+      move_mode: "circle",
+      move_speed: 0.5,
+    },
+  },
   enemy_detect_range: 500,
   health: {
     capacity: 250,
   },
   death: [
-    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.6, spread: -1 }, repeat: 2 },
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.6, spread_angle: -1 }, repeat: 2 },
   ],
   xp: 50,
 };
@@ -529,8 +552,12 @@ make_shapes.enemy_tutorial_easy = [{
 
 make.enemy_tutorial_bit = {
   make_parent: ["enemy_tutorial", "enemy_breakable"],
-  face_mode_idle: "spin",
-  move_mode_idle: "circle",
+  behaviour: {
+    idle: {
+      face_mode: "spin",
+      move_mode: "circle",
+    }
+  },
   enemy_detect_range: 0,
   style: "tutorial_breakable",
   style_: {
@@ -548,9 +575,11 @@ make.enemy_tutorial_down = {
   make_parent: ["enemy_tutorial"],
   style: "tutorial",
   movable: false,
-  shoot_mode: "normal",
-  move_mode: "static",
-  face_mode: "static",
+  behaviour: {
+    normal: {
+      shoot_mode: "normal",
+    }
+  },
   angle: 110,
   enemy_detect_range: 300,
 };
@@ -566,10 +595,25 @@ make_shapes.enemy_tutorial_down = [{
 
 make.enemy_tutorial_boss = {
   make_parent: ["enemy_tutorial"],
-  shoot_mode: "normal",
-  move_mode: "static",
-  face_mode: "predict2",
-  // face_predict_amount: 0.7,
+  behaviour: {
+    normal: [{
+      time: 1,
+      shoot_index: 0,
+      shoot_mode: "single",
+      face_mode: "predict2",
+      // face_predict_amount: 0.7,
+    }, {
+      time: 0.5,
+      shoot_index: [1, 2],
+      shoot_mode: "single",
+      face_mode: "predict2",
+    }, {
+      time: 0.5,
+      shoot_index: 3,
+      shoot_mode: "normal",
+      face_mode: "direct",
+    }],
+  },
   movable: false,
   enemy_detect_range: 0,
   focus_camera: true,
@@ -579,6 +623,7 @@ make.enemy_tutorial_boss = {
   death: [
     { type: "collect_coin", stats: { make: "collect_coin_10", speed: 5 }, repeat: 36, angle_increment: 10 },
   ],
+  shoots: ["enemy_tutorial_boss_spam"],
   xp: 999999, // lol
 };
 make_shapes.enemy_tutorial_boss = [{
@@ -588,7 +633,7 @@ make_shapes.enemy_tutorial_boss = [{
 }, {
   type: "line",
   v2: vector.createpolar_deg(0, 150),
-  shoot: "enemy_tutorial_boss",
+  shoot: "enemy_tutorial_boss_homing",
 }, {
   type: "line",
   style: "tutorial_boss",
@@ -616,11 +661,31 @@ make.bullet = {
 
 make.bullet_homing = {
   make_parent: ["bullet"],
-  move_mode: "direct",
-  face_mode: "direct",
-  move_speed: 5,
+  behaviour: {
+    normal: {
+      move_mode: "direct",
+      face_mode: "direct",
+      move_speed: 5,
+    }
+  },
   enemy_detect_range: 1000,
 };
+
+make.bullet_tutorial_boss_split = {
+  make_parent: ["bullet"],
+};
+make_shapes.bullet_tutorial_boss_split = [{
+  type: "circle",
+  style: "tutorial_boss",
+  radius: 24,
+}, {
+  type: "circle",
+  style_: {
+    fill_opacity: 0.05,
+    stroke_opacity: 0.25,
+  },
+  radius: 160,
+}];
 
 
 
@@ -638,9 +703,13 @@ make.collect_coin = {
   movable: true,
   keep_bullets: true,
   team: -1,
-  face_mode: "direct",
-  move_mode: "direct",
-  move_speed: 4.5,
+  behaviour: {
+    normal: {
+      face_mode: "direct",
+      move_mode: "direct",
+      move_speed: 4.5,
+    }
+  },
   enemy_detect_range: 300,
 };
 
@@ -688,8 +757,12 @@ make.collect_gun = {
 
 make.collect_gun_basic = {
   make_parent: ["collect_gun"],
-  face_mode_idle: "spin",
-  spin_speed: 0.02,
+  behaviour: {
+    idle: {
+      face_mode: "spin",
+      spin_speed: 0.02,
+    }
+  },
   enemy_detect_range: 0,
   collectible: {
     gun: "basic",
@@ -717,7 +790,7 @@ make_shoot.player = {
   size: 9,
   reload: 0.5,
   speed: 8,
-  spread: 0.03,
+  spread_angle: 0.03,
   friction: 0.0025,
   restitution: 1,
   recoil: 1,
@@ -735,7 +808,7 @@ make_shoot.player_basic = {
 
 make_shoot.collect_coin = {
   speed: 2.5,
-  spread: 0.03,
+  spread_angle: 0.03,
   spread_speed: 0.1,
   friction: 0.06,
 };
@@ -755,7 +828,7 @@ make_shoot.enemy = {
 make_shoot.enemy_easy = {
   parent: ["enemy"],
   size: 11,
-  spread: 0.05,
+  spread_angle: 0.05,
   reload: 1.1,
   speed: 4,
   time: 2,
@@ -764,7 +837,7 @@ make_shoot.enemy_easy = {
 make_shoot.enemy_block = {
   parent: ["enemy"],
   size: 13,
-  spread: 0,
+  spread_angle: 0,
   reload: 0.05,
   speed: 10,
   time: 1.6,
@@ -781,17 +854,28 @@ make_shoot.enemy_4way = {
   time: 1.7,
 };
 
-make_shoot.enemy_tutorial_boss = {
+make_shoot.enemy_tutorial_boss_spam = {
   parent: ["enemy"],
-  size: 17,
-  reload: 0.35,
+  size: 10,
+  reload: 0.05,
+  speed: 11,
+  spread_angle: 0.01,
+  damage: 100,
+  time: 3,
+  friction: 0.005,
+};
+
+make_shoot.enemy_tutorial_boss_homing = {
+  parent: ["enemy"],
+  size: 18,
+  reload: 0.5,
   speed: 10,
-  spread: 0.06,
+  spread_angle: 0.06,
   damage: 200,
-  time: 10,
+  time: 3,
   death: [{
-    type: "enemy_tutorial_boss",
-    stats: { make: "bullet_homing", death: [{type: "none"}], speed: 15, friction: 0.06, time: 120, damage: 200, },
+    type: "enemy_tutorial_boss_homing",
+    stats: { make: "bullet_homing", death: [{type: "none"}], speed: 15, friction: 0.06, time: 1, damage: 200, },
     repeat: 1,
     angle: 180,
     offset: vector.create(0, -10),
@@ -800,25 +884,27 @@ make_shoot.enemy_tutorial_boss = {
 
 make_shoot.enemy_tutorial_boss_split = {
   parent: ["enemy"],
+  make: "bullet_tutorial_boss_split",
   style: "tutorial_boss",
-  size: 24,
-  reload: 0.35,
-  speed: 20,
-  spread: 0.1,
+  size: 25,
+  reload: 0.5,
+  speed: 23,
+  random_speed: 7,
+  spread_angle: 0.05,
   damage: 200,
-  time: 0.8,
+  time: 1.8,
   friction: 0.05,
-  death: [{ type: "enemy_tutorial_boss_splitted", repeat: 7, angle_increment: 360/7, }],
+  death: [{ type: "enemy_tutorial_boss_splitted", repeat: 14, angle_increment: 360/14, }],
 };
 
 make_shoot.enemy_tutorial_boss_splitted = {
   parent: ["enemy"],
   size: 10,
-  speed: 20,
-  spread: 0.04,
+  speed: 40,
+  spread_angle: 0.05,
   damage: 100,
-  time: 0.9,
-  friction: 0.05,
+  time: 0.45,
+  friction: 0.2,
 };
 
 

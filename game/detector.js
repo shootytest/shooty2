@@ -72,7 +72,7 @@ export const filters = {
     wall: {
         group: 0,
         category: filter_groups.wall,
-        mask: filter_groups.all,
+        mask: filter_groups.all - filter_groups.wall,
     },
     window: {
         group: 0,
@@ -104,7 +104,6 @@ export const detector = {
     },
     collision_start: (pair, ba, bb, flipped) => {
         const a = ba.parent.thing, b = bb.parent.thing;
-        const b_rittle = b.health && b.health.capacity > 0 && b.health.capacity < 1 - math.epsilon;
         const different_team = Math.floor(a.team) !== Math.floor(b.team);
         // console.log(`[detector/collision_start] Collision started betwixt ${ba.label} & ${bb.label}!`);
         if (a.is_player) {
@@ -116,19 +115,18 @@ export const detector = {
                     player.change_room(b.room_id);
                 b.is_touching_player = true;
             }
-            if (b.health && b_rittle && different_team) {
+            if (b.health && b.options.breakable && different_team) {
                 b.health?.hit_all();
             }
         }
         if (a.is_bullet) {
-            if (!b.options.sensor && !b.options.keep_bullets && !a.options.collectible && !b_rittle && different_team && !b.health?.invincible) {
+            if (!b.options.sensor && !b.options.keep_bullets && !a.options.collectible && !b.options.breakable && different_team && !b.health?.invincible) {
                 if (b.is_player)
                     a.options.death = []; // please don't explode if it hits the player
                 a.die();
             }
-            else if (b_rittle || (!different_team && a.team > 0)) {
+            else if (b.options.breakable || (!different_team && a.team > 0)) {
                 pair.isSensor = true;
-                // (ba as any).temporarySensor = true;
             }
         }
         if (a.damage > 0 && b.health && b.health.capacity > 0 && different_team) {
@@ -205,11 +203,6 @@ export const detector = {
                 mouse_icon.style.fill_opacity = math.bounce(thing.thing_time, config.graphics.blink_time * 2) * 0.5;
             }
         },
-        ["tutorial window 1 sensor"]: (thing) => {
-            console.log("window");
-            thing.lookup("tutorial window 1").die();
-            thing.lookup("tutorial window 1 sensor").shapes[0].style.stroke_opacity = 0;
-        },
     },
     sensor_start_fns: {
         // nothing for now
@@ -220,10 +213,9 @@ export const detector = {
             const centre = Vertices.centre(Spawner.spawners_lookup["tutorial room 2 breakables 4"].vertices);
             player.set_checkpoint(centre); // todo remove
         },
-        ["tutorial window 1 sensor"]: (thing) => {
-            console.log("window");
-            thing.lookup("tutorial window 1").die();
-            thing.lookup("tutorial window 1 sensor").shapes[0].style.stroke_opacity = 0;
+        ["tutorial room 3 end sensor"]: (thing) => {
+            thing.lookup("tutorial window 1")?.die();
+            thing.lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
         },
         ["tutorial room 5 sensor"]: (thing) => {
             const boss = Spawner.get_enemy("tutorial room 5 boss");
@@ -256,14 +248,14 @@ export const detector = {
     spawner_calc_fns: {
         ["tutorial room 3 enemy 1"]: (spawner) => {
             if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 2") > 0) {
-                spawner.thing_lookup("tutorial window 1").die();
-                spawner.thing_lookup("tutorial window 1 sensor").shapes[0].style.stroke_opacity = 0;
+                spawner.thing_lookup("tutorial window 1")?.die();
+                spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
             }
         },
         ["tutorial room 3 enemy 2"]: (spawner) => {
             if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 1") > 0) {
-                spawner.thing_lookup("tutorial window 1").die();
-                spawner.thing_lookup("tutorial window 1 sensor").shapes[0].style.stroke_opacity = 0;
+                spawner.thing_lookup("tutorial window 1")?.die();
+                spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
             }
         },
     },

@@ -53,10 +53,13 @@ export class Shoot {
     shoot() {
         const S = this.stats;
         const reload = (S.reload ?? 0);
-        while (reload != undefined && this.time >= reload) {
+        let number_of_shoots = 0;
+        while (reload > 0 && this.time >= reload) {
             this.delayed = Thing.time + (S.delay ?? 0) * reload;
             this.time -= reload;
+            number_of_shoots++;
         }
+        return number_of_shoots;
     }
     // todo make this function faster? perhaps?
     shoot_bullet() {
@@ -72,9 +75,12 @@ export class Shoot {
         if (bullet.team === 0)
             bullet.team = this.thing.team;
         // bullet.is_bullet = bullet.team > 0;
-        const angle = S.spread === -1 ? math.rand(0, Math.PI * 2) : math.randgauss(this.thing.angle + (vector.deg_to_rad(S.angle ?? 0)), S.spread ?? 0);
-        const spreadv = S.spread_speed ?? 0;
-        let speed = spreadv === 0 ? (S.speed ?? 0) : math.randgauss(S.speed ?? 0, spreadv);
+        let angle = S.spread_angle === -1 ? math.rand(0, Math.PI * 2) : math.randgauss(this.thing.angle + (vector.deg_to_rad(S.angle ?? 0)), S.spread_angle ?? 0);
+        if (S.random_angle)
+            angle += math.rand(-S.random_angle, S.random_angle);
+        let speed = math.randgauss(S.speed ?? 0, S.spread_speed ?? 0);
+        if (S.random_speed)
+            speed += math.rand(-S.random_speed, S.random_speed);
         const thing_velocity = Vector.rotate(this.thing.velocity, -angle).x;
         if (speed !== 0 && thing_velocity !== 0)
             speed += thing_velocity * config.physics.velocity_shoot_boost * (S.boost_mult ?? 1);
@@ -83,9 +89,10 @@ export class Shoot {
         bullet.bullet_time = Thing.time + (S.time ?? 1000000) * config.seconds;
         bullet.target.facing = vector.clone(this.thing.target.facing);
         this.bullets.push(bullet);
-        const spreadsize = S.spread_size ?? 0;
-        const size = spreadsize === 0 ? (S.size ?? 0) : math.randgauss(S.size ?? 0, spreadsize);
         if (bullet.shapes.length <= 0) {
+            let size = math.randgauss(S.size ?? 0, S.spread_size ?? 0);
+            if (S.random_size)
+                size += math.rand(-S.random_size, S.random_size);
             const s = Shape.circle(bullet, size);
             s.thing = bullet;
             s.seethrough = true;

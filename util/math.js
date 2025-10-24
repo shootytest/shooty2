@@ -84,6 +84,8 @@ export const math = {
         return Math.random() > 0.5;
     },
     randgauss: (mean, deviation) => {
+        if (deviation === 0)
+            return mean;
         let x1, x2, w;
         do {
             x1 = 2 * Math.random() - 1;
@@ -101,8 +103,21 @@ export const math = {
         }
         return result;
     },
-    randpick: (array) => {
+    randpick: function (array) {
         return array[math.randint(0, array.length - 1)];
+    },
+    randpick_weighted: function (array, weights) {
+        let r = math.rand();
+        let total = 0, running = 0;
+        for (const w of weights)
+            total += w;
+        r *= total;
+        for (let i = 0; i < array.length; i++) {
+            running += weights[i];
+            if (r < running)
+                return array[i];
+        }
+        return array[array.length - 1];
     },
     log_base: (a, b) => {
         return Math.log(a) / Math.log(b);

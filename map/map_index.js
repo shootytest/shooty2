@@ -2,6 +2,12 @@ import { camera } from "../util/camera.js";
 import { init_canvas } from "../util/canvas.js";
 import { key, mouse } from "../util/key.js";
 import { m_ui } from "./map_ui.js";
+Object.defineProperty(Array.prototype, "remove", { value: function (val) {
+        const index = this.indexOf(val);
+        if (index > -1)
+            this.splice(index, 1);
+        return this;
+    } });
 const init_all = () => {
     init_canvas();
     m_ui.init();
