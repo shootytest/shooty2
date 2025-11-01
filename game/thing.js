@@ -82,9 +82,11 @@ export class Thing {
         map: {},
         time: 0,
         shoot_count: 0,
-        move_target: vector3.create(),
+        wander_reached: true,
+        wander_time: -1,
     };
     random_number = math.rand();
+    original_position = vector3.create();
     player_position = vector3.create();
     is_seeing_player = false;
     constructor() {
@@ -142,7 +144,7 @@ export class Thing {
         if (o.options.make_id)
             override_object(this.options, make_options);
         override_object(this.options, o.options);
-        const s = Shape.from_map(this, o);
+        const _s = Shape.from_map(this, o);
         if (this.shapes.length <= 1)
             this.position = /*(o.vertices.length >= 3 && !o.options.open_loop) ? Vertices.centre(o.computed.vertices) :*/ vector3.mean(o.computed.vertices);
         this.create_id(o.id);
@@ -364,7 +366,7 @@ export class Thing {
                     }
                 }
                 else
-                    console.error(`[thing/bullet/remove] thing id '${this.id}': make_shoot '${d.type}' doesn't exist!`);
+                    console.error(`[thing/bullet/remove_death] thing id '${this.id}': make_shoot '${d.type}' doesn't exist!`);
             }
         }
         if (this.options.spawn_permanent) { // death is permanent
@@ -561,10 +563,10 @@ export class Thing {
         else
             this.behaviour.time = Thing.time + Math.round((result.time + (result.shoot_cooldown ?? 0)) * config.seconds);
         this.behaviour.shoot_count = 0;
+        this.behaviour.wander_reached = true;
+        this.behaviour.wander_time = -1;
     }
     do_shoot(b) {
-        if (this.id.includes("boss"))
-            console.log(b);
         const shoot_mode = b.shoot_mode;
         if (b.shoot_cooldown && this.behaviour.time - Math.round(b.shoot_cooldown * config.seconds) < Thing.time)
             return;
@@ -587,17 +589,19 @@ export class Thing {
         const face_mode = b.face_mode;
         const player = Thing.things_lookup["player"];
         if (face_mode === "none") {
+            // do nothing
         }
         else if (face_mode === "static") {
+            // do nothing
         }
         else if (face_mode === "predict2") {
-            const predict_amount = (b.face_predict_amount ?? 1);
-            this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, (vector.length(vector.sub(this.position, this.player_position)) ** 0.5) * 3 * predict_amount));
+            const predict_mult = (b.face_predict_amount ?? 1);
+            this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, (vector.length(vector.sub(this.position, this.player_position)) ** 0.5) * 3 * predict_mult));
             this.update_angle(b.face_smoothness ?? 0.3);
         }
         else if (face_mode === "predict") {
-            const predict_amount = (b.face_predict_amount ?? 1);
-            this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, vector.length(vector.sub(this.position, this.player_position)) * 0.3 * predict_amount));
+            const predict_mult = (b.face_predict_amount ?? 1);
+            this.target.facing = vector.add(this.player_position, vector.mult(player.velocity, vector.length(vector.sub(this.position, this.player_position)) * 0.3 * predict_mult));
             this.update_angle(b.face_smoothness ?? 0.3);
         }
         else if (face_mode === "spin") {
@@ -610,12 +614,23 @@ export class Thing {
             this.target.facing = this.player_position;
             this.update_angle(b.face_smoothness ?? 1);
         }
+        else if (face_mode === "wander") {
+            if (this.behaviour.wander_reached && Thing.time >= this.behaviour.wander_time) {
+                if (b.wander_time != undefined)
+                    this.behaviour.wander_time = Thing.time + ((b.wander_time ?? 1) + (b.wander_cooldown ?? 0)) * config.seconds;
+                this.target.facing = math.rand_point_in_circle(this.original_position, b.wander_distance ?? 0);
+                this.behaviour.wander_reached = false;
+            }
+            this.update_angle(b.face_smoothness ?? 1);
+        }
     }
     do_move(b) {
         const move_mode = b.move_mode;
         if (move_mode === "none") {
+            // do nothing
         }
         else if (move_mode === "static") {
+            // do nothing
         }
         else if (move_mode === "hover") {
             const dist2 = vector.length2(vector.sub(this.position, this.player_position));
@@ -628,8 +643,21 @@ export class Thing {
             const v = vector.rotate(vector.create(), vector.sub(this.position, this.player_position), vector.deg_to_rad(80));
             this.push_to(vector.add(this.target.facing, vector.mult(v, 0.5)), (b.move_speed ?? 1));
         }
-        else if (move_mode === "circle") {
-            this.push_to(this.target.facing, (b.move_speed ?? 1));
+        else if (move_mode === "wander") {
+            if (this.behaviour.wander_reached) {
+                return;
+            }
+            else if (b.wander_time != undefined && Thing.time >= this.behaviour.wander_time - (b.wander_cooldown ?? 0) * config.seconds) {
+                this.behaviour.wander_reached = true;
+            }
+            else if (vector.length2(vector.sub(this.target.facing, this.position)) < 10) {
+                // reached
+                this.behaviour.wander_time = Thing.time + (b.wander_cooldown ?? 0) * config.seconds;
+                this.behaviour.wander_reached = true;
+            }
+            else {
+                this.push_to(this.target.facing, (b.move_speed ?? 1));
+            }
         }
     }
     // physics body functions
@@ -684,7 +712,11 @@ export class Bullet extends Thing {
     is_bullet = true;
     bullet_shoot;
     bullet_time = -1;
+    bullet_total_time = -1;
     bullet_keep = false;
+    get bullet_time_ratio() {
+        return 1 - (this.bullet_time - Thing.time) / this.bullet_total_time;
+    }
     tick(dt) {
         super.tick(dt);
         if (this.bullet_time >= 0 && this.bullet_time <= Thing.time) {

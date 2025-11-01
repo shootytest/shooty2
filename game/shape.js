@@ -35,8 +35,11 @@ export class Shape {
             v.x -= dv.x;
             v.y -= dv.y;
         }
-        s.style = clone_object(STYLES[thing.options.style ?? "error"] ?? STYLES.error);
-        if (thing.options.style_ != undefined)
+        if (thing.options.style) {
+            s.style = clone_object(STYLES[thing.options.style] ?? STYLES.error);
+            s.has_style = true;
+        }
+        if (thing.options.style_)
             override_object(s.style, thing.options.style_);
         s.init_computed();
         if (thing.shapes.length >= 2) { // runs for merged shapes
@@ -62,11 +65,13 @@ export class Shape {
             console.error(`[shape/from_make] shape type '${o.type}' doesn't exist!`);
             s = new Shape(thing);
         }
-        s.blinking = Boolean(o.blinking);
-        s.glowing = o.glowing ?? 0;
+        s.options = o;
         s.seethrough = Boolean(thing.options.seethrough);
-        s.style = clone_object(STYLES[o.style ?? thing.options.style ?? "error"] ?? STYLES.error);
-        if (thing.options.style_ != undefined)
+        if (o.style || thing.options.style) {
+            s.style = clone_object(STYLES[o.style ?? thing.options.style ?? "error"] ?? STYLES.error);
+            s.has_style = true;
+        }
+        if (thing.options.style_)
             override_object(s.style, thing.options.style_);
         if (o.style_ != undefined)
             override_object(s.style, o.style_);
@@ -151,19 +156,21 @@ export class Shape {
             z = math.round_dp(z, 3);
         // hope this doesn't take too long per tick...
         Shape.draw_shapes.sort((s1, s2) => {
-            if (s1.thing.options.decoration && !s2.thing.options.decoration)
-                return -1;
-            if (s2.thing.options.decoration && !s1.thing.options.decoration)
-                return 1;
+            if (Math.abs(s1.z - s2.z) < math.epsilon_smaller) {
+                if (s1.thing.options.decoration && !s2.thing.options.decoration)
+                    return -1;
+                if (s2.thing.options.decoration && !s1.thing.options.decoration)
+                    return 1;
+            }
             return s1.z - s2.z;
+        });
+        Particle.particles.sort((p1, p2) => {
+            return p1.z - p2.z;
         });
         for (const s of Shape.draw_shapes) {
             if (z != undefined && s.z !== z)
                 continue;
-            s.draw();
-            s.draw_glow();
-            s.draw_blink();
-            s.draw_health();
+            s.draw_all();
         }
         ctx.globalAlpha = 1;
     }
@@ -218,9 +225,10 @@ export class Shape {
     opacity = 1;
     activate_scale = false;
     closed_loop = true;
+    options = {
+        type: "none",
+    };
     translucent = 0;
-    blinking = false;
-    glowing = 0;
     get z() {
         return math.round_dp(this.offset.z + this.thing.z, 3);
     }
@@ -238,6 +246,7 @@ export class Shape {
     computed_aabb; // for use in Shape.filter()
     // map_shape_type_object?: map_shape_type;
     style = {};
+    has_style = false;
     constructor(thing) {
         this.thing = thing;
         this.add(thing);
@@ -272,6 +281,15 @@ export class Shape {
     calculate() {
         // ok there's nothing to do here because the vertices _are_ the data
         return;
+    }
+    draw_all() {
+        if (this.options.clip)
+            this.draw_clip();
+        else
+            this.draw();
+        this.draw_glow();
+        this.draw_blink();
+        this.draw_health();
     }
     draw(style_mult) {
         if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0)
@@ -345,7 +363,7 @@ export class Shape {
         ctx.ctx.restore();
     }
     draw_blink() {
-        if (!this.blinking && (!this.thing.health?.invincible))
+        if (!this.options.blinking && (!this.thing.health?.invincible))
             return;
         if (this.thing.is_player && player.paused)
             return;
@@ -360,18 +378,48 @@ export class Shape {
         this.draw(style_mult);
     }
     draw_glow() {
-        if (this.glowing === 0)
+        if (!this.options.glowing || this.options.glowing < 0)
             return;
-        const frac = this.glowing - Math.floor(this.glowing);
+        const glow = this.options.glowing;
+        const frac = glow - Math.floor(glow);
         const style_mult = {
             fill: this.style.stroke,
             fill_opacity: ((this.style.stroke_opacity ?? 1) / (this.style.fill_opacity || 1)) * (frac === 0 ? 0.8 : frac),
         };
         ctx.ctx.shadowBlur = config.graphics.shadowblur;
         ctx.ctx.shadowColor = this.style.stroke ?? color.white;
-        for (let i = 0; i < this.glowing; i++)
+        for (let i = 0; i < glow; i++)
             this.draw(style_mult);
         ctx.ctx.shadowBlur = 0;
+    }
+    draw_clip() {
+        if (this.computed?.screen_vertices == undefined || !this.computed.on_screen || !this.options.clip)
+            return;
+        const clip = this.options.clip;
+        let ratio = 0; // can be negative too!
+        let angle = 0; // -Thing.time / config.seconds * config.graphics.health_rotate_speed;
+        if (clip.timing === "fixed") {
+            ratio = clip.end - clip.start;
+            angle = clip.start * Math.PI * 2;
+        }
+        else if (clip.timing === "bullet") {
+            ratio = 1 - (this.thing.bullet_time_ratio - clip.start) / (clip.end - clip.start);
+        }
+        // handle edge cases
+        if (ratio <= math.epsilon)
+            return;
+        else if (ratio >= 1 - math.epsilon)
+            return this.draw();
+        // clip!
+        ctx.ctx.save();
+        const c = this.is_circle ? this.computed.screen_vertices[0] : vector.aabb_centre(vector.make_aabb(this.computed.screen_vertices));
+        ctx.beginPath();
+        ctx.moveTo(c.x, c.y);
+        ctx.arc_v(c, 123456, angle % (Math.PI * 2), (angle + Math.PI * 2 * ratio) % (Math.PI * 2));
+        ctx.lineTo(c.x, c.y);
+        ctx.clip();
+        this.draw();
+        ctx.ctx.restore();
     }
     compute_screen() {
         if (this.computed?.vertices == undefined)
@@ -404,6 +452,10 @@ export class Shape {
             // remove this from array
             array?.remove(this);
         }
+    }
+    scale_size(size) {
+        this.offset = vector3.mult(this.offset, size);
+        vector3.scale_to_list(this.vertices, vector.create(size, size));
     }
     break(o = {}) {
         if (this.computed?.vertices == undefined || !this.computed.on_screen)
@@ -507,6 +559,11 @@ export class Polygon extends Shape {
         else {
             super.compute_screen();
         }
+    }
+    scale_size(size) {
+        this.offset = vector3.mult(this.offset, size);
+        this.radius *= size;
+        this.calculate();
     }
 }
 ;

@@ -149,7 +149,7 @@ export const detector = {
         save.set_switch(switch_id);
         save.set_switch_time(switch_id, b.thing_time);
       }
-      b.shapes[0].glowing = 1;
+      b.shapes[0].options.glowing = 1;
     }
     if (b.options.breakable) b.velocity = vector.mult(a.velocity, 0.5);
   },

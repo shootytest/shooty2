@@ -279,6 +279,11 @@ export const math = {
         const [a, b, c] = triangle;
         return 0.5 * ((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y));
     },
+    rand_point_in_circle: (centre, radius) => {
+        if (radius <= 0)
+            return vector.clone(centre);
+        return vector.add(centre, vector.createpolar(math.rand(0, Math.PI * 2), radius * math.sqrt(math.rand())));
+    },
     rand_point_in_polygon: (vertices) => {
         if (vertices.length === 1)
             return vertices[0];
@@ -303,4 +308,48 @@ export const math = {
         }
         return vector.add_all(a, vector.mult(vector.sub(b, a), r1), vector.mult(vector.sub(c, a), r2));
     },
+    is_point_in_polygon: (point, polygon) => {
+        const { x, y } = point;
+        let c = false;
+        for (let l = polygon.length, i = 0, j = l - 1; i < l; j = i++) {
+            const xj = polygon[j].x, yj = polygon[j].y, xi = polygon[i].x, yi = polygon[i].y;
+            const where = (yi - yj) * (x - xi) - (xi - xj) * (y - yi);
+            if (yj < yi) {
+                if (y >= yj && y < yi) {
+                    if (where == 0)
+                        return true; // point on the line
+                    if (where > 0) {
+                        if (y == yj) { // ray intersects vertex
+                            if (y > polygon[j == 0 ? l - 1 : j - 1].y) {
+                                c = !c;
+                            }
+                        }
+                        else {
+                            c = !c;
+                        }
+                    }
+                }
+            }
+            else if (yi < yj) {
+                if (y > yi && y <= yj) {
+                    if (where == 0)
+                        return true; // point on the line
+                    if (where < 0) {
+                        if (y == yj) { // ray intersects vertex
+                            if (y < polygon[j == 0 ? l - 1 : j - 1].y) {
+                                c = !c;
+                            }
+                        }
+                        else {
+                            c = !c;
+                        }
+                    }
+                }
+            }
+            else if (y == yi && (x >= xj && x <= xi || x >= xi && x <= xj)) {
+                return true; // point on horizontal edge
+            }
+        }
+        return c;
+    }
 };

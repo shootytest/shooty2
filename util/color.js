@@ -144,11 +144,16 @@ export const STYLES = {
     tutorial_door: {
         stroke: color.tutorial_dark2,
     },
-    tutorial_floor: {
+    tutorial_door_floor: {
         stroke: color.tutorial_main,
         stroke_opacity: 0,
         fill: color.tutorial_dark2,
         fill_opacity: 0.3,
+    },
+    tutorial_floor: {
+        stroke_opacity: 0,
+        fill: color.tutorial_dark2,
+        fill_opacity: 1,
     },
     start: {
         stroke: color.start,

@@ -17,6 +17,12 @@ export class Particle {
         }
         ctx.globalAlpha = 1;
     }
+    static get_screen_particles() {
+        return this.particles.filter((particle) => particle.is_screen);
+    }
+    static get_world_particles() {
+        return this.particles.filter((particle) => !particle.is_screen);
+    }
     static make(screen_vertices, velocity, acceleration, jerk) {
         const p = new Particle();
         p.vertices = screen_vertices;

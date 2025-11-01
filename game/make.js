@@ -6,6 +6,7 @@ import { vector } from "../util/vector.js";
 ;
 ;
 ;
+;
 // make
 export const make = {};
 export const make_ = {};
@@ -75,6 +76,7 @@ make.wall_tutorial_fake = {
 };
 // @floors
 make.floor = {
+    floor: true,
     decoration: true,
     seethrough: true,
     keep_bullets: true,
@@ -141,6 +143,7 @@ make.icon_tutorial = {
 make.deco = {
     decoration: true,
     seethrough: true,
+    keep_bullets: true,
 };
 make.deco_gun_basic = {
     make_parent: ["deco"],
@@ -320,9 +323,13 @@ make.enemy_tutorial_easy = {
             move_speed: 3,
         },
         idle: {
-            face_mode: "spin",
-            move_mode: "circle",
+            face_mode: "wander",
+            move_mode: "wander",
             move_speed: 0.5,
+            wander_time: 2,
+            wander_distance: 150,
+            wander_cooldown: 0.6,
+            face_smoothness: 0.05,
         },
     },
     enemy_detect_range: 500,
@@ -348,7 +355,7 @@ make.enemy_tutorial_bit = {
     behaviour: {
         idle: {
             face_mode: "spin",
-            move_mode: "circle",
+            move_mode: "direct",
         }
     },
     enemy_detect_range: 0,
@@ -362,6 +369,23 @@ make_shapes.enemy_tutorial_bit = [{
         type: "polygon",
         sides: 7,
         radius: 10,
+    }];
+make.enemy_tutorial_big = {
+    make_parent: ["enemy_tutorial"],
+    behaviour: {
+        idle: {
+            face_mode: "spin",
+            move_mode: "direct",
+            move_speed: 0.5,
+        }
+    },
+    enemy_detect_range: 0,
+    style: "tutorial_breakable",
+};
+make_shapes.enemy_tutorial_big = [{
+        type: "polygon",
+        sides: 7,
+        radius: 100,
     }];
 make.enemy_tutorial_down = {
     make_parent: ["enemy_tutorial"],
@@ -459,15 +483,29 @@ make.bullet_tutorial_boss_split = {
 };
 make_shapes.bullet_tutorial_boss_split = [{
         type: "circle",
-        style: "tutorial_boss",
-        radius: 24,
+        radius: 1,
     }, {
         type: "circle",
+        style: "tutorial_enemy",
         style_: {
-            fill_opacity: 0.05,
-            stroke_opacity: 0.25,
+            fill_opacity: 0.07,
+            stroke_opacity: 0,
         },
-        radius: 160,
+        radius: 7,
+    }, {
+        type: "circle",
+        style: "tutorial_enemy",
+        style_: {
+            fill_opacity: 0.03,
+            stroke_opacity: 0.3,
+        },
+        radius: 7,
+        clip: {
+            shape: "circle",
+            timing: "bullet",
+            start: 0,
+            end: 1,
+        },
     }];
 // @collectibles
 make.collect = {
@@ -631,7 +669,7 @@ make_shoot.enemy_tutorial_boss_homing = {
     time: 3,
     death: [{
             type: "enemy_tutorial_boss_homing",
-            stats: { make: "bullet_homing", death: [{ type: "none" }], speed: 15, friction: 0.06, time: 1, damage: 200, },
+            stats: { make: "bullet_homing", death: [{ type: "none" }], speed: 15, friction: 0.06, time: 0.5, damage: 200, },
             repeat: 1,
             angle: 180,
             offset: vector.create(0, -10),
@@ -647,7 +685,7 @@ make_shoot.enemy_tutorial_boss_split = {
     random_speed: 7,
     spread_angle: 0.05,
     damage: 200,
-    time: 1.8,
+    time: 1.5,
     friction: 0.05,
     death: [{ type: "enemy_tutorial_boss_splitted", repeat: 14, angle_increment: 360 / 14, }],
 };
@@ -658,7 +696,7 @@ make_shoot.enemy_tutorial_boss_splitted = {
     spread_angle: 0.05,
     damage: 100,
     time: 0.45,
-    friction: 0.2,
+    friction: 0.19,
 };
 const calculated_keys = ["default"];
 const calculated_shoot_keys = [];

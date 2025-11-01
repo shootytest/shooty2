@@ -256,7 +256,7 @@ export const map_draw = {
                     o.new = false;
                     if (!(mouse.drag_vector_old[0] === false || vector.length2(mouse.drag_vector_old[0]) < 30)) {
                         // if actually dragged
-                        const round_to_number = key.ctrl() ? 10 : 1;
+                        const round_to_number = key.ctrl() ? 1 : 10;
                         if (key.shift()) {
                             for (let i = 0; i < o.shape.vertices.length; i++) {
                                 o.shape.vertices[i] = vector.round_to(o.shape.vertices[i], round_to_number);

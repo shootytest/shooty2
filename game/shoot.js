@@ -86,21 +86,39 @@ export class Shoot {
             speed += thing_velocity * config.physics.velocity_shoot_boost * (S.boost_mult ?? 1);
         bullet.velocity = vector.createpolar(angle, speed);
         bullet.angle = angle;
-        bullet.bullet_time = Thing.time + (S.time ?? 1000000) * config.seconds;
+        bullet.bullet_total_time = (S.time ?? 1000000) * config.seconds;
+        bullet.bullet_time = Thing.time + bullet.bullet_total_time;
         bullet.target.facing = vector.clone(this.thing.target.facing);
         this.bullets.push(bullet);
+        let size = S.size == undefined ? 1 : math.randgauss(S.size, S.spread_size ?? 0);
+        if (S.random_size)
+            size += math.rand(-S.random_size, S.random_size);
         if (bullet.shapes.length <= 0) {
-            let size = math.randgauss(S.size ?? 0, S.spread_size ?? 0);
-            if (S.random_size)
-                size += math.rand(-S.random_size, S.random_size);
-            const s = Shape.circle(bullet, size);
-            s.thing = bullet;
-            s.seethrough = true;
-            s.style = clone_object(this.thing.shapes[0].style);
+            const shape = Shape.circle(bullet, size);
+            shape.thing = bullet;
+            shape.seethrough = true;
+            shape.style = clone_object(this.thing.shapes[0].style);
+            shape.has_style = true;
             if (S.style)
-                override_object(s.style, (STYLES[S.style] ?? STYLES.error));
+                override_object(shape.style, (STYLES[S.style] ?? STYLES.error));
             if (S.style_)
-                override_object(s.style, S.style_);
+                override_object(shape.style, S.style_);
+        }
+        else {
+            for (const shape of bullet.shapes) {
+                shape.scale_size(size);
+                shape.thing = bullet;
+                if (!shape.has_style) {
+                    shape.style = clone_object(this.thing.shapes[0].style);
+                    shape.has_style = true;
+                }
+                if (shape.index === 0) {
+                    if (S.style)
+                        override_object(shape.style, (STYLES[S.style] ?? STYLES.error));
+                    if (S.style_)
+                        override_object(shape.style, S.style_);
+                }
+            }
         }
         const body_options = bullet.create_body_options(bullet.is_bullet ? filters.bullet(bullet.team) : filters.thing(bullet.team));
         body_options.frictionAir = S.friction ?? body_options.frictionAir ?? 0;

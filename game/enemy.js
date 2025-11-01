@@ -1,5 +1,5 @@
 import { math } from "../util/math.js";
-import { vector } from "../util/vector.js";
+import { vector, vector3 } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
 import { make } from "./make.js";
 import { player } from "./player.js";
@@ -34,6 +34,7 @@ export class Enemy extends Thing {
             this.team += (Enemy.cumulative_team_ids[this.team]++) * 0.000000000001; // a trillion possible enemies per team
         }
         this.position = position;
+        this.original_position = vector3.create_(position);
         if (!this.options.angle)
             this.angle = math.rand(0, Math.PI * 2);
         if (!this.options.decoration)
@@ -41,7 +42,7 @@ export class Enemy extends Thing {
         if (this.body)
             this.body.label = id;
         if (this.options.switch && save.check_switch(this.spawner.id)) {
-            this.shapes[0].glowing = 1;
+            this.shapes[0].options.glowing = 1;
         }
     }
     die() {
@@ -52,11 +53,11 @@ export class Enemy extends Thing {
         super.die();
     }
     tick(dt) {
+        if (this.is_seeing_player)
+            player.enemy_can_see = true;
         super.tick(dt);
     }
     shoot(index = -1) {
-        if (this.is_seeing_player)
-            player.enemy_can_see = true;
         return super.shoot(index);
     }
     remove() {

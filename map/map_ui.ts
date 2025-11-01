@@ -68,7 +68,7 @@ export const m_ui = {
       m_ui.click.new_fns_exist = [false, false, false];
     },
   },
-  
+
   get viewport(): AABB {
     return {
       min_x: 60,
@@ -174,9 +174,9 @@ export const m_ui = {
     m_ui.mouse.was_rclick = m_ui.mouse.clickbuttons[2];
     m_ui.mouse.release_rclick = mouse.up_buttons[2];
     m_ui.mouse.clickbuttons = [m_ui.mouse.click, m_ui.mouse.mclick, m_ui.mouse.rclick];
-    
+
     m_ui.click.new_fns = [() => {}, () => {}, () => {}];
-    
+
     const MOVE_SPEED = 10;
     let dx = 0;
     let dy = 0;
@@ -524,14 +524,14 @@ export const m_ui = {
       }
     }
     // respond to mousedrag
-    
+
     ctx.restore("draw_left");
   },
 
   draw_map: function() {
     m_ui.draw_a_map(m_ui.map);
   },
-  
+
   draw_a_map: function(map: map_type) {
     map_draw.draw(ctx, map);
   },
@@ -550,7 +550,7 @@ export const m_ui = {
       ctx.beginPath();
       ctx.circle(v.x, v.y, size * 1.9);
       ctx.fill();
-      
+
       for (const option of m_ui.circle_menu.options) {
 
         const i = option.i;
@@ -565,10 +565,10 @@ export const m_ui = {
         ctx.beginPath();
         ctx.donut_arc(v.x, v.y, 90 * ratio, 80 * ratio, a_ + a * (i + 0.05), a_ + a * (i + 0.95), a_ + a * (i + 0.05625), a_ + a * (i + 0.94375));
         ctx.globalAlpha = 0.7 * ratio + ((hovering && !disabled) ? 0.2 : 0);
-        ctx.fill(); 
+        ctx.fill();
         ctx.svg(option.svg, v.x + size * Math.cos(a_ + a * (i + 0.5)), v.y + size * Math.sin(a_ + a * (i + 0.5)), size * 0.9);
         if (hovering) m_ui.click.new(disabled ? () => {} : option.fn);
-        
+
       }
       ctx.globalAlpha = 1;
       if (!vector.in_circle(mouse.position, v, 100)) {
@@ -583,11 +583,11 @@ export const m_ui = {
   },
 
   draw_overlay: function() {
-    
+
   },
 
   draw_selection: function(map: map_type) {
-    
+
   },
 
   draw_grid: function() {
@@ -763,7 +763,7 @@ export const m_ui = {
         details.appendChild(summary);
         const ul = document.createElement("ul");
         details.appendChild(ul);
-        
+
         if (id === "all") {
           aside.appendChild(details);
         } else {
@@ -1158,7 +1158,7 @@ export const m_ui = {
       }
     }
 
-  },  
+  },
 
   open_properties: function(shape?: map_shape_type) {
     if (shape) {
@@ -1176,7 +1176,7 @@ export const m_ui = {
     m_ui.update_properties();
     m_ui.update_right_sidebar();
   },
-  
+
   select_parent: function(shape: map_shape_type) {
 
     const selected_shape = m_ui.map.computed?.shape_map[m_ui.properties_selecting_parent] ?? m_ui.properties_selected;
@@ -1203,7 +1203,7 @@ export const m_ui = {
     m_ui.right_sidebar_mode = "directory";
     m_ui.update_right_sidebar();
     map_draw.change("edit property: parent", m_ui.properties_selected);
-    
+
   },
 
   select_connection: function(shape: map_shape_type) {
@@ -1223,7 +1223,7 @@ export const m_ui = {
     map_draw.change("add property: connection", m_ui.properties_selected);
 
   },
-  
+
   // recursive
   check_child: function(check_id: string, shape: map_shape_type): boolean {
 
