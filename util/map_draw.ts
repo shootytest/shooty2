@@ -5,6 +5,7 @@ import { color, STYLES } from "./color.js";
 import { Context } from "./draw.js";
 import { key, mouse } from "./key.js";
 import { map_serialiser, map_shape_type, map_type, map_vertex_type } from "./map_type.js";
+import { math } from "./math.js";
 import { AABB3, vector, vector3 } from "./vector.js";
 
 export const map_draw = {
@@ -49,10 +50,14 @@ export const map_draw = {
       new_shape.vertices = shape.vertices.splice(at_vertex_index, shape.vertices.length - at_vertex_index);
       if (new_shape.vertices[0]) shape.vertices.push(vector3.clone_(new_shape.vertices[0])); // also duplicate the vertex at the split location
     } else {
-      const move_vector = shape.computed ? vector.aabb2v(shape.computed?.aabb) : vector.create(10, 10);
-      for (const v of new_shape.vertices) {
-        v.x += move_vector.x;
-        v.y += move_vector.y;
+      if (key.shift()) { // not cloning vertices
+        new_shape.vertices = [vector.add(new_shape.vertices[m_ui.circle_menu.target.index], vector.create(10, 10))];
+      } else { // copy vertices but move the shape by a lot
+        const move_vector = shape.computed ? vector.aabb2v(shape.computed?.aabb) : vector.create(10, 10);
+        for (const v of new_shape.vertices) {
+          v.x += move_vector.x;
+          v.y += move_vector.y;
+        }
       }
     }
     // set id of new shape
@@ -94,24 +99,34 @@ export const map_draw = {
           // compute distance
           shape.computed.distance2 = vector.length2(vector.sub(shape.computed?.mean, cam));
           // compute location on screen
-          const vs: vector3[] = [];
           let i = 0;
           if (memo_aabb3[shape.z] == undefined) {
             const z_scale = camera.zscale_inverse(shape.z);
             memo_aabb3[shape.z] = vector3.aabb_scale(screen_aabb3, vector3.create(z_scale, z_scale, 1));
           }
           shape.computed.on_screen = vector3.aabb_intersect(shape.computed.aabb3, memo_aabb3[shape.z]) && shape.z <= camera.z / camera.scale;
-          if (!m_ui.editor.layers.sensors && shape.computed.options?.sensor) shape.computed.on_screen = false;
-          if (!m_ui.editor.layers.spawners && shape.computed.options?.is_spawner) shape.computed.on_screen = false;
-          if (!m_ui.editor.layers.decoration && shape.computed.options?.decoration) shape.computed.on_screen = false;
+          if (shape.computed.on_screen && shape.id !== m_ui.properties_selected.id) {
+            if ((!m_ui.editor.layers.floors && shape.computed.options?.floor) ||
+                (!m_ui.editor.layers.sensors && shape.computed.options?.sensor) ||
+                (!m_ui.editor.layers.spawners && shape.computed.options?.is_spawner) ||
+                (!m_ui.editor.layers.decoration && shape.computed.options?.decoration && !shape.computed.options?.floor) ||
+                (!m_ui.editor.layers.z && Math.abs(shape.z - camera.look_z) > math.epsilon)
+            ) {
+              shape.computed.on_screen = false;
+            }
+          }
           m_ui.directory_spans[shape.id].style.color = shape.computed.on_screen ? "black" : "#999999";
-          if (!shape.computed.on_screen) continue; // hmmm can i get away with doing this
+          if (!shape.computed.on_screen) continue; // hmmm can i get away with doing this (seems so)
+          const screen_vs: vector3[] = [];
+          const shadow_vs: vector3[] = []; // only use if shadows enabled
           for (const world_v of shape.computed.vertices) {
             const v = camera.world3screen(world_v);
-            vs.push(vector3.create2(v, world_v.z - camera.look_z));
+            screen_vs.push(vector3.create2(v, world_v.z - camera.look_z));
+            if (m_ui.editor.layers.z >= 2) shadow_vs.push(vector3.create2(camera.world3screen(vector3.create2(world_v, camera.look_z)), camera.look_z));
             i++;
           }
-          shape.computed.screen_vertices = vs;
+          shape.computed.screen_vertices = screen_vs;
+          shape.computed.shadow_vertices = shadow_vs;
         }
       }
       // TODO optimisation:
@@ -120,12 +135,26 @@ export const map_draw = {
       //   and only calculate screen position for all objects on screen
       //   hopefully this is fast enough? although i'll probably make a chunk-like system too?
       // ok why was i sorting by distance?
-      map_draw.shapes_on_screen = map.shapes.filter((s) => s.computed?.on_screen).sort((a, b) => b.computed?.distance2! - a.computed?.distance2!);
-      let i = 0;
+      map_draw.shapes_on_screen = map.shapes.filter((s) => s.computed?.on_screen).sort((a, b) => {
+        if (b.z !== a.z || b.computed?.options == undefined || a.computed?.options == undefined) return a.z - b.z;
+        if (a.id === m_ui.properties_selected.id) return 1;
+        if (b.id === m_ui.properties_selected.id) return -1;
+        const o1 = a.computed.options, o2 = b.computed.options;
+        if (o1.sensor && !o2.sensor) return 1;
+        if (o2.sensor && !o1.sensor) return -1;
+        if (o1.is_spawner && !o2.is_spawner) return 1;
+        if (o2.is_spawner && !o1.is_spawner) return -1;
+        if (o1.floor && !o2.floor) return -1;
+        if (o2.floor && !o1.floor) return 1;
+        return 0;
+      });
       for (const shape of map_draw.shapes_on_screen) {
         map_draw.draw_shape(ctx, shape);
         map_draw.draw_shape_ui(ctx, shape);
-        i++;
+        if (m_ui.editor.layers.z >= 2 && Math.abs(shape.z - camera.look_z) > math.epsilon) {
+          map_draw.draw_shape(ctx, shape, true);
+          map_draw.draw_shape_ui(ctx, shape, true);
+        }
       }
     }
 
@@ -133,26 +162,25 @@ export const map_draw = {
 
 
 
-  draw_shape: (ctx: Context, shape: map_shape_type) => {
+  draw_shape: (ctx: Context, shape: map_shape_type, shadow: boolean = false) => {
 
-    if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0) return;
+    if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0 || shape.computed.shadow_vertices == undefined) return;
     const style = map_draw.get_style(shape);
     const open_loop = Boolean(shape.options.open_loop);
     ctx.save("draw_shape");
     ctx.beginPath();
-    ctx.lines_v(shape.computed.screen_vertices, !open_loop);
+    ctx.lines_v((shadow ? shape.computed.shadow_vertices : shape.computed.screen_vertices), !open_loop);
     ctx.lineCap = "square";
     if (open_loop && !style.stroke) style.stroke = style.fill; // hmmm
     if (style.stroke) {
       ctx.strokeStyle = style.stroke;
-      ctx.globalAlpha = style.stroke_opacity ?? 1;
       ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
     }
-    ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1);
+    ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (shadow ? 0.6 : 1);
     ctx.stroke();
     if (style.fill && !open_loop) {
       ctx.fillStyle = style.fill;
-      ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1);
+      ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1) * (shadow ? 0.6 : 1);
       ctx.fill();
     }
     ctx.restore("draw_shape");
@@ -161,22 +189,23 @@ export const map_draw = {
 
 
 
-  draw_shape_ui: (ctx: Context, shape: map_shape_type) => {
+  draw_shape_ui: (ctx: Context, shape: map_shape_type, shadow: boolean = false) => {
 
-    if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0) return;
-    if (shape.z !== camera.look_z) return;
+    if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0 || shape.computed.shadow_vertices == undefined) return;
+    const screen_vertices = shadow ? shape.computed.shadow_vertices : shape.computed.screen_vertices;
 
     const style = map_draw.get_style(shape);
     const id_prefix = shape.id + "__";
     const selected = shape.id === m_ui.mouse.drag_target[0]?.shape?.id;
 
-    for (const [i, v] of shape.computed.screen_vertices.entries()) {
+    for (const [i, v] of screen_vertices.entries()) {
+      if (v.z !== camera.look_z) continue;
       const id_ = id_prefix + i;
       const vertex_size = (shape.id === "start") ? camera.scale * 30 : camera.sqrtscale * 5;
       if (Math.abs(v.z) <= 0.005) {
         ctx.begin();
         ctx.circle(v.x, v.y, vertex_size);
-        ctx.fillStyle = style.stroke ?? style.fill ?? color.purewhite;
+        ctx.fillStyle = (style.stroke ?? style.fill ?? color.purewhite) + (shadow ? "99" : "");
         ctx.lineWidth = camera.sqrtscale * 2;
         ctx.fill();
         if (selected && shape.vertices.length > 1) {
@@ -197,7 +226,7 @@ export const map_draw = {
         // mouse hover
         ctx.begin();
         ctx.circle(v.x, v.y, hove_r);
-        ctx.fillStyle = style.fill ?? style.stroke ?? color.purewhite;
+        ctx.fillStyle = (style.fill ?? style.stroke ?? color.purewhite);
         ctx.lineWidth = camera.sqrtscale * 2;
         ctx.globalAlpha = 0.4;
         ctx.fill();
@@ -221,7 +250,7 @@ export const map_draw = {
       if (m_ui.mouse.drag_target[0].id === id_) {
         ctx.begin();
         ctx.circle(v.x, v.y, hove_r);
-        ctx.strokeStyle = style.stroke ?? style.fill ?? color.purewhite;
+        ctx.strokeStyle = color.purewhite; // (style.stroke ?? style.fill ?? color.purewhite);
         ctx.lineWidth = camera.sqrtscale * 2;
         ctx.stroke();
         const o = m_ui.mouse.drag_target[0] as map_vertex_type;
@@ -342,6 +371,12 @@ export const map_draw = {
           m_ui.map.computed!.shape_map[s_id].options.parent = shape.options.parent;
         } else delete m_ui.map.computed?.shape_map[s_id].options.parent; // orphan :(
       }
+    }
+    // deselect from sidebar
+    if (m_ui.properties_selected === shape) {
+      m_ui.properties_selected = m_ui.all_shape;
+      m_ui.right_sidebar_mode = "directory";
+      m_ui.update_right_sidebar();
     }
     m_ui.circle_menu.deactivate();
     m_ui.update_directory();

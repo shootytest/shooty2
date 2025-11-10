@@ -170,8 +170,8 @@ export const detector = {
 
   sensor_during_fns: {
     ["tutorial room 1 sensor"]: (thing) => {
-      thing.lookup("tutorial room 1 arrow").shapes[0].style.stroke_opacity = 1 - math.bound((player.position.x - thing.position.x) / 350, 0, 1);
-      player.set_checkpoint(vector.clone(MAP.computed?.shape_map["start"].vertices[0] ?? vector.create(100, -100)));
+      thing.lookup("tutorial room 1 arrow").shapes[0].style.opacity = 1 - math.bound((player.position.x - thing.position.x) / 350, 0, 1);
+      player.set_checkpoint(vector3.create_(MAP.computed?.shape_map["start"].vertices[0] ?? vector.create(100, -100), 0));
     },
     ["tutorial room 2 door sensor"]: (_thing) => {
       // const style = thing.lookup("tutorial room 2 arrow 1").shapes[0].style;
@@ -180,7 +180,7 @@ export const detector = {
     ["tutorial room 4 sensor"]: (thing) => {
       const center = vector.clone(MAP.computed?.shape_map["tutorial room 4 gun"].vertices[0] ?? vector.create());
       const d = vector.length(vector.sub(player.position, center));
-      if (d < 100) player.set_checkpoint(center);
+      if (d < 100) player.set_checkpoint(vector3.create_(center, 0));
       player.fov_mult = 1.25 - 0.5 * math.bound(1 - d / 500, 0, 1);
       // hmmm
       let i = 0;
@@ -216,7 +216,7 @@ export const detector = {
     },
     ["tutorial room 2.5 sensor"]: (_thing) => {
       const centre = Vertices.centre(Spawner.spawners_lookup["tutorial room 2 breakables 4"].vertices);
-      player.set_checkpoint(centre); // todo remove
+      player.set_checkpoint(vector3.create_(centre, 0)); // todo remove
     },
     ["tutorial room 3 end sensor"]: (thing) => {
       thing.lookup("tutorial window 1")?.die();
@@ -296,7 +296,7 @@ export const detector = {
             shape.style.stroke_opacity = 0.6;
             shape.init_computed();
           }
-          thing.lookup("tutorial room 2 arrow 2").shapes[0].style.opacity = 1;
+          thing.lookup("tutorial room 2 arrow 2").shapes[0].style.opacity = 0.6;
         }
         if (!thing.object.block_done) {
           const block = Spawner.get_enemy("tutorial room 2 block");

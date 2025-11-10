@@ -18,6 +18,12 @@ export const ui = {
   height: canvas.width,
   size: 0,
 
+  debug: {
+    dt_queue: [] as number[],
+    dt_total: 0,
+    dt_max: 0,
+    fps_display: 0,
+  },
   click: {
     new_fns: [() => {}, () => {}, () => {}] as (() => void)[],
     new_fns_exist: [false, false, false] as boolean[],
@@ -62,9 +68,15 @@ export const ui = {
   tick: function(dt: number) {
     ui.tick_time++;
     ui.time += dt;
+    ui.debug.dt_queue.push(dt);
+    ui.debug.dt_total += dt;
+    while (ui.debug.dt_queue.length > 100) {
+      ui.debug.dt_total -= ui.debug.dt_queue.shift() ?? 0;
+    }
   },
 
   draw: function() {
+    ui.draw_debug();
     ui.draw_health();
     if (player.paused) ui.draw_pause_menu();
     ui.click.tick();
@@ -106,6 +118,42 @@ export const ui = {
     },
   },
 
+  draw_debug: function() {
+    if (!config.game.debug_mode) return;
+    const size = ui.size * 1.2;
+    const fps = ui.debug.dt_queue.length === 100 ? 1000000 / ui.debug.dt_total : ui.debug.dt_queue.length * 10000 / ui.debug.dt_total; // wow a million
+    const display_fps = math.lerp(ui.debug.fps_display, fps, 0.1);
+    ui.debug.fps_display = display_fps;
+    let x = ui.width - size * 10.5;
+    let y = size;
+    ctx.fillStyle = color.white + "33";
+    ctx.beginPath();
+    ctx.rect(x - size / 2, 0, size * 11, size * 4.5);
+    ctx.fill();
+    ctx.fillStyle = color.white + "aa";
+    ctx.set_font_mono(size);
+    ctx.textAlign = "left";
+    ctx.text(`${display_fps.toFixed(2)} fps`, x, y);
+
+    const real_max = math.max(...ui.debug.dt_queue);
+    const display_max = math.lerp(ui.debug.dt_max, real_max, real_max > ui.debug.dt_max ? 0.1 : 0.08);
+    ui.debug.dt_max = display_max;
+    const points = [] as vector[];
+    points.push(vector.create(x, y + size * 3));
+    for (let i = 0; i < ui.debug.dt_queue.length; i++) {
+      points.push(vector.create(ui.width - size / 10 * (105 - i), y + size + size * 2 * (1 - math.bound(ui.debug.dt_queue[i] / display_max, 0, 1))));
+    }
+    points.push(vector.create(ui.width - size * 0.6, y + size * 3));
+    ctx.lineWidth = size / 8;
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = color.white + "88";
+    ctx.fillStyle = color.green + "88";
+    ctx.beginPath();
+    ctx.lines_v(points, false);
+    ctx.stroke();
+    ctx.fill();
+  },
+
   draw_health: function() {
     if (!player.health) return;
     const total_health = player.health.capacity / 100;
@@ -116,7 +164,7 @@ export const ui = {
     let x = size * 7;
     let y = size * 5;
     let r = size * 1.25;
-    ctx.lineWidth = config.graphics.linewidth_mult;
+    ctx.lineWidth = 1.25 * config.graphics.linewidth_mult;
     const angle = -ui.time / config.seconds * config.graphics.health_rotate_speed;
     for (let i = 0; i < total_health; i++) {
       if (i < health_display - math.epsilon_bigger) {

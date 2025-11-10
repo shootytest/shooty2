@@ -139,6 +139,9 @@ make.icon = {
 make.icon_tutorial = {
     make_parent: ["icon"],
     style: "tutorial",
+    style_: {
+        opacity: 0.6,
+    },
 };
 make.deco = {
     decoration: true,
@@ -151,7 +154,7 @@ make.deco_gun_basic = {
     style_: {
         stroke_opacity: 0.3,
         fill_opacity: 0,
-    }
+    },
 };
 make_shapes.deco_gun_basic = [];
 for (let i = 0; i < 10; i++) {
@@ -287,7 +290,7 @@ make.enemy_tutorial_4way = {
     health: {
         capacity: 750,
     },
-    xp: 200,
+    xp: 100,
 };
 make_shapes.enemy_tutorial_4way = [{
         type: "polygon",

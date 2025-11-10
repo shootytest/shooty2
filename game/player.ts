@@ -8,6 +8,7 @@ import { filters } from "./detector.js";
 import { Spawner } from "./enemy.js";
 import { maketype_collect, override_object, shallow_clone_array } from "./make.js";
 import { player_save, player_stats, save } from "./save.js";
+import { Shape } from "./shape.js";
 import { Thing } from "./thing.js";
 import { ui } from "./ui.js";
 
@@ -16,8 +17,9 @@ export class Player extends Thing {
   autoshoot: boolean = false;
   fov_mult: number = 1;
   autosave_time: number = -1;
+  last_floor_time: number = -1;
   old_position: vector3_ = vector.create();
-  checkpoint: vector3_ = vector.create();
+  checkpoint: vector3 = vector3.create();
   checkpoint_room: string = "";
   current_gun: string = "";
   enemy_can_see: boolean = false;
@@ -32,6 +34,9 @@ export class Player extends Thing {
     bullets_shot: {}, // todo
     currencies_total: {},
   };
+
+  on_floor: number = 0; // 2 = safe, 1 = not safe, 0 = falllllling
+  floor_z: number = 0;
 
   camera_target: vector3_ = vector.create();
   camera_target_target: vector3_ = vector.create();
@@ -77,7 +82,7 @@ export class Player extends Thing {
     this.target.facing = vector.add(vector.sub(camera.mouse_v, camera.world2screen(this.position)), this.position);
     const move_x = (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
     const move_y = (controls.down ? 1 : 0) - (controls.up ? 1 : 0);
-    const move_z = (this.target.vz < 0 && this.z < math.epsilon) ? (controls.jump ? 1 : 0) : 0;
+    const move_z = (controls.jump ? 1 : 0);
     const move_v = vector.normalise(vector.create(move_x, move_y));
     if (this.body) {
       if (!this.paused) this.push_by(vector.mult(move_v, config.physics.player_speed));
@@ -85,24 +90,63 @@ export class Player extends Thing {
     }
     this.stats.pixels_walked += Math.floor(vector.length(vector.sub(this.position, this.old_position)));
     this.old_position = this.position;
+    // handle floor checking, z movement, shooting, and autosaving only when unpaused
     if (!this.paused) {
-      if (move_z > 0) this.target.vz = move_z * 0.03;
-      this.target.position.z = math.bound(this.target.position.z + this.target.vz, 0, 0.5);
-      this.target.vz = this.target.vz - 0.0015;
+      let on_floor = false;
+      let safe_floor = false;
+      let floor_z = (save.save.player.position?.z ?? 0) - 2;
+      let z = this.target.position.z;
+      for (const s of Shape.floor_shapes) {
+        if (s.computed && math.is_point_in_polygon(this.position, s.computed?.vertices)) {
+          floor_z = s.z;
+          on_floor = s.z - math.epsilon <= z;
+          safe_floor = on_floor && Boolean(s.thing.options.safe_floor);
+          if (on_floor) break;
+        }
+      }
+      const grounded = Math.abs(z - floor_z) < math.epsilon;
+      if (grounded) {
+        this.target.vz = 0;
+        if (on_floor) {
+          // grounded
+          this.last_floor_time = Thing.time;
+          if (move_z > 0) this.jump(); // only jump while grounded
+        } else {
+          // fell
+          z = this.fall_back();
+        }
+      }
+      if (move_z > 0 && Thing.time - this.last_floor_time < config.physics.coyote_time) {
+        this.jump(); // handle coyote time too
+      }
+      if (z < floor_z - 1.95) z = this.fall_back();
+      else {
+        z = math.bound(z + this.target.vz, z < floor_z - 0.25 ? floor_z - 2 : floor_z, floor_z + 1000);
+        this.target.vz = this.target.vz - config.physics.player_gravity;
+      }
       if (controls.shoot || this.autoshoot) {
         this.shoot();
       }
+      if (safe_floor && grounded && Thing.time >= this.autosave_time) { // only save while safe
+        if (this.autosave_time < 0) this.autosave_time = Thing.time + config.game.autosave_interval;
+        else this.save();
+      }
+      this.target.position.z = z;
+      this.on_floor = safe_floor ? 2 : (on_floor ? 1 : 0);
+      this.floor_z = floor_z;
     }
-    if (Thing.time >= this.autosave_time && !this.paused) {
-      if (this.autosave_time < 0) this.autosave_time = Thing.time + config.game.autosave_interval;
-      else this.save();
-    }
+  }
+
+  jump(power = 1) {
+    this.target.vz = power * config.physics.player_jump;
   }
 
   die() {
     this.stats.deaths++;
     this.reset_velocity();
+    this.target.vz = 0;
     this.teleport_to(this.checkpoint);
+    this.target.position.z = this.checkpoint.z;
     if (this.health) {
       this.health.heal_all();
       this.health.set_invincible(config.game.invincibility_time);
@@ -110,8 +154,18 @@ export class Player extends Thing {
     this.reload_all_rooms();
   }
 
+  fall_back() { // teleport player back after fall
+    this.health?.hit(config.game.fall_damage);
+    this.reset_velocity();
+    this.target.vz = 0;
+    this.teleport_to(save.save.player.position ?? this.checkpoint);
+    this.target.position.z = save.save.player.position?.z ?? 0;
+    return this.target.position.z;
+  }
+
   hit(damage: number) {
     super.hit(damage);
+    player.save_but_health_only(); // save when hit to prevent reloading tricks :(
     if (damage > 0) this.health?.set_invincible(config.game.invincibility_time);
   }
 
@@ -131,6 +185,11 @@ export class Player extends Thing {
     let s = Math.sqrt(v.x * v.y) / 500 / this.fov_mult;
     if (this.paused) s *= 10 * this.fov_mult;
     return s;
+  }
+
+  camera_zs() {
+    const look_z = math.lerp(camera.look_z, this.z, config.graphics.camera_smoothness);
+    return [ look_z + 1, look_z ];
   }
 
   remake_shoot(shoot_id?: string) {
@@ -221,7 +280,7 @@ export class Player extends Thing {
     }
   }
 
-  set_checkpoint(position: vector3_, room_id?: string) {
+  set_checkpoint(position: vector3, room_id?: string) {
     this.checkpoint = position;
     this.checkpoint_room = room_id ?? this.room_id;
   }

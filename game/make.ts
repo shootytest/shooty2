@@ -14,7 +14,7 @@ export interface maketype {
 
   // game booleans
   decoration?: boolean; // this won't add a physics object
-  floor?: boolean;
+  floor?: boolean; // a floor the player can stand on
   sensor?: boolean; // invisible physics sensor
   invisible?: boolean; // invisible shape
   movable?: boolean; // dynamic physics object
@@ -99,6 +99,7 @@ export interface maketype_collect {
 
 export interface maketype_shape {
 
+  // the shape itself
   type: "circle" | "polygon" | "line" | "none";
   style?: string;
   style_?: style_type;
@@ -108,13 +109,18 @@ export interface maketype_shape {
   angle?: number;
   offset?: vector;
   scale?: vector;
-  v1?: vector;
+  v1?: vector; // for lines
   v2?: vector;
+
+  // affects display
   blinking?: boolean;
   glowing?: number;
   clip?: maketype_shape_clip;
+
+  // affects gameplay
   shoot?: string;
   shoot_?: shoot_stats;
+  floor?: boolean;
 
 };
 
@@ -335,6 +341,9 @@ make.icon = {
 make.icon_tutorial = {
   make_parent: ["icon"],
   style: "tutorial",
+  style_: {
+    opacity: 0.6,
+  },
 };
 
 make.deco = {
@@ -349,7 +358,7 @@ make.deco_gun_basic = {
   style_: {
     stroke_opacity: 0.3,
     fill_opacity: 0,
-  }
+  },
 };
 make_shapes.deco_gun_basic = [];
 for (let i = 0; i < 10; i++) {
@@ -504,7 +513,7 @@ make.enemy_tutorial_4way = {
   health: {
     capacity: 750,
   },
-  xp: 200,
+  xp: 100,
 };
 make_shapes.enemy_tutorial_4way = [{
   type: "polygon",
@@ -652,7 +661,7 @@ make.enemy_tutorial_boss = {
     }],
   },
   movable: false,
-  enemy_detect_range: 0,
+  enemy_detect_range: 0, // at first, then it changes to 2000 (range of arena)
   focus_camera: true,
   health: {
     capacity: 10000,

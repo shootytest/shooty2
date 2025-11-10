@@ -83,6 +83,7 @@ export const color/*: { [key: string]: `#${string}` }*/ = {
   tutorial_alt: "#778eea",
   tutorial_dark: "#544bdb",
   tutorial_dark2: "#4e47af",
+  tutorial_floor: "#29264e",
 
 };
 
@@ -177,8 +178,8 @@ export const STYLES: styles_type = {
   },
   tutorial_floor: {
     stroke_opacity: 0,
-    fill: color.tutorial_dark2,
-    fill_opacity: 1,
+    fill: color.tutorial_floor,
+    fill_opacity: 0.7,
   },
   start: {
     stroke: color.start,

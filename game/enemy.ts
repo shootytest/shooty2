@@ -49,8 +49,8 @@ export class Enemy extends Thing {
   die() {
     const id = this.spawner.id;
     const bypass_remove = detector.before_death_fns[id]?.(this);
-    if (bypass_remove) return;
-    super.die();
+    if (bypass_remove) super.die_xp();
+    else super.die();
   }
 
   tick(dt: number) {

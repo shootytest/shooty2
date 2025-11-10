@@ -314,16 +314,19 @@ export class Thing {
     }
     die() {
         const id = this.id.split("#")[0].trim();
-        if (this.options.xp) { // add xp if needed
-            const player = Thing.things_lookup["player"];
-            player.add_xp(this.options.xp);
-        }
+        this.die_xp();
         const bypass_remove = detector.before_death_fns[id]?.(this);
         if (bypass_remove)
             return;
         this.remove_death();
         this.remove_break();
         this.remove();
+    }
+    die_xp() {
+        if (this.options.xp) { // add xp if needed
+            const player = Thing.things_lookup["player"];
+            player.add_xp(this.options.xp);
+        }
     }
     remove() {
         if (this.is_removed)

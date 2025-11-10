@@ -2,7 +2,9 @@ import { Vertices } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
 import { config } from "../util/config.js";
+import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
+import { player } from "./player.js";
 import { Thing } from "./thing.js";
 export class Particle {
     static particles = [];
@@ -11,8 +13,12 @@ export class Particle {
             particle.tick();
         }
     }
-    static draw_particles() {
+    static draw_particles(z) {
+        if (z)
+            z = math.round_dp(z, 3);
         for (const particle of Particle.particles) {
+            if (z != undefined && particle.z !== z)
+                continue;
             particle.draw();
         }
         ctx.globalAlpha = 1;
@@ -94,7 +100,7 @@ export class Particle {
         if (style.stroke) {
             ctx.strokeStyle = style.stroke;
             ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * this.opacity;
-            ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * config.graphics.linewidth_mult;
+            ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.z) * config.graphics.linewidth_mult;
             ctx.stroke();
         }
         if (style.fill) {
@@ -119,8 +125,8 @@ export class Particle {
         else {
             const vs = [];
             for (const vertex of this.vertices) {
-                const world_v = vector3.create2(vector.add(vertex, this.offset), this.z + (this.offset.z ?? 0));
-                const v = camera.world3screen(world_v, this.vertices[1]);
+                const world_v = vector3.create2(vector.add(vertex, this.offset), this.z);
+                const v = camera.world3screen(world_v, player);
                 vs.push(vector3.create2(v, world_v.z - camera.look_z));
             }
             if (this.is_circle) {

@@ -87,7 +87,7 @@ export const camera = {
     if (Math.abs(this.scale - this.scale_target) > math.epsilon) {
       this.scale = 1 / math.lerp(1 / this.scale, 1 / this.scale_target, this.lerp_factor);
     }
-    if (Math.abs(this.lerp_factor - config.graphics.camera_smoothness) < math.epsilon) this.lerp_factor = config.graphics.camera_smoothness;
+    if (Math.abs(this.lerp_factor - config.graphics.camera_smoothness) < math.epsilon || this.lerp_factor === 1) this.lerp_factor = config.graphics.camera_smoothness;
   },
   position_jump: function() {
     this.position = this.position_target;

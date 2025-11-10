@@ -40,13 +40,13 @@ export const save = {
         player.stats.currencies_total[name] = (player.stats.currencies_total[name] ?? 0) + number;
         save.changed(true);
     },
-    changed: (big = false, force = false) => {
+    changed: (not_autosave = false, force = false) => {
         // todo autosave to slot
         if (player.enemy_can_see && !force) {
             // player.enemy_can_see = false; // hmmm
             return false;
         }
-        // if (big) console.log("saving... ", save.save);
+        // if (not_autosave) console.log("saving... ", save.save);
         save.save_to_slot(save.current_slot);
         save.save_to_storage();
         return true;

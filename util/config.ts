@@ -5,20 +5,25 @@ export const config = {
   timescale: 1,
   game: {
     version: "0.1.0",
+    debug_mode: ["127.0.0.1", "localhost"].includes(window.location.hostname),
     invincibility_time: 1.5 * SECONDS,
     autosave_interval: 1 * SECONDS,
     level_1_xp: 1000,
+    fall_damage: 100,
   },
   physics: {
     wall_width: 8,
     player_speed: 10,
+    player_jump: 0.02,
+    player_gravity: 0.001,
+    coyote_time: 0.111 * SECONDS,
     force_factor: 0.0005,
     recoil_factor: 10,
     velocity_shoot_boost: 0.3,
   },
   graphics: {
     shape_cull_padding: 100, // 16 should be ok, 100 is just to be safe
-    linewidth_mult: 8,
+    linewidth_mult: 6,
     shadowblur: 75,
     xp_hide_bar: false,
     xp_display_smoothness: 0.08,

@@ -13,9 +13,9 @@ import { make, override_object } from "../game/make.js";
 let width = canvas.width;
 let height = canvas.height;
 let x, y, w, h;
-let r, c, size;
+let r, size;
 let o;
-let hover, hovering, clicking;
+let hovering;
 export const m_ui = {
     time: 0,
     map: TEST_MAP,
@@ -118,6 +118,11 @@ export const m_ui = {
                     // map_draw.change("reset 'move vertex'", target.shape); // pressing escape shouldn't change stuff
                 }
             }
+            if (m_ui.properties_selected) {
+                m_ui.properties_selected = m_ui.all_shape;
+                m_ui.right_sidebar_mode = "directory";
+                m_ui.update_right_sidebar();
+            }
         });
         key.add_key_listener("KeyF", () => {
             m_ui.right_sidebar_mode = m_ui.right_sidebar_mode === "directory" ? "properties" : "directory";
@@ -196,7 +201,8 @@ export const m_ui = {
     editor: {
         mode: "none",
         layers: {
-            walls: true,
+            z: 1,
+            floors: true,
             spawners: true,
             sensors: true,
             rooms: true,
@@ -209,7 +215,8 @@ export const m_ui = {
             name: "clear",
             icon: "x",
             action: () => {
-                m_ui.editor.layers.walls = true;
+                m_ui.editor.layers.z = 1;
+                m_ui.editor.layers.floors = true;
                 m_ui.editor.layers.spawners = true;
                 m_ui.editor.layers.sensors = true;
                 m_ui.editor.layers.rooms = true;
@@ -218,10 +225,21 @@ export const m_ui = {
             color: () => color.black,
         },
         {
+            name: "z",
+            get icon() {
+                return (m_ui.editor.layers.z >= 2) ? "layers_" : "layers";
+            },
+            action: function () {
+                m_ui.editor.layers.z += 1;
+                m_ui.editor.layers.z %= 3;
+            },
+            color: () => [color.black, "#479e33", "#699e33"][m_ui.editor.layers.z],
+        },
+        {
             name: "wall",
             icon: "wall",
-            action: () => { m_ui.editor.layers.walls = !m_ui.editor.layers.walls; },
-            color: () => m_ui.editor.layers.walls ? "#bc4a3c" : color.black,
+            action: () => { m_ui.editor.layers.floors = !m_ui.editor.layers.floors; },
+            color: () => m_ui.editor.layers.floors ? "#bc4a3c" : color.black,
         },
         {
             name: "spawner",
@@ -504,7 +522,7 @@ export const m_ui = {
             o.change -= dy;
             if (math.abs(o.change) >= 0.1) {
                 const d = math.round_to(o.change, 0.1) ?? 0;
-                camera.look_z += d;
+                camera.look_z = math.round_to(camera.look_z + d, 0.1);
                 o.change -= d;
             }
         }
@@ -891,6 +909,15 @@ export const m_ui = {
                 name: "death is permanent",
                 type: "checkbox",
             },
+            floor: {
+                name: "floor",
+                type: "checkbox",
+            },
+            safe_floor: {
+                show: "floor",
+                name: "floor is safe",
+                type: "checkbox",
+            },
             is_room: {
                 name: "room",
                 type: "checkbox",
@@ -901,10 +928,6 @@ export const m_ui = {
                 type: "button",
             },
         },
-        /*parent: {
-          name: "parent",
-          type: "text",
-        },*/
     },
     properties_options_metadata: {
         shape: {

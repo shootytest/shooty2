@@ -52,15 +52,13 @@ export const do_visibility = () => {
     ctx.save("see");
     clip_visibility_path(player, path, z);
     Shape.draw(z);
-    if (z === 0) {
-      Particle.draw_particles();
-    }
+    Particle.draw_particles(z);
     ctx.restore("see");
   }
   // ctx.ctx.save();
   // clip_inverted_path(player, inverted, 0);
   // ctx.ctx.restore();
-  for (let z = 0 /* + ((performance.now() / 300) % 1) / 10 */; z < 0.9; z += 0.1) {
+  for (let z = 0 /* + ((performance.now() / 300) % 1) / 10 */; z < math.round_to(player.z + 1, 0.1); z += 0.1) {
     ctx.ctx.save();
     clip_inverted_path(player, inverted, z);
     ctx.ctx.restore();

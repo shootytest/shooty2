@@ -215,15 +215,23 @@ export class Context {
         this.rect(x - w / 2, y - h / 2, w, h, a);
     }
     arc(x, y, r, start, end, clockwise = false) {
+        if (r < 0)
+            return;
         this.ctx.arc(x, y, r, start, end, !clockwise);
     }
     arc_v(v, r, start, end, clockwise = false) {
+        if (r < 0)
+            return;
         this.ctx.arc(v.x, v.y, r, start, end, !clockwise);
     }
     circle(x, y, r, clockwise = false) {
+        if (r < 0)
+            return;
         this.arc(x, y, r, 0, 2 * Math.PI, clockwise);
     }
     circle_v(v, r, clockwise = false) {
+        if (r < 0)
+            return;
         this.arc(v.x, v.y, r, 0, 2 * Math.PI, clockwise);
     }
     // r1 > r2

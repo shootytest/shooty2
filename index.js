@@ -43,8 +43,9 @@ const tick_all = (timestamp) => {
     const dt = real_dt * engine.timing.timeScale;
     time = now;
     camera.tick(dt);
-    camera.scale_target = player.camera_scale();
     camera.location_target = player.camera_position();
+    camera.scale_target = player.camera_scale();
+    [camera.z, camera.look_z] = player.camera_zs();
     camera.scale_adjust2(camera.halfscreen);
     if (player.paused)
         player.tick(real_dt);

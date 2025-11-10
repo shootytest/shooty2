@@ -1,5 +1,5 @@
 import { config } from "../util/config.js";
-import type { vector, vector3_ } from "../util/vector.js";
+import type { vector3, vector3_ } from "../util/vector.js";
 import { clone_object } from "./make.js";
 import { player } from "./player.js";
 import { Thing } from "./thing.js";
@@ -14,13 +14,13 @@ export interface save_type {
 };
 
 export interface player_save {
-  position?: vector;
+  position?: vector3;
   room_id?: string;
   health?: number;
   ability?: number;
   fov_mult?: number;
   xp?: number;
-  checkpoint?: vector3_;
+  checkpoint?: vector3;
   checkpoint_room?: string;
   current_gun?: string;
   guns?: string[];
@@ -82,13 +82,13 @@ export const save = {
     save.changed(true);
   },
 
-  changed: (big = false, force = false) => {
+  changed: (not_autosave = false, force = false) => {
     // todo autosave to slot
     if (player.enemy_can_see && !force) {
       // player.enemy_can_see = false; // hmmm
       return false;
     }
-    // if (big) console.log("saving... ", save.save);
+    // if (not_autosave) console.log("saving... ", save.save);
     save.save_to_slot(save.current_slot);
     save.save_to_storage();
     return true;

@@ -16,6 +16,7 @@ import { Thing } from "./thing.js";
 export class Shape {
     static shapes = [];
     static draw_shapes = [];
+    static floor_shapes = [];
     static draw_zs = [];
     static cumulative_id = 0;
     static type = "shape";
@@ -112,6 +113,8 @@ export class Shape {
         for (const s of Shape.shapes) {
             if (s.computed == undefined || s.thing == undefined || s.thing.options.invisible)
                 continue;
+            if (s.z < camera.look_z - 1 || s.z >= camera.look_z + 1)
+                continue; // cullingz
             s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position);
             if (memo_aabb3[s.z] == undefined) {
                 const z_scale = camera.zscale_inverse(s.z >= 0 ? 0 : s.z);
@@ -134,11 +137,15 @@ export class Shape {
         };
         Shape.draw_shapes = Shape.filter(screen_aabb);
         Shape.draw_zs = [0];
+        Shape.floor_shapes = [];
         for (const s of Shape.draw_shapes) {
             if (s.z !== 0) {
                 const z = math.round_to(s.z, 0.001);
                 if (!Shape.draw_zs.includes(z))
                     Shape.draw_zs.push(z);
+            }
+            if (s.thing.options.floor || s.options.floor) {
+                Shape.floor_shapes.push(s);
             }
             if (s.computed == undefined) {
                 s.init_computed();
@@ -149,12 +156,6 @@ export class Shape {
             }
         }
         Shape.draw_zs.sort();
-    }
-    ;
-    static draw(z) {
-        if (z)
-            z = math.round_dp(z, 3);
-        // hope this doesn't take too long per tick...
         Shape.draw_shapes.sort((s1, s2) => {
             if (Math.abs(s1.z - s2.z) < math.epsilon_smaller) {
                 if (s1.thing.options.decoration && !s2.thing.options.decoration)
@@ -164,9 +165,23 @@ export class Shape {
             }
             return s1.z - s2.z;
         });
+        Shape.floor_shapes.sort((s1, s2) => s2.z - s1.z); // higher z first
+        // nowhere else to put this... handle particles
+        for (const p of Particle.particles) {
+            if (p.z !== 0) {
+                const z = math.round_to(p.z, 0.001);
+                if (!Shape.draw_zs.includes(z))
+                    Shape.draw_zs.push(z);
+            }
+        }
         Particle.particles.sort((p1, p2) => {
             return p1.z - p2.z;
         });
+    }
+    ;
+    static draw(z) {
+        if (z)
+            z = math.round_dp(z, 3);
         for (const s of Shape.draw_shapes) {
             if (z != undefined && s.z !== z)
                 continue;
@@ -306,13 +321,13 @@ export class Shape {
         const override_pause_opacity = this.thing.is_player && this.index >= 1 && player.paused;
         if (style.stroke) {
             ctx.strokeStyle = style.stroke;
-            ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
-            ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * config.graphics.linewidth_mult * (this.translucent <= math.epsilon ? 1 : 1.8);
+            ctx.globalAlpha = this.opacity * (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
+            ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.z) * config.graphics.linewidth_mult * (this.translucent <= math.epsilon ? 1 : 1.8);
             ctx.stroke();
         }
         if (style.fill && this.closed_loop) {
             ctx.fillStyle = style.fill;
-            ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
+            ctx.globalAlpha = this.opacity * (style.opacity ?? 1) * (style.fill_opacity ?? 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
             ctx.fill();
         }
     }
@@ -438,7 +453,7 @@ export class Shape {
         }
         // translate by thing position
         vector3.add_to_list(this.computed.vertices, this.thing.position);
-        // no need to compute distance to camera centre... maybe next time for optimisation?
+        // no need to compute distance to camera centre... maybe next time? (for 3d optimisation? what)
         // this.computed.distance2 = vector.length2(vector.sub(this.computed.mean, camera.location3));
         const vs = [];
         for (const world_v of this.computed.vertices) {
@@ -446,6 +461,7 @@ export class Shape {
             vs.push(vector3.create2(v, world_v.z - camera.look_z));
         }
         this.computed.screen_vertices = vs;
+        // todo compute shadow_vertices
     }
     remove() {
         for (const array of [Shape.shapes, this.thing.shapes]) {
@@ -466,14 +482,15 @@ export class Shape {
         const p = new Particle();
         p.style = style;
         p.time = Thing.time + time;
-        p.offset.z = this.z;
+        p.z = this.z;
         if (o.type === "triangulate" && this.computed.vertices.length <= 2) {
-            console.error(`[shape/break] can't triangulate less than 2 vertices!`);
+            console.error(`[shape/break] can't triangulate 2 or less vertices!`);
             o.type = "fade";
         }
         if (o.type === "triangulate") {
             const mean = vector.mean(this.computed.vertices);
             for (const triangle of math.triangulate_polygon(this.computed.vertices)) {
+                // todo huh why wasn't i creating a new particle for each triangle?
                 const c = vector.sub(vector.mean(triangle), mean);
                 p.vertices = triangle;
                 p.velocity = vector.mult(c, o.speed ?? 0.1);
