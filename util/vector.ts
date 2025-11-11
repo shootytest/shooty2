@@ -31,12 +31,6 @@ export const vector = {
   create: (x = 0, y = 0): vector => {
     return {x, y};
   },
-  create3: (v: vector3): vector => {
-    return {
-      x: v.x,
-      y: v.y
-    };
-  },
   clone: (v: vector): vector => {
     return vector.create(v.x, v.y);
   },
@@ -317,6 +311,11 @@ export const vector3 = {
       y: v.y * scale,
       z: v.z * z_scale
     };
+  },
+  mult_: (v: vector3_, scale: number): vector3_ => {
+    const result: vector3_ = vector.create(v.x * scale, v.y * scale);
+    if (v.z != undefined) result.z = v.z * scale;
+    return result;
   },
   neg: (v: vector3): vector3 => {
     return {

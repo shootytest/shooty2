@@ -747,6 +747,8 @@ export const m_ui = {
                 depth++;
             }
             shortened_id = "↑".repeat(ups) + shortened_id;
+            if (shortened_id === id)
+                shortened_id = "● " + id;
             const li = document.createElement("li");
             let clickable = li;
             if (id === "all" || (shape.options.contains?.length ?? 0) > 0) {

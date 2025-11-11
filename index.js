@@ -52,7 +52,7 @@ const tick_all = (timestamp) => {
     else
         Thing.tick_things(dt);
     Spawner.tick_spawners();
-    Particle.tick_particles();
+    Particle.tick_particles(dt);
     if (!player.paused && Thing.time > 500)
         Engine.update(engine, real_dt / 10);
     // ctx.clear();

@@ -44,7 +44,7 @@ export const do_visibility = () => {
     for (const z of Shape.draw_zs) {
         ctx.save("see");
         clip_visibility_path(player, path, z);
-        Shape.draw(z);
+        Shape.draw(Number(z.toFixed(3)));
         Particle.draw_particles(z);
         ctx.restore("see");
     }

@@ -3562,7 +3562,7 @@ declare namespace Matter {
 
         static heap = Heap;
     }
-    
+
     export declare type vp_Vector2D = [number, number];
     export declare type vp_Segments = vp_Vector2D[][];
     export declare type vp_Angle = number;

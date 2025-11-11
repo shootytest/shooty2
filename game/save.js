@@ -80,6 +80,7 @@ export const save = {
         save.current_slot = slot;
         player.load(s.player);
         console.log("loaded game from slot " + slot + "!");
+        // console.log(s);
     },
     load_from_storage: () => {
         const raw = localStorage.getItem("saves");

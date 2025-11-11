@@ -28,10 +28,12 @@ export interface player_save {
 };
 
 export interface player_stats {
+  game_time: number,
+  total_time: number,
   deaths: number;
   pixels_walked: number;
   clicks: [number, number, number];
-  enemies_killed: { [key: string]: number };
+  enemies_killed: { [key: string]: number }; // todo
   bullets_shot: { [key: string]: number };
   currencies_total: { [key: string]: number };
 };
@@ -125,6 +127,7 @@ export const save = {
     save.current_slot = slot;
     player.load(s.player);
     console.log("loaded game from slot " + slot + "!");
+    // console.log(s);
   },
 
   load_from_storage: () => {

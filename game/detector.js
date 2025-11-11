@@ -10,7 +10,7 @@ import { player } from "./player.js";
 import { save } from "./save.js";
 /**
  *
- * Collisions between two bodies will obey the following rules:
+ * Collisions betwixt two bodies will obey the following rules:
  *
  *  - If the two bodies have the same non-zero value of `collisionFilter.group`,
  *    they will always collide if the value is positive, and they will never collide
@@ -30,7 +30,10 @@ import { save } from "./save.js";
  * category in its mask, i.e. `(categoryA & maskB) !== 0` and `(categoryB & maskA) !== 0`
  * are both true.
  *
- * ~ matter.js api docs
+ * ~ matter.js api docs (a word is modified, i wonder which)
+ *
+ *
+ * additionally, collisions betwixt two bodies with different z values are handled accordingly, i hope.
  *
  */
 export const filter_groups = {
@@ -90,22 +93,53 @@ export const detector = {
         Events.on(engine, "collisionStart", function (event) {
             for (const pair of event.pairs) {
                 const ba = pair.bodyA, bb = pair.bodyB;
-                detector.collision_start(pair, ba, bb, false);
-                detector.collision_start(pair, bb, ba, true);
+                const a = ba.parent.thing, b = bb.parent.thing;
+                detector.collision_start(pair, a, b);
+                detector.collision_start(pair, b, a);
+            }
+        });
+        Events.on(engine, "collisionActive", function (event) {
+            for (const pair of event.pairs) {
+                const ba = pair.bodyA, bb = pair.bodyB;
+                const a = ba.parent.thing, b = bb.parent.thing;
+                if (!a.cover_z && !b.cover_z) {
+                    if (pair.z_diff) {
+                        // suddenly same z
+                        if (Math.abs(b.z - a.z) <= 0.1) {
+                            pair.z_diff = false;
+                            detector.collision_start(pair, a, b, true);
+                            detector.collision_start(pair, b, a, true);
+                        }
+                    }
+                    else if (!pair.z_diff) {
+                        // suddenly a different z
+                        if (Math.abs(b.z - a.z) > 0.1) {
+                            pair.isSensor = true;
+                            pair.z_diff = true;
+                            detector.collision_end(pair, a, b, true);
+                            detector.collision_end(pair, b, a, true);
+                        }
+                    }
+                }
             }
         });
         Events.on(engine, "collisionEnd", function (event) {
             for (const pair of event.pairs) {
                 const ba = pair.bodyA, bb = pair.bodyB;
-                detector.collision_end(pair, ba, bb, false);
-                detector.collision_end(pair, bb, ba, true);
+                const a = ba.parent.thing, b = bb.parent.thing;
+                detector.collision_end(pair, a, b);
+                detector.collision_end(pair, b, a);
             }
         });
     },
-    collision_start: (pair, ba, bb, flipped) => {
-        const a = ba.parent.thing, b = bb.parent.thing;
+    collision_start: (pair, a, b, z_diff = false) => {
         const different_team = Math.floor(a.team) !== Math.floor(b.team);
         // console.log(`[detector/collision_start] Collision started betwixt ${ba.label} & ${bb.label}!`);
+        if (!z_diff && !a.cover_z && !b.cover_z && Math.abs(b.z - a.z) > 0.1) {
+            pair.isSensor = true;
+            pair.z_diff = true;
+            return;
+        }
         if (a.is_player) {
             if (b.options.sensor) {
                 detector.sensor_start_fns[b.id]?.(b);
@@ -151,17 +185,13 @@ export const detector = {
         if (b.options.breakable)
             b.velocity = vector.mult(a.velocity, 0.5);
     },
-    collision_end: (pair, ba, bb, flipped) => {
-        const a = ba.parent.thing, b = bb.parent.thing;
+    collision_end: (pair, a, b, z_diff = false) => {
         // console.log(`[detector/collision_end] Collision ended betwixt ${ba.label} & ${bb.label}!`);
         if (a.is_player) {
             if (b.options.sensor) {
                 detector.sensor_end_fns[b.id]?.(b);
                 b.is_touching_player = false;
             }
-        }
-        if (ba.temporarySensor) {
-            pair.isSensor = false;
         }
     },
     sensor_during_fns: {
@@ -217,11 +247,12 @@ export const detector = {
             thing.lookup("tutorial window 1")?.die();
             thing.lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
         },
-        ["tutorial room 5 sensor"]: (thing) => {
+        ["tutorial room 5 sensor boss"]: (thing) => {
             const boss = Spawner.get_enemy("tutorial room 5 boss");
             if (boss) {
-                boss.object.activated = true;
-                boss.options.enemy_detect_range = 2000;
+                boss.object.start_activated = true;
+                // boss.object.end_activated = true;
+                // boss.options.enemy_detect_range = 2000;
             }
         },
     },
@@ -312,8 +343,11 @@ export const detector = {
         ["tutorial rock 11"]: (door) => {
             switch_door(door, Spawner.check_progress("tutorial room 2 enemy shooter") > 0 || door.lookup("tutorial room 2.1 sensor").is_touching_player, "tutorial room 2.1 switch path", 1);
         },
-        ["tutorial room 5 door"]: (door) => {
-            switch_door(door, Spawner.get_enemy("tutorial room 5 boss")?.object?.activated, "tutorial room 5 switch path", 6);
+        ["tutorial room 5 door start"]: (door) => {
+            switch_door(door, Spawner.get_enemy("tutorial room 5 boss")?.object?.start_activated, "tutorial room 5 door start path", 6);
+        },
+        ["tutorial room 5 door end"]: (door) => {
+            switch_door(door, Spawner.get_enemy("tutorial room 5 boss")?.object?.end_activated, "tutorial room 5 door end path", 6);
         },
     },
 };

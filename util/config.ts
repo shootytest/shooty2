@@ -13,7 +13,7 @@ export const config = {
   },
   physics: {
     wall_width: 8,
-    player_speed: 10,
+    player_speed: 8,
     player_jump: 0.02,
     player_gravity: 0.001,
     coyote_time: 0.111 * SECONDS,
@@ -22,7 +22,7 @@ export const config = {
     velocity_shoot_boost: 0.3,
   },
   graphics: {
-    shape_cull_padding: 100, // 16 should be ok, 100 is just to be safe
+    shape_cull_padding: 50, // 16 should be ok, 50 is just to be safe
     linewidth_mult: 6,
     shadowblur: 75,
     xp_hide_bar: false,

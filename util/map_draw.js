@@ -114,9 +114,10 @@ export const map_draw = {
                     for (const world_v of shape.computed.vertices) {
                         const v = camera.world3screen(world_v);
                         screen_vs.push(vector3.create2(v, world_v.z - camera.look_z));
-                        if (m_ui.editor.layers.z >= 2)
+                    }
+                    if (m_ui.editor.layers.z >= 2) {
+                        for (const world_v of shape.computed.vertices)
                             shadow_vs.push(vector3.create2(camera.world3screen(vector3.create2(world_v, camera.look_z)), camera.look_z));
-                        i++;
                     }
                     shape.computed.screen_vertices = screen_vs;
                     shape.computed.shadow_vertices = shadow_vs;
@@ -267,7 +268,7 @@ export const map_draw = {
                             else {
                                 ov.x = newpos.x;
                                 ov.y = newpos.y;
-                                // todo probably shouldn't be running this loop every time
+                                // todo only run when the shift key is let go
                                 for (let i = 0; i < o.shape.vertices.length; i++) {
                                     if (i === o.index)
                                         continue;
@@ -277,10 +278,11 @@ export const map_draw = {
                         }
                     }
                     else {
-                        // this case probably doesn't occur now
+                        // this case probably doesn't occur now (hmmm maybe sometimes?)
                         const change = vector.div(mouse.drag_change[0], camera.scale * camera.zscale(o.vertex.z));
-                        ov.x += change.x;
-                        ov.y += change.y;
+                        const round_to_number = key.ctrl() ? 1 : 10;
+                        ov.x = math.round_to(ov.x + change.x, round_to_number);
+                        ov.y = math.round_to(ov.y + change.y, round_to_number);
                     }
                 }
                 if (m_ui.mouse.release_click) {

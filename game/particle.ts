@@ -1,6 +1,7 @@
 import { Vertices } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
+import { color } from "../util/color.js";
 import { config } from "../util/config.js";
 import { style_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
@@ -13,9 +14,9 @@ export class Particle {
 
   static particles: Particle[] = [];
 
-  static tick_particles() {
+  static tick_particles(dt: number) {
     for (const particle of Particle.particles) {
-      particle.tick();
+      particle.tick(dt);
     }
   }
 
@@ -44,6 +45,16 @@ export class Particle {
     return p;
   }
 
+  static make_icon(icon: string, radius: number, position: vector, velocity?: vector, acceleration?: vector, jerk?: vector): Particle {
+    const p = new Particle();
+    p.vertices = [position, vector.add(position, vector.create(radius))];
+    p.icon = icon;
+    if (velocity) p.velocity = velocity;
+    if (acceleration) p.acceleration = acceleration;
+    if (jerk) p.jerk = jerk;
+    return p;
+  }
+
   static make_target(screen_vertices: vector3_[], target: vector, smoothness?: number): Particle {
     const p = new Particle();
     p.vertices = screen_vertices;
@@ -58,7 +69,7 @@ export class Particle {
   is_screen = false; // indicates if the particle's vertices are in screen coordinates
   z: number = 0;
   screen_vertices: vector[] = [];
-  offset: vector = vector.create();
+  offset: vector3_ = vector.create();
   velocity: vector3_ = vector.create();
   acceleration: vector3_ = vector.create();
   jerk: vector3_ = vector.create();
@@ -68,14 +79,18 @@ export class Particle {
   style: style_type = {};
   time: number = -1;
   fade_time: number = -1;
-
+  icon: string = "";
 
   constructor() {
     Particle.particles.push(this);
   }
 
+  get total_z(): number {
+    return this.z + (this.offset.z ?? 0);
+  }
+
   get is_circle() {
-    return this.vertices[2]?.x === -123 && this.vertices[2]?.y === -123 && this.vertices[2]?.z === -123;
+    return this.vertices.length >= 3 && this.vertices[2]?.x === -123 && this.vertices[2]?.y === -123 && this.vertices[2]?.z === -123;
   }
 
   centralise() {
@@ -84,15 +99,16 @@ export class Particle {
     this.offset = vector3.add_(this.offset, vector3.create2(c));
   }
 
-  tick() {
+  tick(dt: number) {
     if (this.target != undefined) {
       const offset = vector.lerp(this.offset, this.target, this.smoothness ?? 0.1);
       this.offset.x = offset.x;
       this.offset.y = offset.y;
     } else {
-      this.offset = vector3.add_(this.offset, this.velocity);
-      this.velocity = vector3.add_(this.velocity, this.acceleration);
-      this.acceleration = vector3.add_(this.acceleration, this.jerk);
+      const mult = dt / config.seconds;
+      this.offset = vector3.add_(this.offset, vector3.mult_(this.velocity, mult));
+      this.velocity = vector3.add_(this.velocity, vector3.mult_(this.acceleration, mult));
+      this.acceleration = vector3.add_(this.acceleration, vector3.mult_(this.jerk, mult));
     }
     if (Thing.time > this.time) {
       this.remove();
@@ -103,20 +119,28 @@ export class Particle {
 
   draw() {
     const style = this.style;
-    ctx.beginPath();
-    this.draw_path();
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    if (style.stroke) {
-      ctx.strokeStyle = style.stroke;
-      ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * this.opacity;
-      ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.z) * config.graphics.linewidth_mult;
-      ctx.stroke();
-    }
-    if (style.fill) {
-      ctx.fillStyle = style.fill;
+    if (this.icon) {
+      this.compute_screen();
+      const [c, r] = this.screen_vertices;
+      ctx.fillStyle = style.fill ?? color.error;
       ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1) * this.opacity;
-      ctx.fill();
+      ctx.svg(this.icon, Math.round(c.x + this.offset.x), Math.round(c.y + this.offset.y), r.x);
+    } else {
+      ctx.beginPath();
+      this.draw_path();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      if (style.stroke) {
+        ctx.strokeStyle = style.stroke;
+        ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * this.opacity;
+        ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.total_z) * config.graphics.linewidth_mult;
+        ctx.stroke();
+      }
+      if (style.fill) {
+        ctx.fillStyle = style.fill;
+        ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1) * this.opacity;
+        ctx.fill();
+      }
     }
   }
 
@@ -125,6 +149,8 @@ export class Particle {
     if (this.is_circle) {
       const [c, r] = this.screen_vertices;
       ctx.circle(Math.round(c.x + this.offset.x), Math.round(c.y + this.offset.y), r.x);
+    } else if (this.icon) {
+      console.error("[particle/draw_path] why is this particle an icon");
     } else {
       ctx.lines_v(this.screen_vertices, true);
     }
@@ -135,11 +161,11 @@ export class Particle {
     else {
       const vs: vector3[] = [];
       for (const vertex of this.vertices) {
-        const world_v = vector3.create2(vector.add(vertex, this.offset), this.z);
+        const world_v = vector3.create2(vector.add(vertex, this.offset), this.total_z);
         const v = camera.world3screen(world_v, player);
         vs.push(vector3.create2(v, world_v.z - camera.look_z));
       }
-      if (this.is_circle) {
+      if (this.is_circle || this.icon) {
         vs[1] = vector3.sub(vs[1], vs[0]);
       }
       this.screen_vertices = vs;

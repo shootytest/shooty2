@@ -61,10 +61,8 @@ export const camera = {
   },*/
   world3screen: function(world_vector: vector3, world_center?: vector, scale?: number): vector {
     const centre = world_center ? camera.world2screen(world_center) : this.halfscreen;
-    if (scale == undefined) scale = this.scale;
-    const sv = this.world2screen(vector.create3(world_vector), scale);
-    let z = this.zscale(world_vector.z);
-    return vector.add(centre, vector.mult(vector.sub(sv, centre), z));
+    const sv = this.world2screen(world_vector, scale);
+    return vector.add(centre, vector.mult(vector.sub(sv, centre), this.zscale(world_vector.z)));
   },
   zscale: function(z: number): number {
     let z_ = (this.z - this.look_z) / (this.z - z + ZEPSILON); // replaced this.z / this.scale

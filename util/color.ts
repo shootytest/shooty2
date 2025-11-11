@@ -75,8 +75,12 @@ export const color/*: { [key: string]: `#${string}` }*/ = {
   test: "#abcdef",
   testy: "#123456",
   start: "#00ddff99",
+  player: "#eeeeee",
+  home: "#dddddd",
+  train: "#baabaa",
+  train_floor: "#3b3636",
 
-  coin: "#fff200",
+  coin: "#eff200",
   sensor: "#00ddff",
 
   tutorial_main: "#7f77ea",
@@ -104,8 +108,17 @@ export const STYLES: styles_type = {
     fill_opacity: 0.4,
   },
   home: {
-    stroke: "#eeeeee",
+    stroke: color.home,
     stroke_opacity: 1,
+  },
+  train: {
+    stroke: color.train,
+    stroke_opacity: 1,
+  },
+  train_floor: {
+    stroke_opacity: 0,
+    fill: color.train_floor,
+    fill_opacity: 1,
   },
   tutorial: {
     stroke: color.tutorial_main,

@@ -134,7 +134,7 @@ export const math = {
         return Number(Math.round(Number(value + 'e' + decimals)) + 'e' + -decimals);
     },
     round_to: (value, multiple) => {
-        return Number(Math.round(value / multiple) * multiple);
+        return Math.round(value / multiple) * multiple;
     },
     point_in_rect: (px, py, x, y, w, h) => {
         return (px >= x && py >= y && px <= x + w && py <= y + h);

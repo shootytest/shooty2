@@ -25,6 +25,8 @@ export class Player extends Thing {
     xp = 0;
     level = 0;
     stats = {
+        game_time: 0,
+        total_time: 0,
         deaths: 0,
         pixels_walked: 0,
         clicks: [0, 0, 0],
@@ -67,7 +69,7 @@ export class Player extends Thing {
             left: keys["ArrowLeft"] === true || (keys["KeyA"] === true),
             right: keys["ArrowRight"] === true || (keys["KeyD"] === true),
             jump: false && keys["Space"] === true,
-            shoot: keys["Mouse"] === true || keys["Space"] === true,
+            shoot: keys["Mouse"] === true,
             rshoot: keys["MouseRight"] === true || ((keys["ShiftLeft"] === true || keys["ShiftRight"] === true)),
             facingx: Math.floor(camera.mouse_v.x),
             facingy: Math.floor(camera.mouse_v.y),
@@ -82,8 +84,12 @@ export class Player extends Thing {
                 this.push_by(vector.mult(move_v, config.physics.player_speed));
             this.update_angle();
         }
-        this.stats.pixels_walked += Math.floor(vector.length(vector.sub(this.position, this.old_position)));
         this.old_position = this.position;
+        // update stats
+        if (!this.paused)
+            this.stats.game_time += dt;
+        this.stats.total_time += dt;
+        this.stats.pixels_walked += Math.floor(vector.length(vector.sub(this.position, this.old_position)));
         // handle floor checking, z movement, shooting, and autosaving only when unpaused
         if (!this.paused) {
             let on_floor = false;

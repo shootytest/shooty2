@@ -1,6 +1,6 @@
 // import spam
 import { world } from "../index.js";
-import { Bodies, Body, Composite, IBodyDefinition, ICollisionFilter, Query, Vector } from "../matter.js";
+import { Bodies, Body, Bounds, Composite, IBodyDefinition, ICollisionFilter, Query, Vector } from "../matter.js";
 import { config } from "../util/config.js";
 import { map_shape_options_type, map_shape_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
@@ -73,6 +73,7 @@ export class Thing {
   damage = 0;
   health?: Health;
   ability?: Health;
+  parent: Thing = this;
 
   target: {
     position: vector3,
@@ -112,8 +113,8 @@ export class Thing {
   };
 
   random_number = math.rand();
-  original_position: vector3 = vector3.create();
-  player_position: vector3 = vector3.create();
+  original_position: vector3 = vector3.create(); // for behaviour
+  player_position: vector3 = vector3.create(); // for enemies' target
   is_seeing_player = false;
 
   constructor() {
@@ -136,11 +137,15 @@ export class Thing {
     return this.position.y;
   }
   get z() {
-    return math.round_dp(this.target.position.z, 3);
+    return Number(this.target.position.z.toFixed(3));
   }
 
   set z(z: number) {
     this.target.position.z = z;
+  }
+
+  get radius(): number {
+    return this.shapes[0].r ?? 0;
   }
 
   get angle() {
@@ -169,6 +174,12 @@ export class Thing {
     this.options.room_id = room_id;
   }
 
+  get cover_z(): boolean {
+    return (this.options.cover_z == undefined)
+      ? ((this.options.wall_filter != undefined && this.options.wall_filter !== "none") || Boolean(this.options.sensor) || !this.options.seethrough)
+      : (this.options.cover_z);
+  }
+
   make_map(o: map_shape_type) {
     if (o.computed == undefined) {
       throw "map shape not computed yet!";
@@ -179,6 +190,7 @@ export class Thing {
     override_object(this.options, o.options);
     const _s = Shape.from_map(this, o);
     if (this.shapes.length <= 1) this.position = /*(o.vertices.length >= 3 && !o.options.open_loop) ? Vertices.centre(o.computed.vertices) :*/ vector3.mean(o.computed.vertices);
+    vector3.add_to_list(_s.vertices, vector3.create(0, 0, -this.z)); // move shape vertices back
     this.create_id(o.id);
     this.create_room();
     if (!this.body && !this.options.decoration) {
@@ -461,7 +473,28 @@ export class Thing {
       this.health?.tick();
       this.ability?.tick();
     }
-    this.tick_behaviour();
+    if (this.options.zzz_sleeping) {
+      // make zzz particles around 4 times a second
+      if (Thing.time >= this.behaviour.time) {
+        this.shapes[0].zzz();
+        this.behaviour.time = Thing.time + (0.25 * config.seconds);
+      }
+    } else {
+      // handle behaviour
+      this.tick_behaviour();
+    }
+    if (this.options.repel_range && this.options.repel_force) {
+      // handle repelling
+      const r = this.options.repel_range;
+      for (const b of Query.region(world.bodies, Bounds.create([vector.add(this.position, vector.create(-r, -r)), vector.add(this.position, vector.create(r, r))]))) {
+        const dv = vector.sub(b.position, this.position);
+        const other = ((b as any).thing as Thing);
+        if (vector.length2(dv) < (r + other.radius) ** 2) {
+          const pushforce = vector.normalise(dv, this.options.repel_force);
+          other.push_by(pushforce);
+        }
+      };
+    }
   }
 
   shoot(index: number | number[] = -1) {

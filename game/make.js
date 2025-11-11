@@ -47,6 +47,7 @@ make.wall_tutorial_rock = {
 make.wall_tutorial_spike = {
     make_parent: ["wall_tutorial"],
     style: "tutorial_spike",
+    cover_z: false,
     keep_bullets: false,
     seethrough: true,
     damage: 100,
@@ -74,6 +75,11 @@ make.wall_tutorial_fake = {
     },
     xp: 150,
 };
+make.wall_train = {
+    make_parent: ["wall"],
+    style: "train",
+    keep_bullets: true,
+};
 // @floors
 make.floor = {
     floor: true,
@@ -84,6 +90,10 @@ make.floor = {
 make.floor_tutorial = {
     make_parent: ["floor"],
     style: "tutorial_floor",
+};
+make.floor_train = {
+    make_parent: ["floor"],
+    style: "train_floor",
 };
 // @sensors
 make.sensor = {
@@ -122,9 +132,11 @@ make_shapes.checkpoint = [{
         type: "circle",
         radius: 50,
     }, {
-        type: "circle",
+        type: "polygon",
+        sides: 7,
         radius: 50,
         z: 0.2,
+        floor: true,
     }, {
         type: "circle",
         radius: 50,
@@ -185,7 +197,6 @@ make.player = {
 make_shapes.player = [{
         type: "circle",
         radius: 31,
-        z: 0.01,
     }];
 make_shapes.player_basic = [{
         type: "line",
@@ -353,6 +364,41 @@ make_shapes.enemy_tutorial_easy = [{
         v2: vector.createpolar_deg(0, 35),
         shoot: "enemy_easy",
     }];
+make.enemy_tutorial_easy_static = {
+    make_parent: ["enemy_tutorial"],
+    behaviour: {
+        normal: {
+            shoot_mode: "normal",
+            move_mode: "static",
+            face_mode: "direct",
+        },
+        idle: {
+            face_mode: "wander",
+            move_mode: "static",
+            wander_time: 0.5,
+            wander_distance: 100,
+            wander_cooldown: 0,
+            face_smoothness: 0.05,
+        },
+    },
+    enemy_detect_range: 500,
+    health: {
+        capacity: 450,
+    },
+    death: [
+        { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.6, spread_angle: -1 }, repeat: 4 },
+    ],
+    xp: 80,
+};
+make_shapes.enemy_tutorial_easy_static = [{
+        type: "polygon",
+        sides: 7,
+        radius: 40,
+    }, {
+        type: "line",
+        v2: vector.createpolar_deg(0, 40),
+        shoot: "enemy_easy_static",
+    }];
 make.enemy_tutorial_bit = {
     make_parent: ["enemy_tutorial", "enemy_breakable"],
     behaviour: {
@@ -435,6 +481,10 @@ make.enemy_tutorial_boss = {
     movable: false,
     enemy_detect_range: 0,
     focus_camera: true,
+    zzz_sleeping: true,
+    repel_range: 200,
+    repel_force: 100,
+    angle: 90,
     health: {
         capacity: 10000,
     },
@@ -527,7 +577,7 @@ make.collect_coin = {
             move_speed: 4.5,
         }
     },
-    enemy_detect_range: 300,
+    enemy_detect_range: 250,
 };
 make.collect_coin_1 = {
     make_parent: ["collect_coin"],
@@ -633,6 +683,14 @@ make_shoot.enemy_easy = {
     reload: 1.1,
     speed: 4,
     time: 2,
+};
+make_shoot.enemy_easy_static = {
+    parent: ["enemy"],
+    size: 12,
+    spread_angle: 0.02,
+    reload: 0.6,
+    speed: 5,
+    time: 1.5,
 };
 make_shoot.enemy_block = {
     parent: ["enemy"],

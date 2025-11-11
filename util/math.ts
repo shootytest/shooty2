@@ -139,7 +139,7 @@ export const math = {
     return Number(Math.round(Number(value + 'e' + decimals)) + 'e' + -decimals);
   },
   round_to: (value: number, multiple: number): number => {
-    return Number(Math.round(value / multiple) * multiple);
+    return Math.round(value / multiple) * multiple;
   },
 
   point_in_rect: (px: number, py: number, x: number, y: number, w: number, h: number): boolean => {

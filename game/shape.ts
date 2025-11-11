@@ -29,7 +29,7 @@ export class Shape {
     const s = new Shape(thing);
 
     // s.map_shape_type_object = o;
-    s.offset.z = o.z;
+    s.offset.z = 0; // o.z;
 
     // booleans
     s.closed_loop = !(thing.options.open_loop);
@@ -143,8 +143,7 @@ export class Shape {
     Shape.floor_shapes = [];
     for (const s of Shape.draw_shapes) {
       if (s.z !== 0) {
-        const z = math.round_to(s.z, 0.001);
-        if (!Shape.draw_zs.includes(z)) Shape.draw_zs.push(z);
+        if (!Shape.draw_zs.includes(s.z)) Shape.draw_zs.push(s.z);
       }
       if (s.thing.options.floor || s.options.floor) {
         Shape.floor_shapes.push(s);
@@ -158,14 +157,17 @@ export class Shape {
       }
     }
 
-    Shape.draw_zs.sort();
+    Shape.draw_zs.sort((s1, s2) => s1 - s2); // WHY WAS IT SORTING ALPHABETICALLY thanks js
     Shape.draw_shapes.sort((s1, s2) => {
-      if (Math.abs(s1.z - s2.z) < math.epsilon_smaller) {
-        if (s1.thing.options.decoration && !s2.thing.options.decoration) return -1;
-        if (s2.thing.options.decoration && !s1.thing.options.decoration) return 1;
+      if (Math.abs(s1.z - s2.z) < math.epsilon) {
+        if (s1.thing.is_player && !s2.thing.is_player) return 1;
+        if (s2.thing.is_player && !s1.thing.is_player) return -1;
+        if (s1.thing.options.floor && !s2.thing.options.floor) return -1;
+        if (s2.thing.options.floor && !s1.thing.options.floor) return 1;
+        return 0;
       }
-      return s1.z - s2.z;
-    });
+      return Number((s1.z - s2.z).toFixed(3));
+    }); // lower z first
     Shape.floor_shapes.sort((s1, s2) => s2.z - s1.z); // higher z first
 
     // nowhere else to put this... handle particles
@@ -182,7 +184,6 @@ export class Shape {
   };
 
   static draw(z?: number) {
-    if (z) z = math.round_dp(z, 3);
     for (const s of Shape.draw_shapes) {
       if (z != undefined && s.z !== z) continue;
       s.draw_all();
@@ -239,8 +240,12 @@ export class Shape {
   };
   translucent = 0;
 
-  get z() {
-    return math.round_dp(this.offset.z + this.thing.z, 3);
+  get z(): number {
+    return Number((this.offset.z + this.thing.z).toFixed(3));
+  }
+
+  get r(): number {
+    return 0;
   }
 
   get seethrough(): boolean {
@@ -273,6 +278,13 @@ export class Shape {
     return this.computed?.screen_vertices?.[2]?.x === -123 && this.computed?.screen_vertices?.[2]?.y === -123 && this.computed?.screen_vertices?.[2]?.z === -123;
   }
 
+  get has_shadow(): boolean {
+    // no shadows for now...
+    return false;
+    // return !this.thing.is_player && this.thing.parent.is_player;
+    // return !this.thing.options.decoration && !this.thing.cover_z && Math.abs(this.z - camera.look_z) > math.epsilon && !this.thing.is_player;
+  }
+
   init_computed() {
     const calc_vertices = vector3.add_list(this.vertices, this.offset),
       vertices = vector3.clone_list(this.vertices);
@@ -286,8 +298,42 @@ export class Shape {
       this.computed.aabb = aabb;
       this.computed.aabb3 = aabb3;
       this.computed.mean = mean;
-      this.computed.vertices = vertices;
+      this.computed.vertices = calc_vertices;
     }
+  }
+
+  compute_screen() {
+    if (this.computed?.vertices == undefined) return;
+    // compute vertices and offset by shape offset
+    this.computed.vertices = vector3.add_list(this.vertices, this.offset);
+    if (this.activate_scale) vector3.scale_to_list(this.computed.vertices, this.scale);
+    // rotate by thing angle
+    if (this.thing.angle) {
+      for (const v of this.computed.vertices) {
+        const rotated = vector.rotate(vector.create(), v, this.thing.angle);
+        v.x = rotated.x;
+        v.y = rotated.y;
+      }
+    }
+    this.computed.aabb = vector.make_aabb(this.computed.vertices);
+    this.computed.aabb3 = vector3.make_aabb(this.computed.vertices);
+    // translate by thing position
+    vector3.add_to_list(this.computed.vertices, this.thing.position);
+    // no need to compute distance to camera centre... maybe next time? (for 3d optimisation? what)
+    // this.computed.distance2 = vector.length2(vector.sub(this.computed.mean, camera.location3));
+    const screen_vs: vector3[] = [];
+    const shadow_vs: vector3[] = []; // only use if shadows enabled
+    for (const world_v of this.computed.vertices) {
+      const v = camera.world3screen(world_v, player);
+      screen_vs.push(vector3.create2(v, world_v.z - camera.look_z));
+    }
+    if (this.has_shadow) {
+      for (const world_v of this.computed.vertices)
+        shadow_vs.push(vector3.create2(camera.world3screen(vector3.create2(world_v, camera.look_z)), camera.look_z));
+    }
+    this.computed.screen_vertices = screen_vs;
+    this.computed.shadow_vertices = shadow_vs;
+    // todo compute shadow_vertices
   }
 
   add(thing: Thing) {
@@ -307,18 +353,21 @@ export class Shape {
     else this.draw();
     this.draw_glow();
     this.draw_blink();
-    this.draw_health();
+    if (this.index <= 0) {
+      this.draw_health();
+      this.draw_repel();
+    }
   }
 
-  draw(style_mult?: style_type) {
-    if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0) return;
+  draw(style_mult?: style_type, shadow: boolean = false) {
+    if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0 || this.computed.shadow_vertices == undefined) return;
     let style = this.style;
     if (style_mult) {
       style = clone_object(this.style);
       multiply_and_override_object(style, style_mult);
     }
     ctx.beginPath();
-    this.draw_path();
+    this.draw_path(shadow ? this.computed.shadow_vertices : this.computed.screen_vertices);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     const override_pause_opacity: boolean = this.thing.is_player && this.index >= 1 && player.paused;
@@ -333,15 +382,17 @@ export class Shape {
       ctx.globalAlpha = this.opacity * (style.opacity ?? 1) * (style.fill_opacity ?? 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
       ctx.fill();
     }
+    if (!shadow && (this.computed.shadow_vertices?.length ?? 0) >= 1) {
+      this.draw({ opacity: 0.5, }, true);
+    }
   }
 
-  draw_path() {
-    if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0) return;
-    ctx.lines_v(this.computed.screen_vertices, this.closed_loop);
+  draw_path(vertices: vector3[]) {
+    ctx.lines_v(vertices, this.closed_loop);
   }
 
   draw_health() {
-    if (this.computed?.screen_vertices == undefined || !this.computed.on_screen || this.thing.health == undefined || this.index >= 1) return;
+    if (this.computed?.screen_vertices == undefined || !this.computed.on_screen || this.thing.health == undefined) return;
     if (this.thing.options.hide_health) {
       if (this.thing.options.wall_filter) {
         const until = this.thing.options.hide_health_until;
@@ -429,30 +480,18 @@ export class Shape {
     ctx.ctx.restore();
   }
 
-  compute_screen() {
-    if (this.computed?.vertices == undefined) return;
-    // compute vertices and offset by shape offset
-    this.computed.vertices = vector3.add_list(this.vertices, this.offset);
-    if (this.activate_scale) vector3.scale_to_list(this.computed.vertices, this.scale);
-    // rotate by thing angle
-    if (this.thing.angle) {
-      for (const v of this.computed.vertices) {
-        const rotated = vector.rotate(vector.create(), v, this.thing.angle);
-        v.x = rotated.x;
-        v.y = rotated.y;
-      }
-    }
-    // translate by thing position
-    vector3.add_to_list(this.computed.vertices, this.thing.position);
-    // no need to compute distance to camera centre... maybe next time? (for 3d optimisation? what)
-    // this.computed.distance2 = vector.length2(vector.sub(this.computed.mean, camera.location3));
-    const vs: vector3[] = [];
-    for (const world_v of this.computed.vertices) {
-      const v = camera.world3screen(world_v, player);
-      vs.push(vector3.create2(v, world_v.z - camera.look_z));
-    }
-    this.computed.screen_vertices = vs;
-    // todo compute shadow_vertices
+  draw_repel() {
+    if (!this.thing.options.repel_range || this.computed?.screen_vertices == undefined || !this.computed?.on_screen) return;
+    const c = this.is_circle ? this.computed.screen_vertices[0] : vector.aabb_centre(vector.make_aabb(this.computed.screen_vertices));
+    const r = this.thing.options.repel_range * camera.scale * camera.zscale(this.thing.z);
+    ctx.beginPath();
+    ctx.circle_v(c, r);
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = (this.style.width ?? 1) * camera.scale * camera.zscale(this.z) * config.graphics.linewidth_mult;
+    ctx.strokeStyle = color.white + "88";
+    ctx.fillStyle = color.white + "22";
+    ctx.fill();
+    ctx.stroke();
   }
 
   remove() {
@@ -502,6 +541,20 @@ export class Shape {
     return p;
   }
 
+  zzz() {
+    if (this.computed?.vertices == undefined || !this.computed.on_screen) return;
+    const p = Particle.make_icon("z",
+      Math.min(this.r / 2, 50),
+      vector3.create2(math.rand_point_in_circle(this.thing.position, this.r / 2), this.thing.position.z),
+      vector3.create2(math.rand_point_in_circle(vector.create(), 10), 0.5)
+    );
+    p.time = Thing.time + (2 * config.seconds);
+    p.style.fill = this.style.fill;
+    p.style.opacity = 0.3;
+    p.z = this.z;
+    return p;
+  }
+
 };
 
 
@@ -527,6 +580,10 @@ export class Polygon extends Shape {
   sides: number = 0;
   angle: number = 0;
 
+  get r(): number {
+    return this.radius;
+  }
+
   constructor(thing: Thing) {
     super(thing);
   }
@@ -544,36 +601,44 @@ export class Polygon extends Shape {
     }
   }
 
-  draw_path() {
+  draw_path(vertices: vector3[]) {
     if (this.sides === 0) {
-      if (this.computed?.screen_vertices == undefined || this.computed.screen_vertices.length <= 0) return;
-      const [c, r] = this.computed.screen_vertices;
+      const [c, r] = vertices;
       ctx.circle(c.x, c.y, r.x);
     } else {
-      super.draw_path();
+      super.draw_path(vertices);
     }
   }
 
   compute_screen() {
     if (this.sides === 0) {
-      if (this.computed?.mean == undefined) return;
-      let c = vector3.clone(this.computed.mean);
+      if (this.computed == undefined) return;
+      let c = vector3.create();
       let r = vector3.create(this.radius, 0, 0);
       const rotated = vector.rotate(vector.create(), c, this.thing.angle);
       c.x = rotated.x;
       c.y = rotated.y;
       c = vector3.add(c, this.thing.position);
       r = vector3.add(r, c);
-      const vs: vector3[] = [];
+      const screen_vs: vector3[] = [];
+      const shadow_vs: vector3[] = [];
       for (const world_v of [c, r]) {
         const v = camera.world3screen(world_v, player);
-        vs.push(vector3.create2(v, world_v.z - camera.look_z));
+        screen_vs.push(vector3.create2(v, world_v.z - camera.look_z));
       }
-      vs[1] = vector3.sub(vs[1], vs[0]);
+      screen_vs[1] = vector3.sub(screen_vs[1], screen_vs[0]);
       const shhh = vector3.create(-123, -123, -123);
-      vs.push(shhh);
-      this.computed.screen_vertices = vs;
+      screen_vs.push(shhh);
+      if (this.has_shadow) {
+        for (const world_v of [c, r])
+          shadow_vs.push(vector3.create2(camera.world3screen(vector3.create2(world_v, camera.look_z)), camera.look_z));
+        shadow_vs[1] = vector3.sub(shadow_vs[1], shadow_vs[0]);
+        const shhh = vector3.create(-123, -123, -123);
+        shadow_vs.push(shhh);
+      }
+      this.computed.screen_vertices = screen_vs;
       this.computed.vertices = [c, r, shhh];
+      this.computed.shadow_vertices = shadow_vs;
     } else {
       super.compute_screen();
     }
