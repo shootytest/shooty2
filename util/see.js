@@ -188,7 +188,7 @@ const clip_inverted_path = (center, inverted, z) => {
     clip_path(center, inverted, z);
     ctx.beginPath();
     ctx.rect(0, 0, w, h);
-    ctx.fillStyle = Math.abs(z) < math.epsilon ? "#544bdb80" : color.blackground + "28"; // todo replace color
+    ctx.fillStyle = math.equal(z, 0) ? "#544bdb80" : color.blackground + "28"; // todo replace default color
     ctx.fill();
 };
 // call this function after clipping

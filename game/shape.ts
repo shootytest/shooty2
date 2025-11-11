@@ -158,17 +158,18 @@ export class Shape {
     }
 
     Shape.draw_zs.sort((s1, s2) => s1 - s2); // WHY WAS IT SORTING ALPHABETICALLY thanks js
-    Shape.draw_shapes.sort((s1, s2) => {
-      if (Math.abs(s1.z - s2.z) < math.epsilon) {
+    const draw_shapes_sort = (s1: Shape, s2: Shape): number => {
+      if (math.equal(s1.z, s2.z)) {
         if (s1.thing.is_player && !s2.thing.is_player) return 1;
         if (s2.thing.is_player && !s1.thing.is_player) return -1;
         if (s1.thing.options.floor && !s2.thing.options.floor) return -1;
         if (s2.thing.options.floor && !s1.thing.options.floor) return 1;
         return 0;
       }
-      return Number((s1.z - s2.z).toFixed(3));
-    }); // lower z first
-    Shape.floor_shapes.sort((s1, s2) => s2.z - s1.z); // higher z first
+      return Number((s1.z - s2.z).toFixed(3)); // lower z first
+    };
+    Shape.draw_shapes.sort(draw_shapes_sort);
+    Shape.floor_shapes.sort((s1, s2) => -draw_shapes_sort(s1, s2)); // reverse of draw_shapes
 
     // nowhere else to put this... handle particles
     for (const p of Particle.particles) {
@@ -374,7 +375,7 @@ export class Shape {
     if (style.stroke) {
       ctx.strokeStyle = style.stroke;
       ctx.globalAlpha = this.opacity * (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
-      ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.z) * config.graphics.linewidth_mult * (this.translucent <= math.epsilon ? 1 : 1.8);
+      ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.z) * config.graphics.linewidth_mult * (this.translucent <= math.epsilon ? 1 : 1.8) * (this.thing.options.seethrough && this.thing.is_wall ? 0.5 : 1);
       ctx.stroke();
     }
     if (style.fill && this.closed_loop) {
@@ -404,7 +405,7 @@ export class Shape {
       return;
     }
     const ratio = this.thing.health.display_ratio;
-    if (Math.abs(ratio - 1) < math.epsilon) return;
+    if (math.equal(ratio, 1)) return;
     ctx.ctx.save();
     const c = this.is_circle ? this.computed.screen_vertices[0] : vector.aabb_centre(vector.make_aabb(this.computed.screen_vertices));
     ctx.beginPath();

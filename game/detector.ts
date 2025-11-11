@@ -1,5 +1,5 @@
 import { engine, MAP } from "../index.js";
-import { Body, Events, Vertices } from "../matter.js";
+import { Events, Vertices } from "../matter.js";
 import { STYLES } from "../util/color.js";
 import { config } from "../util/config.js";
 import { math } from "../util/math.js";
@@ -101,6 +101,10 @@ export const detector = {
       for (const pair of event.pairs) {
         const ba = pair.bodyA, bb = pair.bodyB;
         const a = ((ba.parent as any).thing as Thing), b = ((bb.parent as any).thing as Thing);
+        if ((!a.cover_z || (ba as any).z != undefined) && (!b.cover_z || (bb as any).z != undefined) && Math.abs(((bb as any).z ?? b.z) - ((ba as any).z ?? a.z)) >= 0.1) {
+          pair.isSensor = true;
+          (pair as any).z_diff = true;
+        }
         detector.collision_start(pair, a, b);
         detector.collision_start(pair, b, a);
       }
@@ -109,17 +113,18 @@ export const detector = {
       for (const pair of event.pairs) {
         const ba = pair.bodyA, bb = pair.bodyB;
         const a = ((ba.parent as any).thing as Thing), b = ((bb.parent as any).thing as Thing);
-        if (!a.cover_z && !b.cover_z) {
+        if ((!a.cover_z || (ba as any).z != undefined) && (!b.cover_z || (bb as any).z != undefined)) {
+          const diff = Math.abs(((bb as any).z ?? b.z) - ((ba as any).z ?? a.z));
           if ((pair as any).z_diff) {
             // suddenly same z
-            if (Math.abs(b.z - a.z) <= 0.1) {
+            if (diff <= 0.1) {
               (pair as any).z_diff = false;
               detector.collision_start(pair, a, b, true);
               detector.collision_start(pair, b, a, true);
             }
           } else if (!(pair as any).z_diff) {
             // suddenly a different z
-            if (Math.abs(b.z - a.z) > 0.1) {
+            if (diff > 0.1) {
               pair.isSensor = true;
               (pair as any).z_diff = true;
               detector.collision_end(pair, a, b, true);
@@ -141,11 +146,6 @@ export const detector = {
   collision_start: (pair: Matter.Pair, a: Thing, b: Thing, z_diff: boolean = false) => {
     const different_team = Math.floor(a.team) !== Math.floor(b.team);
     // console.log(`[detector/collision_start] Collision started betwixt ${ba.label} & ${bb.label}!`);
-    if (!z_diff && !a.cover_z && !b.cover_z && Math.abs(b.z - a.z) > 0.1) {
-      pair.isSensor = true;
-      (pair as any).z_diff = true;
-      return;
-    }
     if (a.is_player) {
       if (b.options.sensor) {
         detector.sensor_start_fns[b.id]?.(b);
@@ -198,15 +198,15 @@ export const detector = {
 
 
   sensor_during_fns: {
-    ["tutorial room 1 sensor"]: (thing) => {
+    ["tutorial room 1 sensor"]: (thing, _dt) => {
       thing.lookup("tutorial room 1 arrow").shapes[0].style.opacity = 1 - math.bound((player.position.x - thing.position.x) / 350, 0, 1);
       player.set_checkpoint(vector3.create_(MAP.computed?.shape_map["start"].vertices[0] ?? vector.create(100, -100), 0));
     },
-    ["tutorial room 2 door sensor"]: (_thing) => {
+    ["tutorial room 2 door sensor"]: (_thing, _dt) => {
       // const style = thing.lookup("tutorial room 2 arrow 1").shapes[0].style;
       // style.stroke_opacity = math.bound((style.stroke_opacity ?? 1) - 0.05, 0, 1);
     },
-    ["tutorial room 4 sensor"]: (thing) => {
+    ["tutorial room 4 sensor"]: (thing, _dt) => {
       const center = vector.clone(MAP.computed?.shape_map["tutorial room 4 gun"].vertices[0] ?? vector.create());
       const d = vector.length(vector.sub(player.position, center));
       if (d < 100) player.set_checkpoint(vector3.create_(center, 0));
@@ -235,7 +235,10 @@ export const detector = {
         mouse_icon.style.fill_opacity = math.bounce(thing.thing_time, config.graphics.blink_time * 2) * 0.5;
       }
     },
-  } as { [thing_id: string]: (thing: Thing) => void },
+    ["train floor"]: (_thing, dt) => {
+      player.object.train = (player.object.train ?? 0) + dt;
+    },
+  } as { [thing_id: string]: (thing: Thing, dt: number) => void },
 
 
   sensor_start_fns: {
@@ -251,13 +254,17 @@ export const detector = {
       thing.lookup("tutorial window 1")?.die();
       thing.lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
     },
-    ["tutorial room 5 sensor boss"]: (thing) => {
+    ["tutorial room 5 sensor boss"]: (_thing) => {
       const boss = Spawner.get_enemy("tutorial room 5 boss");
       if (boss) {
         boss.object.start_activated = true;
         // boss.object.end_activated = true;
         // boss.options.enemy_detect_range = 2000;
       }
+    },
+    ["tutorial room 6 sensor start"]: (thing) => {
+      const centre = thing.position;
+      player.set_checkpoint(vector3.create_(centre, 0));
     },
   } as { [thing_id: string]: (thing: Thing) => void },
 
@@ -360,6 +367,12 @@ export const detector = {
     },
     ["tutorial room 5 door end"]: (door) => {
       switch_door(door, Spawner.get_enemy("tutorial room 5 boss")?.object?.end_activated, "tutorial room 5 door end path", 6);
+    },
+    ["train door left"]: (door) => {
+      switch_door(door, player.object.train && player.object.train > 1 * config.seconds, "train door left path", 3);
+    },
+    ["train door right"]: (door) => {
+      switch_door(door, player.object.train && player.object.train > 1 * config.seconds, "train door right path", 3);
     },
   } as { [key: string]: (thing: Thing) => void },
 

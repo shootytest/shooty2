@@ -66,12 +66,12 @@ export const camera = {
   },
   zscale: function(z: number): number {
     let z_ = (this.z - this.look_z) / (this.z - z + ZEPSILON); // replaced this.z / this.scale
-    if (z_ <= 0) z = 1 / ZEPSILON;
+    if (z_ <= 0) z_ = 1 / ZEPSILON;
     return z_;
   },
   zscale_inverse: function(z: number): number {
     let z_ = (this.z - z) / (this.z - this.look_z + ZEPSILON); // replaced this.z / this.scale
-    if (z_ <= 0) z = 1 / ZEPSILON;
+    if (z_ <= 0) z_ = 1 / ZEPSILON;
     return z_;
   },
   init: function() {
@@ -82,10 +82,10 @@ export const camera = {
     this.time += dt;
     // lerp
     this.position = vector.lerp(this.position, this.position_target, this.lerp_factor);
-    if (Math.abs(this.scale - this.scale_target) > math.epsilon) {
+    if (!math.equal(this.scale, this.scale_target)) {
       this.scale = 1 / math.lerp(1 / this.scale, 1 / this.scale_target, this.lerp_factor);
     }
-    if (Math.abs(this.lerp_factor - config.graphics.camera_smoothness) < math.epsilon || this.lerp_factor === 1) this.lerp_factor = config.graphics.camera_smoothness;
+    if (math.equal(this.lerp_factor, config.graphics.camera_smoothness) || this.lerp_factor === 1) this.lerp_factor = config.graphics.camera_smoothness;
   },
   position_jump: function() {
     this.position = this.position_target;

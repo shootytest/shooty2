@@ -33,7 +33,7 @@ export const config = {
     health_display_smoothness: 0.07,
     health_rotate_speed: 0.8,
     blink_time: 0.15 * SECONDS,
-    camera_smoothness: 0.2,
+    camera_smoothness: 0.18,
     camera_target_smoothness: 0.1,
     camera_mouse_look_factor: 0.075,
     pause_opacity: 0.25,

@@ -161,10 +161,20 @@ export const ui = {
     const health_ipart = Math.floor(health_display + math.epsilon_bigger);
     const health_fpart = health_display - health_ipart;
     const size = ui.size;
-    let x = size * 7;
-    let y = size * 5;
     let r = size * 1.25;
+    let x = size * 7 - r * 2;
+    let y = size * 5;
+    let w = size * 3.5 * Math.floor(total_health - 1) + r * 4;
+    ctx.fillStyle = (player.enemy_can_see ? color.red + "11" : color.black + "25");
+    ctx.beginPath();
+    ctx.rectangle(x + w / 2, y, w, r * 3);
+    ctx.fill();
+    const w_ = size * 3.5 * health_display;
+    ctx.beginPath();
+    ctx.rectangle(x + r * 0.625 + w_ / 2, y, w_, r * 3);
+    ctx.fill();
     ctx.lineWidth = 1.25 * config.graphics.linewidth_mult;
+    x = size * 7;
     const angle = -ui.time / config.seconds * config.graphics.health_rotate_speed;
     for (let i = 0; i < total_health; i++) {
       if (i < health_display - math.epsilon_bigger) {
@@ -184,16 +194,7 @@ export const ui = {
       x += size * 3.5;
       if (i === health_ipart && health_fpart < 0.1) ctx.globalAlpha = 1;
     }
-    let w = size * 3.5 * Math.floor(total_health - 1) + r * 4;
     x = size * 7 - r * 2;
-    ctx.fillStyle = (player.enemy_can_see ? color.red : color.white) + "11";
-    ctx.beginPath();
-    ctx.rectangle(x + w / 2, y, w, r * 3);
-    ctx.fill();
-    const w_ = size * 3.5 * health_display;
-    ctx.beginPath();
-    ctx.rectangle(x + r * 0.625 + w_ / 2, y, w_, r * 3);
-    ctx.fill();
     // xp
     const is_showing = (ui.time - ui.xp.time) < config.graphics.xp_display_time;
     const y_ratio = math.lerp(ui.xp.y_ratio, Number(is_showing), config.graphics.xp_display_smoothness);

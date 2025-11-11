@@ -110,7 +110,7 @@ export const map_draw = {
                 (!m_ui.editor.layers.sensors && shape.computed.options?.sensor) ||
                 (!m_ui.editor.layers.spawners && shape.computed.options?.is_spawner) ||
                 (!m_ui.editor.layers.decoration && shape.computed.options?.decoration && !shape.computed.options?.floor) ||
-                (!m_ui.editor.layers.z && Math.abs(shape.z - camera.look_z) > math.epsilon)
+                (!m_ui.editor.layers.z && !math.equal(shape.z, camera.look_z))
             ) {
               shape.computed.on_screen = false;
             }
@@ -201,7 +201,7 @@ export const map_draw = {
     const selected = shape.id === m_ui.mouse.drag_target[0]?.shape?.id;
 
     for (const [i, v] of screen_vertices.entries()) {
-      if (v.z !== camera.look_z) continue;
+      if (v.z !== camera.look_z && shape.id !== m_ui.properties_selected.id) continue;
       const id_ = id_prefix + i;
       const vertex_size = (shape.id === "start") ? camera.scale * 30 : camera.sqrtscale * 5;
       if (Math.abs(v.z) <= 0.005) {
@@ -264,7 +264,8 @@ export const map_draw = {
               if (key.shift()) {
                 const difference = vector.sub(newpos, o.vertex_old[o.index]);
                 for (let i = 0; i < o.shape.vertices.length; i++) {
-                  o.shape.vertices[i] = vector.add(o.vertex_old[i], difference);
+                  o.shape.vertices[i].x = o.vertex_old[i].x + difference.x;
+                  o.shape.vertices[i].y = o.vertex_old[i].y + difference.y;
                 }
                 if (o.shape.vertices.length === 1 && (o.shape.options.contains?.length ?? 0) > 0) {
                   const same_difference = vector.sub(newpos, ov);
@@ -300,11 +301,13 @@ export const map_draw = {
             const round_to_number = key.ctrl() ? 1 : 10;
             if (key.shift()) {
               for (let i = 0; i < o.shape.vertices.length; i++) {
-                o.shape.vertices[i] = vector.round_to(o.shape.vertices[i], round_to_number);
+                o.shape.vertices[i].x = math.round_to(o.shape.vertices[i].x, round_to_number);
+                o.shape.vertices[i].y = math.round_to(o.shape.vertices[i].y, round_to_number);
               }
               map_draw.change("move shape", o.shape);
             } else {
-              o.shape.vertices[o.index] = vector.round_to(ov, round_to_number);
+              o.shape.vertices[o.index].x = math.round_to(ov.x, round_to_number);
+              o.shape.vertices[o.index].y = math.round_to(ov.y, round_to_number);
               map_draw.change("move vertex #" + o.index, o.shape);
             }
             map_draw.compute_shape(o.shape);

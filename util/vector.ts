@@ -390,13 +390,15 @@ export const vector3 = {
     }
     return;
   },
-  round_list: (vs: vector3_[], multiple: number): vector3_[] => {
+  round_list: (vs: vector3_[], multiple: number, z_multiple?: number): vector3_[] => {
     const rounded = [];
     for (const v of vs) {
-      rounded.push({
+      const result = {
         x: math.round_to(v.x, multiple),
         y: math.round_to(v.y, multiple)
-      });
+      } as vector3_;
+      if (v.z) result.z = math.round_to(v.z, z_multiple ?? multiple);
+      rounded.push(result);
     }
     return rounded;
   },
@@ -406,6 +408,9 @@ export const vector3 = {
       y: v1.y - v2.y,
       z: v1.z - v2.z
     };
+  },
+  equal: (v1: vector3, v2: vector3): boolean => {
+    return Math.abs(v1.x - v2.x) < math.epsilon && Math.abs(v1.y - v2.y) < math.epsilon && Math.abs(v1.z - v2.z) < math.epsilon;
   },
   length2: (v: vector3) => {
     return v.x * v.x + v.y * v.y + v.z * v.z;
@@ -453,11 +458,19 @@ export const vector3 = {
     return radians * 180 / Math.PI;
   },
   mean: (vertices: vector3[]): vector3 => {
-    let mean: vector3 = { x: 0, y: 0, z: 0, };
+    let mean: vector3 = { x: 0, y: 0, z: 0 };
     for (const v of vertices) {
       mean = vector3.add(mean, v);
     }
     return vector3.div(mean, vertices.length);
+  },
+  mean_but_somehow_max_z: (vertices: vector3[]): vector3 => {
+    let mean: vector = { x: 0, y: 0 }, z = 0; // z = Number.NEGATIVE_INFINITY;
+    for (const v of vertices) {
+      mean = vector.add(mean, v);
+      if (v.z > z) z = v.z;
+    }
+    return vector3.create2(vector.div(mean, vertices.length), z);
   },
   meanz: (vertices: vector3[]): number => {
     let mean: number = 0;

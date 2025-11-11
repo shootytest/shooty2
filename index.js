@@ -47,9 +47,8 @@ const tick_all = (timestamp) => {
     camera.scale_target = player.camera_scale();
     [camera.z, camera.look_z] = player.camera_zs();
     camera.scale_adjust2(camera.halfscreen);
-    if (player.paused)
-        player.tick(real_dt);
-    else
+    player.tick(real_dt);
+    if (!player.paused)
         Thing.tick_things(dt);
     Spawner.tick_spawners();
     Particle.tick_particles(dt);

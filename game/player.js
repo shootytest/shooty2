@@ -93,19 +93,23 @@ export class Player extends Thing {
         // handle floor checking, z movement, shooting, and autosaving only when unpaused
         if (!this.paused) {
             let on_floor = false;
-            let safe_floor = false;
+            let safe_floor = true;
             let floor_z = (save.save.player.position?.z ?? 0) - 2;
             let z = this.target.position.z;
             for (const s of Shape.floor_shapes) {
                 if (s.computed && math.is_point_in_polygon(this.position, s.computed?.vertices)) {
                     floor_z = s.z;
-                    on_floor = s.z - math.epsilon <= z;
-                    safe_floor = on_floor && Boolean(s.thing.options.safe_floor);
-                    if (on_floor)
-                        break;
+                    if (!on_floor)
+                        on_floor = s.z - math.epsilon <= z;
+                    if (on_floor) {
+                        s.thing.is_touching_player = true;
+                        safe_floor = safe_floor && Boolean(s.thing.options.safe_floor);
+                    }
+                    if (s.z + math.epsilon < z)
+                        break; // gone below player z
                 }
             }
-            const grounded = Math.abs(z - floor_z) < math.epsilon;
+            const grounded = math.equal(z, floor_z);
             if (grounded) {
                 this.target.vz = 0;
                 if (on_floor) {
@@ -131,14 +135,14 @@ export class Player extends Thing {
             if (controls.shoot || this.autoshoot) {
                 this.shoot();
             }
-            if (safe_floor && grounded && Thing.time >= this.autosave_time) { // only save while safe
+            if ((safe_floor && on_floor) && grounded && Thing.time >= this.autosave_time) { // only save while safe
                 if (this.autosave_time < 0)
                     this.autosave_time = Thing.time + config.game.autosave_interval;
                 else
                     this.save();
             }
             this.target.position.z = z;
-            this.on_floor = safe_floor ? 2 : (on_floor ? 1 : 0);
+            this.on_floor = (safe_floor && on_floor) ? 2 : (on_floor ? 1 : 0);
             this.floor_z = floor_z;
         }
     }
@@ -148,6 +152,9 @@ export class Player extends Thing {
     die() {
         this.stats.deaths++;
         this.reset_velocity();
+        this.unload_all_rooms();
+        this.change_room(this.checkpoint_room);
+        this.reload_all_rooms();
         this.target.vz = 0;
         this.teleport_to(this.checkpoint);
         this.target.position.z = this.checkpoint.z;
@@ -155,14 +162,13 @@ export class Player extends Thing {
             this.health.heal_all();
             this.health.set_invincible(config.game.invincibility_time);
         }
-        this.reload_all_rooms();
     }
     fall_back() {
         this.health?.hit(config.game.fall_damage);
         this.reset_velocity();
         this.target.vz = 0;
         this.teleport_to(save.save.player.position ?? this.checkpoint);
-        this.target.position.z = save.save.player.position?.z ?? 0;
+        this.target.position.z = save.save.player.position?.z ?? this.checkpoint.z ?? 0;
         return this.target.position.z;
     }
     hit(damage) {
@@ -346,6 +352,11 @@ export class Player extends Thing {
     reload_room(room_id) {
         this.unload_room(room_id);
         this.load_room(room_id);
+    }
+    unload_all_rooms() {
+        for (const room_id of shallow_clone_array(this.room_list)) {
+            this.unload_room(room_id);
+        }
     }
     reload_all_rooms() {
         // console.log("reloading all rooms");

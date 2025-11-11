@@ -94,6 +94,10 @@ export const detector = {
             for (const pair of event.pairs) {
                 const ba = pair.bodyA, bb = pair.bodyB;
                 const a = ba.parent.thing, b = bb.parent.thing;
+                if ((!a.cover_z || ba.z != undefined) && (!b.cover_z || bb.z != undefined) && Math.abs((bb.z ?? b.z) - (ba.z ?? a.z)) >= 0.1) {
+                    pair.isSensor = true;
+                    pair.z_diff = true;
+                }
                 detector.collision_start(pair, a, b);
                 detector.collision_start(pair, b, a);
             }
@@ -102,10 +106,11 @@ export const detector = {
             for (const pair of event.pairs) {
                 const ba = pair.bodyA, bb = pair.bodyB;
                 const a = ba.parent.thing, b = bb.parent.thing;
-                if (!a.cover_z && !b.cover_z) {
+                if ((!a.cover_z || ba.z != undefined) && (!b.cover_z || bb.z != undefined)) {
+                    const diff = Math.abs((bb.z ?? b.z) - (ba.z ?? a.z));
                     if (pair.z_diff) {
                         // suddenly same z
-                        if (Math.abs(b.z - a.z) <= 0.1) {
+                        if (diff <= 0.1) {
                             pair.z_diff = false;
                             detector.collision_start(pair, a, b, true);
                             detector.collision_start(pair, b, a, true);
@@ -113,7 +118,7 @@ export const detector = {
                     }
                     else if (!pair.z_diff) {
                         // suddenly a different z
-                        if (Math.abs(b.z - a.z) > 0.1) {
+                        if (diff > 0.1) {
                             pair.isSensor = true;
                             pair.z_diff = true;
                             detector.collision_end(pair, a, b, true);
@@ -135,11 +140,6 @@ export const detector = {
     collision_start: (pair, a, b, z_diff = false) => {
         const different_team = Math.floor(a.team) !== Math.floor(b.team);
         // console.log(`[detector/collision_start] Collision started betwixt ${ba.label} & ${bb.label}!`);
-        if (!z_diff && !a.cover_z && !b.cover_z && Math.abs(b.z - a.z) > 0.1) {
-            pair.isSensor = true;
-            pair.z_diff = true;
-            return;
-        }
         if (a.is_player) {
             if (b.options.sensor) {
                 detector.sensor_start_fns[b.id]?.(b);
@@ -195,15 +195,15 @@ export const detector = {
         }
     },
     sensor_during_fns: {
-        ["tutorial room 1 sensor"]: (thing) => {
+        ["tutorial room 1 sensor"]: (thing, _dt) => {
             thing.lookup("tutorial room 1 arrow").shapes[0].style.opacity = 1 - math.bound((player.position.x - thing.position.x) / 350, 0, 1);
             player.set_checkpoint(vector3.create_(MAP.computed?.shape_map["start"].vertices[0] ?? vector.create(100, -100), 0));
         },
-        ["tutorial room 2 door sensor"]: (_thing) => {
+        ["tutorial room 2 door sensor"]: (_thing, _dt) => {
             // const style = thing.lookup("tutorial room 2 arrow 1").shapes[0].style;
             // style.stroke_opacity = math.bound((style.stroke_opacity ?? 1) - 0.05, 0, 1);
         },
-        ["tutorial room 4 sensor"]: (thing) => {
+        ["tutorial room 4 sensor"]: (thing, _dt) => {
             const center = vector.clone(MAP.computed?.shape_map["tutorial room 4 gun"].vertices[0] ?? vector.create());
             const d = vector.length(vector.sub(player.position, center));
             if (d < 100)
@@ -233,6 +233,9 @@ export const detector = {
                 mouse_icon.style.fill_opacity = math.bounce(thing.thing_time, config.graphics.blink_time * 2) * 0.5;
             }
         },
+        ["train floor"]: (_thing, dt) => {
+            player.object.train = (player.object.train ?? 0) + dt;
+        },
     },
     sensor_start_fns: {
         // nothing for now
@@ -247,13 +250,17 @@ export const detector = {
             thing.lookup("tutorial window 1")?.die();
             thing.lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
         },
-        ["tutorial room 5 sensor boss"]: (thing) => {
+        ["tutorial room 5 sensor boss"]: (_thing) => {
             const boss = Spawner.get_enemy("tutorial room 5 boss");
             if (boss) {
                 boss.object.start_activated = true;
                 // boss.object.end_activated = true;
                 // boss.options.enemy_detect_range = 2000;
             }
+        },
+        ["tutorial room 6 sensor start"]: (thing) => {
+            const centre = thing.position;
+            player.set_checkpoint(vector3.create_(centre, 0));
         },
     },
     sensor_end_fns: {
@@ -348,6 +355,12 @@ export const detector = {
         },
         ["tutorial room 5 door end"]: (door) => {
             switch_door(door, Spawner.get_enemy("tutorial room 5 boss")?.object?.end_activated, "tutorial room 5 door end path", 6);
+        },
+        ["train door left"]: (door) => {
+            switch_door(door, player.object.train && player.object.train > 1 * config.seconds, "train door left path", 3);
+        },
+        ["train door right"]: (door) => {
+            switch_door(door, player.object.train && player.object.train > 1 * config.seconds, "train door right path", 3);
         },
     },
 };

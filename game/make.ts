@@ -497,6 +497,31 @@ make_shapes.enemy_tutorial_rocky = [{
   glowing: 0.5,
 }];
 
+make.enemy_tutorial_rocky_small = {
+  make_parent: ["enemy_tutorial"],
+  movable: false,
+  style: "tutorial_enemy_coin",
+  health: {
+    capacity: 500,
+  },
+  death: [
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 2 }, repeat: 10, angle_increment: 36 },
+    { type: "collect_coin", stats: { make: "collect_coin_5", speed: 0 }, repeat: 1 },
+  ],
+  xp: 150,
+};
+make_shapes.enemy_tutorial_rocky_small = [{
+  type: "polygon",
+  sides: 7,
+  radius: 30,
+}, {
+  type: "polygon",
+  style: "coin_rock",
+  sides: 7,
+  radius: 15,
+  glowing: 0.6,
+}];
+
 make.enemy_tutorial_rock_room4 = {
   make_parent: ["enemy_tutorial"],
   movable: false,

@@ -27,7 +27,8 @@ export class Thing {
         Thing.tick_time++;
         Thing.time += dt;
         for (const thing of Thing.things) {
-            thing.tick(dt);
+            if (!thing.is_player)
+                thing.tick(dt);
         }
     }
     ;
@@ -139,9 +140,12 @@ export class Thing {
     set room_id(room_id) {
         this.options.room_id = room_id;
     }
+    get is_wall() {
+        return (this.options.wall_filter != undefined && this.options.wall_filter !== "none");
+    }
     get cover_z() {
         return (this.options.cover_z == undefined)
-            ? ((this.options.wall_filter != undefined && this.options.wall_filter !== "none") || Boolean(this.options.sensor) || !this.options.seethrough)
+            ? (this.is_wall || Boolean(this.options.sensor) || !this.options.seethrough)
             : (this.options.cover_z);
     }
     make_map(o) {
@@ -155,7 +159,9 @@ export class Thing {
         override_object(this.options, o.options);
         const _s = Shape.from_map(this, o);
         if (this.shapes.length <= 1)
-            this.position = /*(o.vertices.length >= 3 && !o.options.open_loop) ? Vertices.centre(o.computed.vertices) :*/ vector3.mean(o.computed.vertices);
+            this.position = /*(o.vertices.length >= 3 && !o.options.open_loop) ? Vertices.centre(o.computed.vertices) :*/ vector3.mean_but_somehow_max_z(o.computed.vertices);
+        else
+            console.error("[thing/make_map] i feel this shouldn't happen...");
         vector3.add_to_list(_s.vertices, vector3.create(0, 0, -this.z)); // move shape vertices back
         this.create_id(o.id);
         this.create_room();
@@ -264,7 +270,7 @@ export class Thing {
             // Body.setAngle(body, this.target.angle);
         }
         else { // just use vertices
-            if (s.closed_loop && s.vertices.length > 2) {
+            if (s.closed_loop && s.vertices.length > 2 && !this.is_wall) {
                 // body = Bodies.fromVertices(s.offset.x, s.offset.y, [math.expand_polygon(s.vertices, config.physics.wall_width)], options);
                 body = Bodies.fromVertices(s.offset.x, s.offset.y, [s.vertices], options);
                 if (body.parts.length >= 2 || !(s instanceof Polygon)) {
@@ -285,8 +291,12 @@ export class Thing {
                 // console.log(s.vertices);
                 // console.log(math.expand_lines(s.vertices, 1));
                 // const composite = Composite.create();
-                const sm = vector.mean(s.vertices);
-                const b = Bodies.fromVertices(sm.x, sm.y, math.expand_lines(s.vertices, config.physics.wall_width), options);
+                const vertices = vector3.add_list(s.vertices, vector3.create(0, 0, this.z));
+                const sm = vector.mean(vertices);
+                if (s.closed_loop)
+                    vertices.push(vertices[0]); // must be after calculating the mean!
+                const [expanded, zs] = math.expand_lines(vertices, config.physics.wall_width);
+                const b = Bodies.fromVertices(sm.x, sm.y, expanded, options);
                 const walls = [];
                 b.density = 0;
                 b.collisionFilter = { category: 0 };
@@ -294,15 +304,16 @@ export class Thing {
                 // Composite.add(world, b);
                 Body.setPosition(b, vector.add(this.target.position, sm));
                 Body.setAngle(b, 0);
-                let i = 0;
-                b.label = this.id + "_" + i;
-                i++;
-                for (const vs of math.expand_lines(s.vertices, config.physics.wall_width)) {
+                b.label = this.id + "_" + 0;
+                for (let i = 0; i < expanded.length; i++) {
+                    const vs = expanded[i], z_offset = zs[i];
                     const vm = vector.mean(vs);
                     const b_ = Bodies.fromVertices(s.offset.x + vm.x, s.offset.y + vm.y, [vs], options);
-                    b_.label = this.id + "_" + i;
-                    i++;
+                    b_.label = this.id + "_" + (i + 1);
                     b_.thing = this;
+                    if (z_offset !== 0) {
+                        b_.z = z_offset;
+                    }
                     // Composite.add(composite, b);
                     Composite.add(world, b_);
                     Body.setPosition(b_, vector.add(this.target.position, vm));
@@ -443,7 +454,9 @@ export class Thing {
     tick(dt) {
         detector.tick_fns[this.id]?.(this);
         if (this.is_touching_player && !this.is_player) {
-            detector.sensor_during_fns[this.id]?.(this);
+            detector.sensor_during_fns[this.id]?.(this, dt);
+            if (!this.options.sensor)
+                this.is_touching_player = false;
         }
         for (const shoot of this.shoots) {
             shoot.tick(dt);

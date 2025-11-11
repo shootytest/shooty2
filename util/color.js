@@ -89,6 +89,8 @@ export const STYLES = {
     train: {
         stroke: color.train,
         stroke_opacity: 1,
+        fill: color.train,
+        fill_opacity: 0.5,
     },
     train_floor: {
         stroke_opacity: 0,

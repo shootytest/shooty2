@@ -89,9 +89,32 @@ export const m_ui = {
   init: function() {
 
     key.add_keydown_listener((event) => {
-      let dz = 0;
-      if (event.code === "KeyQ" && event.shiftKey) dz -= 0.1;
-      if (event.code === "KeyE" && event.shiftKey) dz += 0.1;
+      if (event.shiftKey) { // handle shift
+        let dz = 0;
+        if (event.code === "KeyQ") dz -= 0.1;
+        if (event.code === "KeyE") dz += 0.1;
+        if (m_ui.mouse.drag_target[0] != undefined && m_ui.mouse.drag_target[0].shape && m_ui.mouse.drag_target[0].id !== "all") {
+          let dx = 0, dy = 0;
+          if (event.code === "KeyA") dx -= 1;
+          if (event.code === "KeyD") dx += 1;
+          if (event.code === "KeyW") dy -= 1;
+          if (event.code === "KeyS") dy += 1;
+          const target = m_ui.mouse.drag_target[0] as map_vertex_type;
+          const v = target.shape.vertices[target.index];
+          if (event.code === "KeyR" || (dx === 0 && dy === 0 && dz !== 0 && target.shape.z === (v.z ?? target.shape.z) + dz)) {
+            target.shape.vertices[target.index] = vector.clone(target.shape.vertices[target.index]);
+            map_draw.change("reset z of vertex #" + target.index, target.shape);
+          } else {
+            v.x = math.round(v.x + dx);
+            v.y = math.round(v.y + dy);
+            v.z = math.round_to((v.z ?? target.shape.z) + dz, 0.1);
+            if (dx || dy || dz) map_draw.change("move vertex #" + target.index, target.shape);
+          }
+        } else {
+          if (event.code === "KeyR") dz -= camera.look_z;
+          camera.look_z = math.round_to(camera.look_z + dz, 0.1);
+        }
+      }
       if (event.code === "KeyZ" && event.ctrlKey) {
         if (event.shiftKey) { // full undo
           if (confirm("undo all and revert to initial state?") && map_serialiser.initial_state) {
@@ -108,7 +131,6 @@ export const m_ui = {
           }
         }
       }
-      camera.look_z += dz;
     });
 
     key.add_key_listener("Escape", () => {
@@ -183,17 +205,19 @@ export const m_ui = {
     m_ui.click.new_fns = [() => {}, () => {}, () => {}];
 
     const MOVE_SPEED = 10;
-    let dx = 0;
-    let dy = 0;
-    if (keys.KeyW) dy -= 1;
-    if (keys.KeyS) dy += 1;
-    if (keys.KeyA) dx -= 1;
-    if (keys.KeyD) dx += 1;
-    if (dx !== 0 || dy !== 0) camera.move_by(vector.mult(vector.normalise(vector.create(dx, dy)), MOVE_SPEED / camera.scale));
-    let dz = 1;
-    if (keys.KeyQ && !(keys.ShiftLeft || keys.ShiftRight)) dz *= 1.08;
-    if (keys.KeyE && !(keys.ShiftLeft || keys.ShiftRight)) dz /= 1.08;
-    if (dz !== 1) camera.scale_by(camera.halfscreen, dz);
+    if (!key.shift() && !keys.ShiftLeft && !keys.ShiftRight) {
+      let dx = 0;
+      let dy = 0;
+      if (keys.KeyW) dy -= 1;
+      if (keys.KeyS) dy += 1;
+      if (keys.KeyA) dx -= 1;
+      if (keys.KeyD) dx += 1;
+      if (dx !== 0 || dy !== 0) camera.move_by(vector.mult(vector.normalise(vector.create(dx, dy)), MOVE_SPEED / camera.scale));
+      let dz = 1;
+      if (keys.KeyQ) dz *= 1.08;
+      if (keys.KeyE) dz /= 1.08;
+      if (dz !== 1) camera.scale_by(camera.halfscreen, dz);
+    }
   },
 
   draw: function() {

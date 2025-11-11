@@ -24,6 +24,9 @@ export const math = {
     sqrt3: Math.sqrt(3),
     halfsqrt2: Math.sqrt(2) / 2,
     halfsqrt3: Math.sqrt(3) / 2,
+    equal: (a, b) => {
+        return Math.abs(a - b) < math.epsilon;
+    },
     dist2: (x, y) => {
         return x * x + y * y;
     },
@@ -162,18 +165,22 @@ export const math = {
     },
     expand_lines: (vertices, width) => {
         if (vertices.length < 2) {
-            return [[]];
+            return [[[]], [0]];
         }
         else if (vertices.length === 2) {
-            return [math.expand_line(vertices[0], vertices[1], width)];
+            return [[math.expand_line(vertices[0], vertices[1], width)], [(vertices[0].z + vertices[1].z) / 2]];
         }
         else {
-            let result = [];
+            const result = [];
+            const zs = [];
             for (let i = 0; i < vertices.length - 1; i++) {
+                if (vector.equal(vertices[i], vertices[i + 1]) || !math.equal(vertices[i].z, vertices[i + 1].z))
+                    continue;
                 const vs = math.expand_line(vertices[i], vertices[i + 1], width);
                 result.push(vs);
+                zs.push(vertices[i].z);
             }
-            return result;
+            return [result, zs];
         }
     },
     expand_lines_working_i_guess_but_too_many_vertices: (vertices, width) => {
