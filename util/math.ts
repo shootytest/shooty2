@@ -27,8 +27,14 @@ export const math = {
   halfsqrt2: Math.sqrt(2) / 2,
   halfsqrt3: Math.sqrt(3) / 2,
 
+  a_bit_equal: (a: number, b: number): boolean => {
+    return Math.abs(a - b) < math.epsilon_bigger;
+  },
   equal: (a: number, b: number): boolean => {
     return Math.abs(a - b) < math.epsilon;
+  },
+  very_equal: (a: number, b: number): boolean => {
+    return Math.abs(a - b) < math.epsilon_smaller;
   },
 
   dist2: (x: number, y: number): number => {

@@ -1,5 +1,5 @@
 import { Vector } from "../matter.js";
-import { STYLES } from "../util/color.js";
+import { STYLES, STYLES_ } from "../util/color.js";
 import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
@@ -105,7 +105,7 @@ export class Shoot {
             shape.style = clone_object(this.thing.shapes[0].style);
             shape.has_style = true;
             if (S.style)
-                override_object(shape.style, (STYLES[S.style] ?? STYLES.error));
+                override_object(shape.style, (STYLES_[S.style] ?? STYLES.error));
             if (S.style_)
                 override_object(shape.style, S.style_);
         }
@@ -119,7 +119,7 @@ export class Shoot {
                 }
                 if (shape.index === 0) {
                     if (S.style)
-                        override_object(shape.style, (STYLES[S.style] ?? STYLES.error));
+                        override_object(shape.style, (STYLES_[S.style] ?? STYLES.error));
                     if (S.style_)
                         override_object(shape.style, S.style_);
                 }

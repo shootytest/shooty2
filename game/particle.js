@@ -1,7 +1,7 @@
 import { Vertices } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
-import { color } from "../util/color.js";
+import { color, color2hex } from "../util/color.js";
 import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
@@ -114,7 +114,7 @@ export class Particle {
         if (this.icon) {
             this.compute_screen();
             const [c, r] = this.screen_vertices;
-            ctx.fillStyle = style.fill ?? color.error;
+            ctx.fillStyle = color2hex(style.fill ?? color.error);
             ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1) * this.opacity;
             ctx.svg(this.icon, Math.round(c.x + this.offset.x), Math.round(c.y + this.offset.y), r.x);
         }
@@ -124,13 +124,13 @@ export class Particle {
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
             if (style.stroke) {
-                ctx.strokeStyle = style.stroke;
+                ctx.strokeStyle = color2hex(style.stroke ?? color.error);
                 ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * this.opacity;
                 ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.total_z) * config.graphics.linewidth_mult;
                 ctx.stroke();
             }
             if (style.fill) {
-                ctx.fillStyle = style.fill;
+                ctx.fillStyle = color2hex(style.fill ?? color.error);
                 ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1) * this.opacity;
                 ctx.fill();
             }

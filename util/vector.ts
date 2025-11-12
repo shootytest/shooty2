@@ -465,7 +465,7 @@ export const vector3 = {
     return vector3.div(mean, vertices.length);
   },
   mean_but_somehow_max_z: (vertices: vector3[]): vector3 => {
-    let mean: vector = { x: 0, y: 0 }, z = 0; // z = Number.NEGATIVE_INFINITY;
+    let mean: vector = { x: 0, y: 0 }, z = -9999999;
     for (const v of vertices) {
       mean = vector.add(mean, v);
       if (v.z > z) z = v.z;

@@ -1,10 +1,12 @@
+import { clone_object, make_rooms, shallow_clone_array } from "../game/make.js";
 import { Particle } from "../game/particle.js";
 import { player } from "../game/player.js";
 import { Shape } from "../game/shape.js";
 import { Common } from "../matter.js";
 import { camera } from "./camera.js";
 import { canvas, ctx } from "./canvas.js";
-import { color } from "./color.js";
+import { color, color_theme, current_theme, THEMES, THEMES_UID_MAX } from "./color.js";
+import { config } from "./config.js";
 import { math } from "./math.js";
 import { circle, segment, segment_point, vector, vector3 } from "./vector.js";
 
@@ -43,26 +45,42 @@ const add_wall = (p1: vector, p2: vector, force = false): void => {
   end_points.push(...collide.get_endpoints_from_segments([segment]));
 }
 
-export const do_visibility = () => {
+// tick
+let time = 0;
+export const do_visibility = (_dt: number) => {
+  time += _dt;
 
   Shape.compute();
   const path = calc_visibility_path_2(player, Shape.get_vertices());
   const inverted = invert_path(path);
-  for (const z of Shape.draw_zs) {
+  const additional_zs: number[] = [];
+  for (let z = Math.floor(Shape.see_z_range[0] * 10) / 10 /* + ((performance.now() / 300) % 1) / 10 */; z < math.round_to(player.z + 1, 0.1); z += 0.1) {
+    additional_zs.push(Number(z.toFixed(3)));
+  }
+  const draw_zs = [...new Set(additional_zs.concat(Shape.draw_zs))];
+  draw_zs.sort((s1, s2) => s1 - s2);
+  for (const z of draw_zs) {
     ctx.save("see");
     clip_visibility_path(player, path, z);
     Shape.draw(Number(z.toFixed(3)));
     Particle.draw_particles(z);
     ctx.restore("see");
+    if (math.equal(Math.floor(z * 10), z * 10)) {
+      ctx.ctx.save();
+      clip_inverted_path(player, inverted, z);
+      ctx.ctx.restore();
+    }
+    // if ((Math.floor(time / config.seconds * 5) % 11) / 10 - 0.2 < z) break;
   }
   // ctx.ctx.save();
   // clip_inverted_path(player, inverted, 0);
   // ctx.ctx.restore();
-  for (let z = 0 /* + ((performance.now() / 300) % 1) / 10 */; z < math.round_to(player.z + 1, 0.1); z += 0.1) {
-    ctx.ctx.save();
-    clip_inverted_path(player, inverted, z);
-    ctx.ctx.restore();
-  }
+  // const [min_z, max_z] = Shape.see_z_range;
+  // for (let z = 0 /* Math.floor(min_z * 10) / 10 + ((performance.now() / 300) % 1) / 10 */; z < math.round_to(player.z + 1, 0.1); z += 0.1) {
+  //   ctx.ctx.save();
+  //   clip_inverted_path(player, inverted, z);
+  //   ctx.ctx.restore();
+  // }
 
   // do translucent walls
   ctx.save("see");
@@ -94,6 +112,54 @@ export const do_visibility = () => {
   */
 
 };
+
+
+export const tick_colours = (dt: number) => {
+  const room = make_rooms[player.room_id];
+  let theme = THEMES[room.theme] as color_theme;
+  if (room.theme_mix) {
+    theme = mix_themes(room.theme, room.theme_mix, room.theme_mix_strength);
+  }
+  const is_instant = dt >= 10 * config.seconds;
+  const mix_factor = is_instant ? 1 : (0.1 + 0.9 * math.bound(1 - Math.abs(theme.uid - current_theme.uid), 0, 1) ** 3);
+  if (math.equal(current_theme.uid, theme.uid)) {
+    // exit if themes are already the same
+    return;
+  }
+  for (let key in theme) {
+    if (key === "uid") {
+      if (is_instant) current_theme.uid = theme.uid;
+      else current_theme.uid = math.lerp(current_theme.uid, theme.uid, math.bound(0.04 * dt / 160, 0, 1));
+    } else {
+      const c1 = current_theme[key as keyof color_theme], c2 = theme[key as keyof color_theme];
+      if (c1 == undefined || c2 == undefined) continue;
+      (current_theme as any)[key] = chroma.color(c1).mix(chroma.color(c2), mix_factor, "lab").hex(); // any >:(
+    }
+  }
+};
+
+let uid = THEMES_UID_MAX + 1;
+const memo_themes = {} as { [key: string]: color_theme };
+const mix_themes = (one: keyof typeof THEMES, two: keyof typeof THEMES, strength?: number) => {
+  const t1 = THEMES[one] as color_theme, t2 = THEMES[two] as color_theme;
+  const str = (strength ?? 0.5).toFixed(3);
+  const s = one + "_" + two + "_" + str;
+  if (memo_themes[s]) return memo_themes[s]; // no need to clone, just remember this function returns the same object
+  else {
+    strength = Number(str);
+    const result = clone_object(t1) as color_theme;
+    for (let key in t1) {
+      if (key === "uid") continue;
+      const c1 = t1[key as keyof color_theme], c2 = t2[key as keyof color_theme];
+      if (c1 == undefined || c2 == undefined) continue;
+      (result as any)[key] = chroma.color(c1).mix(chroma.color(c2), strength, "lab").hex();
+    }
+    result.uid = uid++;
+    memo_themes[s] = result;
+    return result;
+  }
+};
+
 
 const calc_visibility_path = (v: vector): Path2D => {
 
@@ -164,7 +230,7 @@ const calc_visibility_path_2 = (v: vector, vertices_list: vector3[][]): Path2D =
   const result = collide.get_visibility_polygon(start, vertices_list, viewport_1, viewport_2);
 
   // clip
-  const s = camera.world2screen(start);
+  // const s = camera.world2screen(start);
   const path = new Path2D();
   let first = true;
   let first_e = vector.create();
@@ -204,7 +270,7 @@ const clip_path = (center: vector, path: Path2D, z: number, fill_instead = false
 };
 
 const clip_visibility_path = (center: vector, path: Path2D, z: number) => {
-  clip_path(center, path, z >= 0 ? z : 0);
+  clip_path(center, path, z);
   if (z === 0) {
     const s = camera.world2screen(center);
     draw_lighting(s, Math.sqrt(w * h) * camera.scale);
@@ -215,7 +281,7 @@ const clip_inverted_path = (center: vector, inverted: Path2D, z: number) => {
   clip_path(center, inverted, z);
   ctx.beginPath();
   ctx.rect(0, 0, w, h);
-  ctx.fillStyle = math.equal(z, 0) ? "#544bdb80" : color.blackground + "28"; // todo replace default color
+  ctx.fillStyle = math.equal(z, Shape.see_z_range[0]) ? (current_theme.dark + "80") : (color.blackground + "28"); // todo replace default color
   ctx.fill();
 };
 

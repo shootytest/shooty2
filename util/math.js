@@ -24,8 +24,14 @@ export const math = {
     sqrt3: Math.sqrt(3),
     halfsqrt2: Math.sqrt(2) / 2,
     halfsqrt3: Math.sqrt(3) / 2,
+    a_bit_equal: (a, b) => {
+        return Math.abs(a - b) < math.epsilon_bigger;
+    },
     equal: (a, b) => {
         return Math.abs(a - b) < math.epsilon;
+    },
+    very_equal: (a, b) => {
+        return Math.abs(a - b) < math.epsilon_smaller;
     },
     dist2: (x, y) => {
         return x * x + y * y;

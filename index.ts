@@ -12,7 +12,7 @@ import { color } from "./util/color.js";
 import { config } from "./util/config.js";
 import { key, mouse } from "./util/key.js";
 import { map_serialiser, map_shape_type, TEST_MAP } from "./util/map_type.js";
-import { do_visibility } from "./util/see.js";
+import { do_visibility, tick_colours } from "./util/see.js";
 import { vector, vector3 } from "./util/vector.js";
 
 // important: array remove! why doesn't js have this file :(
@@ -67,7 +67,8 @@ const tick_all = (timestamp: number) => {
   if (!player.paused && Thing.time > 500) Engine.update(engine, real_dt / 10);
   // ctx.clear();
   ctx.fill_screen(color.black);
-  do_visibility(); // draw all shapes
+  tick_colours(real_dt);
+  do_visibility(dt); // draw all shapes
   ui.tick(real_dt);
   ui.draw();
   mouse.tick();
@@ -78,10 +79,6 @@ const tick_all = (timestamp: number) => {
 requestAnimationFrame(tick_all);
 
 map_serialiser.compute(MAP);
-for (const shape of MAP.shapes ?? []) {
-  const room_id = MAP.computed?.shape_room[shape.id] ?? "";
-  shape.options.room_id = room_id;
-}
 
 export const make_from_map_shape = function(map_shape: map_shape_type) {
   if (map_shape.options.is_spawner) {
@@ -106,6 +103,7 @@ player.set_checkpoint(player.position);
 player.fov_mult = MAP.computed?.shape_map.start.options.sensor_fov_mult ?? 1;
 player.create_player();
 save.load_from_storage();
+tick_colours(99 * config.seconds);
 
 // const shapelist = MAP.shapes?.sort((s1, s2) => (s1.computed?.depth ?? 0) - (s2.computed?.depth ?? 0)) ?? [];
 // for (const map_shape of shapelist) {

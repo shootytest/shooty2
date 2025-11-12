@@ -152,6 +152,9 @@ export const ui = {
     ctx.lines_v(points, false);
     ctx.stroke();
     ctx.fill();
+    if (keys.KeyT) {
+      player.teleport_to(camera.screen2world(mouse.position));
+    }
   },
 
   draw_health: function() {

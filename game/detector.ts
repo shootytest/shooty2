@@ -1,7 +1,9 @@
 import { engine, MAP } from "../index.js";
 import { Events, Vertices } from "../matter.js";
+import { camera } from "../util/camera.js";
 import { STYLES } from "../util/color.js";
 import { config } from "../util/config.js";
+import { key } from "../util/key.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { Enemy, Spawner } from "./enemy.js";
@@ -235,8 +237,40 @@ export const detector = {
         mouse_icon.style.fill_opacity = math.bounce(thing.thing_time, config.graphics.blink_time * 2) * 0.5;
       }
     },
-    ["train floor"]: (_thing, dt) => {
-      player.object.train = (player.object.train ?? 0) + dt;
+    ["station tutorial sensor start"]: (thing) => {
+      const style = thing.lookup("train ceiling").shapes[0].style;
+      if (!math.equal(style.fill_opacity ?? 0, 0.5)) style.fill_opacity = math.lerp(style.fill_opacity ?? 0, 0.5, 0.1);
+    },
+    ["station tutorial floor"]: (thing) => {
+      const train = thing.lookup("train");
+      if (player.is_safe && (train.object.train_distance || 0) > 0) {
+        const dv = vector.create(-(train.object.train_distance || 0), 0);
+        for (const t of thing.all_things()) {
+          if (!t.id.startsWith("train")) continue;
+          if (t.body) t.translate(dv);
+          else t.position = vector.add(t.position, dv);
+          if (t.object.original_position) t.object.original_position = vector.add(t.object.original_position, dv);
+        }
+        train.object.train_distance = 0;
+      }
+    },
+    ["train sensor"]: (thing, dt) => {
+      const train_time = (player.object.train_time ?? 0) + dt;
+      player.object.train_time = train_time;
+      if (train_time > 2.1 * config.seconds && !Boolean(player.object.train_stop)) {
+        const train = thing.lookup("train");
+        const train_speed = math.bound((train_time - 2.1 * config.seconds) / 1000, 0, Math.min(config.physics.train_speed, 6150 - (train.object.train_distance || 0)));
+        train.object.train_distance = (train.object.train_distance || 0) + train_speed;
+        const dv = vector.create(train_speed, 0);
+        for (const t of thing.all_things()) {
+          if (!t.id.startsWith("train") && !t.parent.is_player) continue;
+          if (t.body) t.translate(dv);
+          else t.position = vector.add(t.position, dv);
+          if (t.object.original_position) t.object.original_position = vector.add(t.object.original_position, dv);
+        }
+        camera.position.x += train_speed * 1.95;
+      }
+      thing.lookup("train ceiling").shapes[0].style.fill_opacity = 0.5 * math.bound(1 / (player.object.train_time / (0.2 * config.seconds)), 0, 1);
     },
   } as { [thing_id: string]: (thing: Thing, dt: number) => void },
 
@@ -262,15 +296,25 @@ export const detector = {
         // boss.options.enemy_detect_range = 2000;
       }
     },
-    ["tutorial room 6 sensor start"]: (thing) => {
+    ["station tutorial sensor start"]: (thing) => {
       const centre = thing.position;
       player.set_checkpoint(vector3.create_(centre, 0));
+      player.object.train_time = 0;
+    },
+    ["station streets sensor fall"]: (_thing) => {
+      player.object.train_stop = true;
+    },
+    ["train sensor"]: (_thing) => {
+      player.is_safe = false;
     },
   } as { [thing_id: string]: (thing: Thing) => void },
 
 
   sensor_end_fns: {
     // nothing for now
+    ["train sensor"]: (_thing) => {
+      player.is_safe = true;
+    },
   } as { [thing_id: string]: (thing: Thing) => void },
 
 
@@ -279,7 +323,7 @@ export const detector = {
     ["tutorial room 2 enemy shooter"]: (thing) => {
       (thing as Enemy).remove_static();
       for (const shape of thing.shapes) {
-        shape.style = clone_object(STYLES.tutorial);
+        shape.style = clone_object(STYLES.main);
       }
       return true;
     },
@@ -329,7 +373,7 @@ export const detector = {
           for (let i = 0; i < 3; i++) {
             const shape = thing.lookup("tutorial room 2 warning" + (i > 0 ? " " + i : "")).shapes[0];
             shape.offset = vector3.create2(warning_offset);
-            shape.style.stroke = STYLES.tutorial_enemy.stroke;
+            shape.style.stroke = STYLES.enemy.stroke;
             shape.style.stroke_opacity = 0.6;
             shape.init_computed();
           }
@@ -369,10 +413,10 @@ export const detector = {
       switch_door(door, Spawner.get_enemy("tutorial room 5 boss")?.object?.end_activated, "tutorial room 5 door end path", 6);
     },
     ["train door left"]: (door) => {
-      switch_door(door, player.object.train && player.object.train > 1 * config.seconds, "train door left path", 3);
+      switch_door(door, player.object.train_time && player.object.train_time > 1 * config.seconds, "train door left path", 3, true);
     },
     ["train door right"]: (door) => {
-      switch_door(door, player.object.train && player.object.train > 1 * config.seconds, "train door right path", 3);
+      switch_door(door, player.object.train_time && player.object.train_time > 1 * config.seconds, "train door right path", 3, true);
     },
   } as { [key: string]: (thing: Thing) => void },
 
@@ -387,18 +431,24 @@ const do_door = (door: Thing, sensor_id: string, speed = 5, invert = false) => {
   let exceeded = true;
   if (triggered) exceeded = vector.length2(offset) > vector.length2(dir);
   else exceeded = vector.dot(offset, dir) < 0;
-  if (!exceeded) door.translate_wall(vector.normalise(dir, triggered ? speed : -speed));
+  if (!exceeded) door.translate(vector.normalise(dir, triggered ? speed : -speed));
 };
 
-const switch_door = (door: Thing, switch_ids: string | boolean | (string | boolean)[], path_id: string, speed: number | number[] = [5], invert: boolean[] = [false]) => {
+const switch_door = (door: Thing, switch_ids: string | boolean | (string | boolean)[], path_id: string, speed: number | number[] = [5], reversible: boolean = false, invert: boolean[] = [false]) => {
   const path = door.lookup(path_id);
-  if (path == undefined) return;
+  if (path == undefined) {
+    console.error(`[detector/switch_door] path "${path_id}" not found!`);
+    return;
+  }
   const vs = path.shapes[0].vertices;
   const pos = door.position;
   let step = door.object.step ?? 1;
   if (!Array.isArray(switch_ids)) switch_ids = [switch_ids];
   if (typeof speed === "number") speed = [speed];
-  if (step >= vs.length || step > switch_ids.length) return;
+  if (step >= vs.length || step > switch_ids.length) {
+    if (reversible) step--;
+    else return;
+  }
   if (door.object.step == undefined) {
     door.object.original_position = vector.clone(pos);
     door.object.step = step;
@@ -418,15 +468,17 @@ const switch_door = (door: Thing, switch_ids: string | boolean | (string | boole
     if (invert[step - 1] ?? false) triggered = !triggered;
   }
   // do normal stuff
-  if (triggered) {
-    const target_dv = vector.sub(vs[step], vs[0]);
+  if (triggered || (!triggered && reversible)) {
+    const target_dv = vector.sub(vs[triggered ? step : step - 1], vs[0]);
     const door_dv = vector.sub(vector.add(door.object.original_position, target_dv), pos);
     const sped = speed[step] ?? speed[0];
-    if (vector.length(door_dv) <= sped) {
-      door.translate_wall(door_dv);
-      door.object.step = step + 1;
+    if (vector.equal(door_dv, vector.create())) {
+      door.object.step = triggered ? step + 1 : step;
+    } else if (vector.length(door_dv) <= sped) {
+      door.translate(door_dv);
+      door.object.step = triggered ? step + 1 : step;
     } else {
-      door.translate_wall(vector.normalise(door_dv, sped));
+      door.translate(vector.normalise(door_dv, sped));
     }
   }
 };

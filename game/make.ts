@@ -1,3 +1,4 @@
+import { STYLES, THEMES } from "../util/color.js";
 import { style_type } from "../util/map_type.js";
 import { vector, vector3_ } from "../util/vector.js";
 
@@ -9,7 +10,7 @@ export interface maketype {
   make_parent?: string[];
 
   // display options
-  style?: string;
+  style?: keyof typeof STYLES;
   style_?: style_type; // consider renaming to style_override (not really)
 
   // game booleans
@@ -39,6 +40,8 @@ export interface maketype {
   friction_contact?: number;
   restitution?: number;
   density?: number;
+  force_wall_body?: boolean;
+  force_wall_ground?: number;
 
   // enemy stuff
   breakable?: boolean;
@@ -105,7 +108,7 @@ export interface maketype_shape {
 
   // the shape itself
   type: "circle" | "polygon" | "line" | "none";
-  style?: string;
+  style?: keyof typeof STYLES;
   style_?: style_type;
   z?: number;
   sides?: number;
@@ -201,53 +204,52 @@ make.default = { };
 
 // @environment
 
+
 // @walls
 
 make.wall = {
   wall_filter: "wall",
+  style: "wall",
 };
-
-make.wall_home = {
-  make_parent: ["wall"],
-  style: "home",
-};
-
-make.wall_tutorial = {
-  make_parent: ["wall"],
-  style: "tutorial",
-};
-
-make.wall_tutorial_window = {
-  // make_parent: ["wall_tutorial"], // hmmm it's not needed for now
-  style: "tutorial_window",
-  wall_filter: "window",
-  keep_bullets: true,
-  seethrough: true,
-};
-
-make.wall_tutorial_curtain = {
-  style: "tutorial_curtain",
-  wall_filter: "curtain",
-  seethrough: true,
-};
-
-make.wall_tutorial_rock = {
-  make_parent: ["wall_tutorial"],
-  style: "tutorial_filled",
+make.rock = {
+  wall_filter: "wall",
+  style: "wall_filled",
   keep_bullets: true,
 };
-
-make.wall_tutorial_spike = {
-  make_parent: ["wall_tutorial"],
-  style: "tutorial_spike",
+make.spike = {
+  wall_filter: "wall",
+  style: "enemy",
   cover_z: false,
   keep_bullets: false,
   seethrough: true,
   damage: 100,
 };
 
+make.wall_train = {
+  make_parent: ["wall"],
+  force_wall_body: true,
+  force_wall_ground: 0,
+  style: "train",
+  style_: {
+    width: 0.5,
+  },
+  keep_bullets: true,
+};
+
+make.wall_tutorial_window = {
+  // make_parent: ["wall"], // hmmm it's not needed for now
+  style: "tutorial_window",
+  wall_filter: "window",
+  keep_bullets: true,
+  seethrough: true,
+};
+make.wall_tutorial_curtain = {
+  style: "tutorial_curtain",
+  wall_filter: "curtain",
+  seethrough: true,
+};
 make.wall_tutorial_rock_breakable = {
-  make_parent: ["wall_tutorial"],
+  make_parent: ["rock"],
   hide_health: true,
   hide_health_until: 450,
   team: 7,
@@ -256,10 +258,9 @@ make.wall_tutorial_rock_breakable = {
   },
   xp: 0,
 };
-
 make.wall_tutorial_fake = {
   make_parent: ["wall"],
-  style: "tutorial",
+  style: "wall",
   style_: {
     opacity: 0.65,
   },
@@ -271,11 +272,31 @@ make.wall_tutorial_fake = {
   xp: 150,
 };
 
-make.wall_train = {
+
+make.wall_streets = {
   make_parent: ["wall"],
-  style: "train",
+  style: "wall",
+};
+make.wall_streets_rock = {
+  make_parent: ["wall_streets"],
+  style: "wall_filled",
   keep_bullets: true,
 };
+make.wall_streets_fake = {
+  make_parent: ["wall"],
+  style: "wall",
+  style_: {
+    opacity: 0.7,
+  },
+  hide_health: true,
+  hide_health_until: 450,
+  health: {
+    capacity: 700,
+  },
+  xp: 200,
+};
+
+
 
 // @floors
 
@@ -284,17 +305,20 @@ make.floor = {
   decoration: true,
   seethrough: true,
   keep_bullets: true,
-};
-
-make.floor_tutorial = {
-  make_parent: ["floor"],
-  style: "tutorial_floor",
+  style: "floor",
 };
 
 make.floor_train = {
   make_parent: ["floor"],
   style: "train_floor",
 };
+
+make.floor_train_track = {
+  make_parent: ["floor"],
+  style: "train_track",
+};
+
+
 
 // @sensors
 
@@ -349,19 +373,21 @@ make_shapes.checkpoint = [{
   style_: { stroke_opacity: 0, }
 }];
 
+
+
 // @decorations
 
 make.icon = {
   decoration: true,
   seethrough: true,
+  style: "main",
+  style_: {
+    opacity: 0.6,
+  },
 };
 
 make.icon_tutorial = {
   make_parent: ["icon"],
-  style: "tutorial",
-  style_: {
-    opacity: 0.6,
-  },
 };
 
 make.deco = {
@@ -432,6 +458,7 @@ make.enemy = {
   seethrough: true,
   friction: 0.1,
   restitution: 0,
+  style: "enemy",
 };
 
 make.enemy_breakable = {
@@ -443,17 +470,23 @@ make.enemy_breakable = {
   health: {
     capacity: 0.1,
   },
+  style: "breakable",
 };
 
 make.enemy_tutorial = {
   make_parent: ["enemy"],
-  style: "tutorial_enemy",
   team: 7,
 };
 
+make.enemy_streets = {
+  make_parent: ["enemy"],
+  team: 3,
+};
+
+// only used betwixt tutorial room 2 and tutorial room 2.5
 make.enemy_tutorial_block = {
   make_parent: ["enemy_tutorial"],
-  style: "tutorial_enemy_coin",
+  style: "tutorial_coin",
   movable: false,
   seethrough: false,
   angle: 0,
@@ -471,10 +504,11 @@ make_shapes.enemy_tutorial_block = [{
   radius: 50,
 }];
 
+// coin rock for tutorial
 make.enemy_tutorial_rocky = {
   make_parent: ["enemy_tutorial"],
   movable: false,
-  style: "tutorial_enemy_coin",
+  style: "tutorial_coin",
   health: {
     capacity: 400,
   },
@@ -497,10 +531,11 @@ make_shapes.enemy_tutorial_rocky = [{
   glowing: 0.5,
 }];
 
+// coin rock in tutorial room 5, only accessible from the tutorial station
 make.enemy_tutorial_rocky_small = {
   make_parent: ["enemy_tutorial"],
   movable: false,
-  style: "tutorial_enemy_coin",
+  style: "tutorial_coin",
   health: {
     capacity: 500,
   },
@@ -522,6 +557,7 @@ make_shapes.enemy_tutorial_rocky_small = [{
   glowing: 0.6,
 }];
 
+// testing in tutorial room 4 secret
 make.enemy_tutorial_rock_room4 = {
   make_parent: ["enemy_tutorial"],
   movable: false,
@@ -538,6 +574,7 @@ make_shapes.enemy_tutorial_rock_room4 = [{
   radius: 50,
 }];
 
+// main enemy in tutorial room 2
 make.enemy_tutorial_4way = {
   make_parent: ["enemy_tutorial"],
   movable: false,
@@ -582,6 +619,7 @@ make_shapes.enemy_tutorial_4way = [{
   shoot_: { angle: 4 * 360 / 7 },
 }];
 
+// main enemies in tutorial room 3
 make.enemy_tutorial_easy = {
   make_parent: ["enemy_tutorial"],
   behaviour: {
@@ -620,6 +658,7 @@ make_shapes.enemy_tutorial_easy = [{
   shoot: "enemy_easy",
 }];
 
+// main enemy in tutorial room 5.5
 make.enemy_tutorial_easy_static = {
   make_parent: ["enemy_tutorial"],
   behaviour: {
@@ -656,6 +695,7 @@ make_shapes.enemy_tutorial_easy_static = [{
   shoot: "enemy_easy_static",
 }];
 
+// generic small breakable everywhere in the tutorial
 make.enemy_tutorial_bit = {
   make_parent: ["enemy_tutorial", "enemy_breakable"],
   behaviour: {
@@ -665,7 +705,6 @@ make.enemy_tutorial_bit = {
     }
   },
   enemy_detect_range: 0,
-  style: "tutorial_breakable",
   style_: {
     opacity: 0.6,
   },
@@ -677,6 +716,7 @@ make_shapes.enemy_tutorial_bit = [{
   radius: 10,
 }];
 
+// todo unused, maybe for tutorial's void decoration?
 make.enemy_tutorial_big = {
   make_parent: ["enemy_tutorial"],
   behaviour: {
@@ -687,7 +727,7 @@ make.enemy_tutorial_big = {
     }
   },
   enemy_detect_range: 0,
-  style: "tutorial_breakable",
+  style: "breakable",
 };
 make_shapes.enemy_tutorial_big = [{
   type: "polygon",
@@ -695,9 +735,10 @@ make_shapes.enemy_tutorial_big = [{
   radius: 100,
 }];
 
+// blockage in tutorial room 2.5 secret
 make.enemy_tutorial_down = {
   make_parent: ["enemy_tutorial"],
-  style: "tutorial",
+  style: "wall",
   movable: false,
   behaviour: {
     normal: {
@@ -717,6 +758,7 @@ make_shapes.enemy_tutorial_down = [{
   shoot: "enemy_block",
 }];
 
+// tutorial room 5's huge boss
 make.enemy_tutorial_boss = {
   make_parent: ["enemy_tutorial"],
   behaviour: {
@@ -764,13 +806,13 @@ make_shapes.enemy_tutorial_boss = [{
   shoot: "enemy_tutorial_boss_homing",
 }, {
   type: "line",
-  style: "tutorial_boss",
+  style: "enemy2",
   v2: vector.createpolar_deg(-360/14, 136),
   shoot: "enemy_tutorial_boss_split",
   shoot_: { delay: 0.5, angle: -360/14, },
 }, {
   type: "line",
-  style: "tutorial_boss",
+  style: "enemy2",
   v2: vector.createpolar_deg(360/14, 136),
   shoot: "enemy_tutorial_boss_split",
   shoot_: { delay: 0.5, angle: 360/14, },
@@ -807,7 +849,7 @@ make_shapes.bullet_tutorial_boss_split = [{
   radius: 1,
 }, {
   type: "circle",
-  style: "tutorial_enemy",
+  style: "enemy",
   style_: {
     fill_opacity: 0.07,
     stroke_opacity: 0,
@@ -815,7 +857,7 @@ make_shapes.bullet_tutorial_boss_split = [{
   radius: 7,
 }, {
   type: "circle",
-  style: "tutorial_enemy",
+  style: "enemy",
   style_: {
     fill_opacity: 0.03,
     stroke_opacity: 0.3,
@@ -1057,6 +1099,70 @@ make_shoot.enemy_tutorial_boss_splitted = {
   time: 0.45,
   friction: 0.19,
 };
+
+
+
+
+
+// @rooms and @areas
+
+
+export const make_areas = {
+  // todo
+};
+
+export interface maketype_room {
+  theme: keyof typeof THEMES;
+  theme_mix?: keyof typeof THEMES;
+  theme_mix_strength?: number;
+};
+
+export const make_rooms = {
+
+  ["default"]: {
+    theme: "default",
+  },
+
+  ["home"]: {
+    theme: "home",
+  },
+
+  ["station"]: {
+    theme: "train",
+  },
+  ["station tutorial"]: {
+    theme: "tutorial",
+    theme_mix: "train",
+    theme_mix_strength: 0.2,
+  },
+  ["station streets"]: {
+    theme: "streets",
+    theme_mix: "train",
+    theme_mix_strength: 0.2,
+  },
+
+  ["tutorial room 1"]: {
+    theme: "tutorial",
+  },
+  ["tutorial room 2"]: {
+    theme: "tutorial",
+  },
+  ["tutorial room 3"]: {
+    theme: "tutorial",
+  },
+  ["tutorial room 4"]: {
+    theme: "tutorial",
+  },
+  ["tutorial room 5"]: {
+    theme: "tutorial",
+  },
+
+  ["streets room 1"]: {
+    theme: "streets",
+  },
+
+} as { [key: string]: maketype_room };
+
 
 
 

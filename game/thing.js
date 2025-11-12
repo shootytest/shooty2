@@ -270,7 +270,7 @@ export class Thing {
             // Body.setAngle(body, this.target.angle);
         }
         else { // just use vertices
-            if (s.closed_loop && s.vertices.length > 2 && !this.is_wall) {
+            if (s.closed_loop && s.vertices.length > 2 && !this.options.force_wall_body) {
                 // body = Bodies.fromVertices(s.offset.x, s.offset.y, [math.expand_polygon(s.vertices, config.physics.wall_width)], options);
                 body = Bodies.fromVertices(s.offset.x, s.offset.y, [s.vertices], options);
                 if (body.parts.length >= 2 || !(s instanceof Polygon)) {
@@ -311,7 +311,7 @@ export class Thing {
                     const b_ = Bodies.fromVertices(s.offset.x + vm.x, s.offset.y + vm.y, [vs], options);
                     b_.label = this.id + "_" + (i + 1);
                     b_.thing = this;
-                    if (z_offset !== 0) {
+                    if (this.options.force_wall_body && z_offset !== (this.options.force_wall_ground ?? 0)) {
                         b_.z = z_offset;
                     }
                     // Composite.add(composite, b);
@@ -455,8 +455,13 @@ export class Thing {
         detector.tick_fns[this.id]?.(this);
         if (this.is_touching_player && !this.is_player) {
             detector.sensor_during_fns[this.id]?.(this, dt);
-            if (!this.options.sensor)
+            if (!this.options.sensor) { // is a floor
+                if (this.options.sensor_fov_mult != undefined)
+                    Thing.things_lookup.player.fov_mult = this.options.sensor_fov_mult || 1;
+                if (!this.options.sensor_dont_set_room)
+                    Thing.things_lookup.player.change_room(this.room_id);
                 this.is_touching_player = false;
+            }
         }
         for (const shoot of this.shoots) {
             shoot.tick(dt);
@@ -531,11 +536,14 @@ export class Thing {
     lookup(id) {
         return Thing.things_lookup[id];
     }
+    all_things() {
+        return Thing.things;
+    }
     // behaviour functions
     tick_behaviour() {
         if (!this.options.behaviour)
             return;
-        const player = Thing.things_lookup["player"];
+        const player = Thing.things_lookup.player;
         this.can_see_player();
         if (this.is_seeing_player) {
             if (this.behaviour.type !== "normal") {
@@ -710,24 +718,24 @@ export class Thing {
         }
     }
     // physics body functions
-    translate_wall(vector) {
-        if (!this.body)
-            return;
-        this.translate(vector);
-        const walls = this.body.walls ?? [];
-        for (const wall of walls) {
-            Body.setPosition(wall, Vector.add(wall.position, vector));
-        }
-    }
     translate(v) {
         if (!this.body)
             return;
         Body.setPosition(this.body, Vector.add(this.body.position, v));
+        const walls = this.body.walls ?? [];
+        for (const wall of walls) {
+            Body.setPosition(wall, Vector.add(wall.position, v));
+        }
     }
     teleport_to(v) {
         if (!this.body)
             return;
         Body.setPosition(this.body, v);
+    }
+    set_velocity(v) {
+        if (!this.body)
+            return;
+        Body.setVelocity(this.body, v);
     }
     reset_velocity() {
         if (!this.body)

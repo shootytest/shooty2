@@ -239,6 +239,7 @@ export const m_ui = {
             sensors: true,
             rooms: true,
             decoration: true,
+            debug: false,
         },
         settings: false,
     },
@@ -253,6 +254,7 @@ export const m_ui = {
                 m_ui.editor.layers.sensors = true;
                 m_ui.editor.layers.rooms = true;
                 m_ui.editor.layers.decoration = true;
+                m_ui.editor.layers.debug = false;
             },
             color: () => color.black,
         },
@@ -305,6 +307,14 @@ export const m_ui = {
         },
     ],
     top_settings: [
+        {
+            name: "debug",
+            get icon() {
+                return (m_ui.editor.layers.debug) ? "debug_" : "debug";
+            },
+            action: () => { m_ui.editor.layers.debug = !m_ui.editor.layers.debug; },
+            color: () => m_ui.editor.layers.debug ? "#ad1818" : color.black,
+        },
         {
             name: "save",
             icon: "save",
@@ -440,7 +450,7 @@ export const m_ui = {
                 color: "#3ca2f6ff",
                 fn: () => {
                     const target = m_ui.circle_menu.target;
-                    // console.log(target);
+                    console.log(target.shape.vertices[target.index]);
                     m_ui.open_properties(target.shape);
                     m_ui.directory_jump_fns[target.shape.id]?.();
                 },
@@ -917,7 +927,7 @@ export const m_ui = {
                 step: 0.1,
             },
             sensor_dont_set_room: {
-                show: "sensor",
+                show: ["sensor", "floor"],
                 name: "don't set room",
                 type: "checkbox",
             },
@@ -989,7 +999,9 @@ export const m_ui = {
         </button>
       </span>
       </h3>
-      <div style="float: left; user-select: none;"></div>
+      <div style="float: left; user-select: none;">
+      <span style="font-size: 0.8em;">${shape.options.room_id ? "room id: " + shape.options.room_id : ""}</span>
+      </div>
     `;
         document.getElementById("jump_to_shape")?.addEventListener("click", function (event) {
             m_ui.directory_jump_fns[shape.id]?.();
@@ -1054,7 +1066,9 @@ export const m_ui = {
                 // summary.textContent = group_key;
                 for (const option_key in group) {
                     const option = group[option_key];
-                    const showing = !option.show || options[option.show];
+                    const showing = (Array.isArray(option.show))
+                        ? option.show.map((s) => Boolean(options[s])).reduce((b1, b2) => b1 || b2)
+                        : !option.show || options[option.show];
                     const exists = option_key === "z" || shape.options[option_key] != undefined;
                     if (!showing && !exists)
                         continue;

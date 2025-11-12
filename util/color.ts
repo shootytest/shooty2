@@ -1,7 +1,8 @@
 
 // all colours are in 6-long hex format
 
-import type { styles_type } from "./map_type";
+import { clone_object, make_rooms } from "../game/make.js";
+import { style_type } from "./map_type.js";
 
 export const color/*: { [key: string]: `#${string}` }*/ = {
 
@@ -76,12 +77,19 @@ export const color/*: { [key: string]: `#${string}` }*/ = {
   testy: "#123456",
   start: "#00ddff99",
   player: "#eeeeee",
-  home: "#dddddd",
+
+  home: "#cadbca",
+  home_floor: "#445544",
+
   train: "#baabaa",
   train_floor: "#3b3636",
 
   coin: "#eff200",
   sensor: "#00ddff",
+  spawner: "#af4747",
+
+  enemy_main: "#d7193f",
+  enemy_alt: "#d75f19",
 
   tutorial_main: "#7f77ea",
   tutorial_alt: "#778eea",
@@ -89,134 +97,115 @@ export const color/*: { [key: string]: `#${string}` }*/ = {
   tutorial_dark2: "#4e47af",
   tutorial_floor: "#29264e",
 
+  streets_main: "#77adea",
+  streets_alt: "#77dfea",
+  streets_dark: "#4b98db",
+  streets_dark2: "#478baf",
+  streets_floor: "#263e4e",
+
 };
 
-export const STYLES: styles_type = {
+export interface color_theme {
+
+  uid: number,
+
+  main: string,
+  alt?: string,
+  dark: string,
+  dark2?: string,
+  floor: string,
+
+  enemy?: string,
+  enemy2?: string,
+  coin?: string,
+  shadow?: string,
+
+};
+
+export const THEMES/*: { [key: string]: color_theme }*/ = {
+
+  default: {
+    uid: 1,
+    main: "#ff0000",
+    alt: "#ff0000",
+    dark: "#ff0000",
+    dark2: "#ff0000",
+    floor: "#ff0000",
+    enemy: "#d7193f",
+    enemy2: "#d75f19",
+    coin: "#eff200",
+  },
+  home: {
+    uid: 2,
+    main: "#cadbca",
+    dark: "#829882",
+    floor: "#445544",
+  },
+  train: {
+    uid: 3,
+    main: "#baabaa",
+    dark: "#756564",
+    floor: "#3b3636",
+  },
+  station_tutorial: {
+    uid: 7.5,
+    main: "#7f77ea",
+    dark: "#544bdb",
+    floor: "#29264e",
+  },
+  tutorial: {
+    uid: 7,
+    main: "#7f77ea",
+    alt: "#778eea",
+    dark: "#544bdb",
+    dark2: "#4e47af",
+    floor: "#22203c",
+  },
+  streets: {
+    uid: 8,
+    main: "#77adea",
+    alt: "#77dfea",
+    dark: "#4b98db",
+    dark2: "#478baf",
+    floor: "#21323d",
+  },
+
+};
+// export const THEMES_: { [key: string]: color_theme } = THEMES;
+export const THEMES_UID_MAX = Object.values(THEMES as { [key: string]: color_theme }).map((t) => t.uid).reduce((id1, id2) => Math.max(id1, id2)); // i don't normally put everything in 1 line lol
+
+export const current_theme: color_theme = clone_object(THEMES.default) as color_theme;
+
+export const color2hex = (c: string) => {
+  return "" + ((current_theme as any)[c] ?? (THEMES.default as any)[c] ?? c);
+};
+
+export const color2hex_map = (c: string, theme_string: string) => {
+  if (!(theme_string in THEMES)) {
+    theme_string = make_rooms[theme_string]?.theme;
+  }
+  const t = (theme_string ? (THEMES[theme_string as keyof typeof THEMES] ?? THEMES.default) : current_theme) as any;
+  const tc = t[c] ?? (THEMES.default as any)[c];
+  if (tc) return "" + tc;
+  else return c;
+}
+
+export const STYLES/*: { [key: string]: style_type }*/ = {
+
+  // test colours
   error: {
     stroke: color.error,
     fill: color.error,
-  },
+  } as style_type,
   test: {
     stroke: color.test + "99",
     fill: color.test + "99",
     fill_opacity: 0.8,
   },
-  player: {
-    stroke: color.white,
-    stroke_opacity: 1,
-    fill: color.white,
-    fill_opacity: 0.4,
-  },
-  home: {
-    stroke: color.home,
-    stroke_opacity: 1,
-  },
-  train: {
-    stroke: color.train,
-    stroke_opacity: 1,
-    fill: color.train,
-    fill_opacity: 0.5,
-  },
-  train_floor: {
-    stroke_opacity: 0,
-    fill: color.train_floor,
-    fill_opacity: 1,
-  },
-  tutorial: {
-    stroke: color.tutorial_main,
-    stroke_opacity: 1,
-  },
-  tutorial_filled: {
-    stroke: color.tutorial_main,
-    stroke_opacity: 1,
-    fill: color.tutorial_dark,
-    fill_opacity: 0.7,
-  },
-  tutorial_window: {
-    stroke: color.tutorial_alt,
-    fill: color.tutorial_alt,
-    fill_opacity: 0.2,
-  },
-  tutorial_curtain: {
-    stroke: color.tutorial_dark2,
-    stroke_opacity: 0,
-    fill: color.tutorial_dark2,
-    fill_opacity: 0.3,
-  },
-  tutorial_breakable: {
-    stroke: color.tutorial_alt,
-    stroke_opacity: 0.45,
-  },
-  tutorial_boss: {
-    stroke: "#d75f19",
-    fill: "#d75f19",
-    health: color.tutorial_alt,
-    fill_opacity: 0.4,
-    health_opacity: 0.6,
-  },
-  tutorial_enemy: {
-    stroke: "#d7193f",
-    fill: "#d7193f",
-    health: color.tutorial_alt,
-    fill_opacity: 0.4,
-    health_opacity: 0.6,
-  },
-  tutorial_spike: {
-    stroke: "#d7193f",
-    fill: "#d7193f",
-    health: color.tutorial_alt,
-    fill_opacity: 0.4,
-    health_opacity: 0.6,
-  },
-  tutorial_enemy_2: {
-    stroke: color.tutorial_alt,
-    fill: color.tutorial_alt,
-    health: "#d7193f",
-    fill_opacity: 0.4,
-    health_opacity: 0.25,
-  },
-  tutorial_enemy_coin: {
-    stroke: color.tutorial_alt,
-    fill: color.tutorial_alt,
-    health: color.coin,
-    fill_opacity: 0.4,
-    health_opacity: 0.3,
-  },
-  tutorial_door: {
-    stroke: color.tutorial_dark2,
-  },
-  tutorial_door_floor: {
-    stroke: color.tutorial_main,
-    stroke_opacity: 0,
-    fill: color.tutorial_dark2,
-    fill_opacity: 0.3,
-  },
-  tutorial_floor: {
-    stroke_opacity: 0,
-    fill: color.tutorial_floor,
-    fill_opacity: 0.7,
-  },
+
+  // map colours
   start: {
     stroke: color.start,
-  },
-  coin_rock: {
-    stroke: color.coin,
-    stroke_opacity: 0.5,
-    fill: color.coin,
-    fill_opacity: 0.1,
-  },
-  collect_coin: {
-    stroke: color.coin,
-    stroke_opacity: 1,
-    width: 0.5,
-    fill: color.coin,
-    fill_opacity: 0.1,
-  },
-  collect_gun: {
-    stroke: "#a6ff00",
-    stroke_opacity: 1,
-    fill: "#a6ff00",
-    fill_opacity: 0.2,
   },
   switch: {
     stroke: color.sensor,
@@ -236,7 +225,123 @@ export const STYLES: styles_type = {
   },
   spawner: {
     stroke_opacity: 0,
-    fill: "#af4747",
+    fill: color.spawner,
     fill_opacity: 0.3,
   },
+
+  // collectible colours
+  coin_rock: {
+    stroke: "coin",
+    stroke_opacity: 0.5,
+    fill: "coin",
+    fill_opacity: 0.1,
+  },
+  collect_coin: {
+    stroke: "coin",
+    stroke_opacity: 1,
+    width: 0.5,
+    fill: "coin",
+    fill_opacity: 0.1,
+  },
+  collect_gun: {
+    stroke: "#a6ff00",
+    stroke_opacity: 1,
+    fill: "#a6ff00",
+    fill_opacity: 0.2,
+  },
+
+  // the one
+  player: {
+    stroke: color.white,
+    stroke_opacity: 1,
+    fill: color.white,
+    fill_opacity: 0.4,
+  },
+
+
+  train: {
+    stroke: color.train,
+    stroke_opacity: 1,
+    fill: color.train,
+    fill_opacity: 0.5,
+  },
+  train_floor: {
+    stroke_opacity: 0,
+    fill: color.train_floor,
+    fill_opacity: 1,
+  },
+  train_track: {
+    width: 3,
+    stroke: color.train_floor,
+    fill_opacity: 0.8,
+  },
+
+
+  main: {
+    stroke: "main",
+    stroke_opacity: 1,
+  },
+  wall: {
+    stroke: "main",
+    stroke_opacity: 1,
+  },
+  wall_filled: {
+    stroke: "main",
+    stroke_opacity: 1,
+    fill: "dark",
+    fill_opacity: 0.7,
+  },
+  tutorial_window: {
+    stroke: "alt",
+    fill: "alt",
+    fill_opacity: 0.2,
+  },
+  tutorial_curtain: {
+    stroke: "dark2",
+    stroke_opacity: 0,
+    fill: "dark2",
+    fill_opacity: 0.3,
+  },
+  tutorial_door: {
+    stroke: "dark2",
+  },
+  tutorial_door_floor: {
+    stroke: "main",
+    stroke_opacity: 0,
+    fill: "dark2",
+    fill_opacity: 0.3,
+  },
+  floor: {
+    stroke_opacity: 0,
+    fill: "floor",
+    fill_opacity: 1,
+  },
+  breakable: {
+    stroke: "alt",
+    stroke_opacity: 0.45,
+  },
+  enemy: {
+    stroke: "enemy",
+    fill: "enemy",
+    health: "alt",
+    fill_opacity: 0.4,
+    health_opacity: 0.6,
+  },
+  enemy2: {
+    stroke: "enemy2",
+    fill: "enemy2",
+    health: "alt",
+    fill_opacity: 0.4,
+    health_opacity: 0.25,
+  },
+  tutorial_coin: {
+    stroke: "alt",
+    fill: "alt",
+    health: "coin",
+    fill_opacity: 0.4,
+    health_opacity: 0.3,
+  },
+
 };
+
+export const STYLES_ = STYLES as { [key: string]: style_type };

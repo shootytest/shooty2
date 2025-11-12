@@ -1,5 +1,5 @@
 import { Vector } from "../matter.js";
-import { STYLES } from "../util/color.js";
+import { STYLES, STYLES_ } from "../util/color.js";
 import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3_ } from "../util/vector.js";
@@ -113,7 +113,7 @@ export class Shoot {
       shape.seethrough = true;
       shape.style = clone_object(this.thing.shapes[0].style);
       shape.has_style = true;
-      if (S.style) override_object(shape.style, (STYLES[S.style] ?? STYLES.error));
+      if (S.style) override_object(shape.style, (STYLES_[S.style] ?? STYLES.error));
       if (S.style_) override_object(shape.style, S.style_);
     } else {
       for (const shape of bullet.shapes) {
@@ -124,7 +124,7 @@ export class Shoot {
           shape.has_style = true;
         }
         if (shape.index === 0) {
-          if (S.style) override_object(shape.style, (STYLES[S.style] ?? STYLES.error));
+          if (S.style) override_object(shape.style, (STYLES_[S.style] ?? STYLES.error));
           if (S.style_) override_object(shape.style, S.style_);
         }
       }

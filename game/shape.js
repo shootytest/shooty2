@@ -1,7 +1,7 @@
 import { Vertices } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
-import { color, STYLES } from "../util/color.js";
+import { color, color2hex, STYLES, STYLES_ } from "../util/color.js";
 import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
@@ -37,7 +37,7 @@ export class Shape {
             v.y -= dv.y;
         }
         if (thing.options.style) {
-            s.style = clone_object(STYLES[thing.options.style] ?? STYLES.error);
+            s.style = clone_object(STYLES_[thing.options.style] ?? STYLES.error);
             s.has_style = true;
         }
         if (thing.options.style_)
@@ -69,7 +69,7 @@ export class Shape {
         s.options = o;
         s.seethrough = Boolean(thing.options.seethrough);
         if (o.style || thing.options.style) {
-            s.style = clone_object(STYLES[o.style ?? thing.options.style ?? "error"] ?? STYLES.error);
+            s.style = clone_object(STYLES_[o.style ?? thing.options.style ?? "error"] ?? STYLES.error);
             s.has_style = true;
         }
         if (thing.options.style_)
@@ -136,13 +136,8 @@ export class Shape {
             min_x: screen_topleft.x - config.graphics.shape_cull_padding, min_y: screen_topleft.y - config.graphics.shape_cull_padding, max_x: screen_bottomright.x + config.graphics.shape_cull_padding, max_y: screen_bottomright.y + config.graphics.shape_cull_padding, min_z: -Number.MAX_SAFE_INTEGER, max_z: Number.MAX_SAFE_INTEGER,
         };
         Shape.draw_shapes = Shape.filter(screen_aabb);
-        Shape.draw_zs = [0];
         Shape.floor_shapes = [];
         for (const s of Shape.draw_shapes) {
-            if (s.z !== 0) {
-                if (!Shape.draw_zs.includes(s.z))
-                    Shape.draw_zs.push(s.z);
-            }
             if (s.thing.options.floor || s.options.floor) {
                 Shape.floor_shapes.push(s);
             }
@@ -154,7 +149,9 @@ export class Shape {
                 s.compute_screen();
             }
         }
-        Shape.draw_zs.sort((s1, s2) => s1 - s2); // WHY WAS IT SORTING ALPHABETICALLY thanks js
+        Shape.draw_zs = [...new Set(Shape.draw_shapes.map(s => s.z))];
+        // sort everything
+        Shape.draw_zs.sort((s1, s2) => s1 - s2);
         const draw_shapes_sort = (s1, s2) => {
             if (math.equal(s1.z, s2.z)) {
                 if (s1.thing.is_player && !s2.thing.is_player)
@@ -193,10 +190,12 @@ export class Shape {
         ctx.globalAlpha = 1;
     }
     ;
+    static see_z_range = [0, 0];
     // gets screen vertices for everything on screen
     // for visibility purposes
     static get_vertices() {
         const result = [];
+        let min_z = 9999999, max_z = -9999999;
         for (const s of Shape.draw_shapes) {
             const vs = s.computed?.vertices;
             if (!vs)
@@ -205,14 +204,16 @@ export class Shape {
                 continue;
             if (s.thing.is_player)
                 continue;
-            if (s.z !== player.z) {
-                // todo when the time comes...
-                //continue;
-            }
+            if (s.z < min_z)
+                min_z = s.z;
+            if (s.z > max_z)
+                max_z = s.z;
             if (s.closed_loop)
                 vs.push(vs[0]);
             result.push(vs);
         }
+        if (Shape.draw_shapes.length > 0)
+            Shape.see_z_range = [min_z, max_z];
         return result;
     }
     ;
@@ -370,13 +371,13 @@ export class Shape {
         ctx.lineJoin = "round";
         const override_pause_opacity = this.thing.is_player && this.index >= 1 && player.paused;
         if (style.stroke) {
-            ctx.strokeStyle = style.stroke;
+            ctx.strokeStyle = color2hex(style.stroke);
             ctx.globalAlpha = this.opacity * (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
-            ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.z) * config.graphics.linewidth_mult * (this.translucent <= math.epsilon ? 1 : 1.8) * (this.thing.options.seethrough && this.thing.is_wall ? 0.5 : 1);
+            ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.z) * config.graphics.linewidth_mult * (this.translucent <= math.epsilon ? 1 : 1.8); // * (this.thing.options.seethrough && this.thing.is_wall ? 0.5 : 1);
             ctx.stroke();
         }
         if (style.fill && this.closed_loop) {
-            ctx.fillStyle = style.fill;
+            ctx.fillStyle = color2hex(style.fill);
             ctx.globalAlpha = this.opacity * (style.opacity ?? 1) * (style.fill_opacity ?? 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
             ctx.fill();
         }

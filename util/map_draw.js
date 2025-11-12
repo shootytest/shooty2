@@ -1,7 +1,7 @@
 import { make } from "../game/make.js";
 import { m_ui } from "../map/map_ui.js";
 import { camera } from "./camera.js";
-import { color, STYLES } from "./color.js";
+import { color, color2hex_map, STYLES, STYLES_ } from "./color.js";
 import { key, mouse } from "./key.js";
 import { map_serialiser } from "./map_type.js";
 import { math } from "./math.js";
@@ -73,11 +73,10 @@ export const map_draw = {
     },
     draw: (ctx, map) => {
         if (map.shapes != undefined) {
-            const cam = vector3.create2(camera.location, camera.z);
             const screen_topleft = camera.screen2world({ x: 0, y: 0 });
             const screen_bottomright = camera.screen2world({ x: ctx.canvas.width, y: ctx.canvas.height });
             const screen_aabb3 = {
-                min_x: screen_topleft.x, min_y: screen_topleft.y, max_x: screen_bottomright.x, max_y: screen_bottomright.y, min_z: -999, max_z: 999, // todo z culling (first pass)?
+                min_x: screen_topleft.x, min_y: screen_topleft.y, max_x: screen_bottomright.x, max_y: screen_bottomright.y, min_z: -999, max_z: 999, // todo z culling?
             };
             const memo_aabb3 = {};
             // loop: compute shape stuff
@@ -88,10 +87,9 @@ export const map_draw = {
                 if (shape.computed != undefined) {
                     // compute vertices
                     shape.computed.vertices = vector3.create_many(shape.vertices, shape.z);
-                    // compute distance
-                    shape.computed.distance2 = vector.length2(vector.sub(shape.computed?.mean, cam));
+                    // compute distance (not really applicable now, but previously i was sorting by it)
+                    // shape.computed.distance2 = vector.length2(vector.sub(shape.computed?.mean, vector3.create2(camera.location, camera.z)));
                     // compute location on screen
-                    let i = 0;
                     if (memo_aabb3[shape.z] == undefined) {
                         const z_scale = camera.zscale_inverse(shape.z);
                         memo_aabb3[shape.z] = vector3.aabb_scale(screen_aabb3, vector3.create(z_scale, z_scale, 1));
@@ -106,7 +104,8 @@ export const map_draw = {
                             shape.computed.on_screen = false;
                         }
                     }
-                    m_ui.directory_spans[shape.id].style.color = shape.computed.on_screen ? "black" : "#999999";
+                    if (m_ui.directory_spans[shape.id])
+                        m_ui.directory_spans[shape.id].style.color = shape.computed.on_screen ? "black" : "#999999";
                     if (!shape.computed.on_screen)
                         continue; // hmmm can i get away with doing this (seems so)
                     const screen_vs = [];
@@ -128,7 +127,6 @@ export const map_draw = {
             //   so that static objects (which should be the majority?) don't always recompute world AABB
             //   and only calculate screen position for all objects on screen
             //   hopefully this is fast enough? although i'll probably make a chunk-like system too?
-            // ok why was i sorting by distance?
             map_draw.shapes_on_screen = map.shapes.filter((s) => s.computed?.on_screen).sort((a, b) => {
                 if (b.z !== a.z || b.computed?.options == undefined || a.computed?.options == undefined)
                     return a.z - b.z;
@@ -173,15 +171,27 @@ export const map_draw = {
         if (open_loop && !style.stroke)
             style.stroke = style.fill; // hmmm
         if (style.stroke) {
-            ctx.strokeStyle = style.stroke;
+            ctx.strokeStyle = color2hex_map(style.stroke, shape.options.room_id ?? "default");
             ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
         }
         ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (shadow ? 0.6 : 1);
         ctx.stroke();
         if (style.fill && !open_loop) {
-            ctx.fillStyle = style.fill;
+            ctx.fillStyle = color2hex_map(style.fill, shape.options.room_id ?? "default");
             ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1) * (shadow ? 0.6 : 1);
             ctx.fill();
+        }
+        if (m_ui.editor.layers.debug && shape.computed.aabb) {
+            const aabb = shape.computed?.aabb;
+            const topleft = camera.world2screen({ x: aabb.min_x, y: aabb.min_y });
+            const bottomright = camera.world2screen({ x: aabb.max_x, y: aabb.max_y });
+            const aabb2 = { min_x: topleft.x, min_y: topleft.y, max_x: bottomright.x, max_y: bottomright.y, };
+            ctx.beginPath();
+            ctx.globalAlpha = 0.5;
+            ctx.lineWidth = camera.sqrtscale;
+            ctx.strokeStyle = color.white;
+            ctx.rect(aabb2.min_x, aabb2.min_y, aabb2.max_x - aabb2.min_x, aabb2.max_y - aabb2.min_y);
+            ctx.stroke();
         }
         ctx.restore("draw_shape");
     },
@@ -193,14 +203,15 @@ export const map_draw = {
         const id_prefix = shape.id + "__";
         const selected = shape.id === m_ui.mouse.drag_target[0]?.shape?.id;
         for (const [i, v] of screen_vertices.entries()) {
-            if (v.z !== camera.look_z && shape.id !== m_ui.properties_selected.id)
+            if (!math.equal(v.z, 0) && shape.id !== m_ui.properties_selected.id)
                 continue;
             const id_ = id_prefix + i;
             const vertex_size = (shape.id === "start") ? camera.scale * 30 : camera.sqrtscale * 5;
+            const colorhex = color2hex_map((style.stroke ?? style.fill ?? color.purewhite), shape.options.room_id ?? "default");
             if (Math.abs(v.z) <= 0.005) {
                 ctx.begin();
                 ctx.circle(v.x, v.y, vertex_size);
-                ctx.fillStyle = (style.stroke ?? style.fill ?? color.purewhite) + (shadow ? "99" : "");
+                ctx.fillStyle = colorhex + (shadow ? "99" : "");
                 ctx.lineWidth = camera.sqrtscale * 2;
                 ctx.fill();
                 if (selected && shape.vertices.length > 1) {
@@ -222,7 +233,7 @@ export const map_draw = {
                 // mouse hover
                 ctx.begin();
                 ctx.circle(v.x, v.y, hove_r);
-                ctx.fillStyle = (style.fill ?? style.stroke ?? color.purewhite);
+                ctx.fillStyle = colorhex;
                 ctx.lineWidth = camera.sqrtscale * 2;
                 ctx.globalAlpha = 0.4;
                 ctx.fill();
@@ -256,14 +267,14 @@ export const map_draw = {
                         if (mouse.buttons[0]) {
                             const newpos = camera.screen2world(mouse.position);
                             if (key.shift()) {
+                                if (o.shape.vertices.length === 1 && (o.shape.options.contains?.length ?? 0) > 0) {
+                                    const same_difference = vector.sub(newpos, ov);
+                                    map_draw.move_vertices_recursively(o.shape, same_difference);
+                                }
                                 const difference = vector.sub(newpos, o.vertex_old[o.index]);
                                 for (let i = 0; i < o.shape.vertices.length; i++) {
                                     o.shape.vertices[i].x = o.vertex_old[i].x + difference.x;
                                     o.shape.vertices[i].y = o.vertex_old[i].y + difference.y;
-                                }
-                                if (o.shape.vertices.length === 1 && (o.shape.options.contains?.length ?? 0) > 0) {
-                                    const same_difference = vector.sub(newpos, ov);
-                                    map_draw.move_vertices_recursively(o.shape, same_difference);
                                 }
                             }
                             else {
@@ -273,7 +284,7 @@ export const map_draw = {
                                 for (let i = 0; i < o.shape.vertices.length; i++) {
                                     if (i === o.index)
                                         continue;
-                                    o.shape.vertices[i] = o.vertex_old[i];
+                                    o.shape.vertices[i] = vector.clone(o.vertex_old[i]);
                                 }
                             }
                         }
@@ -330,11 +341,15 @@ export const map_draw = {
     move_vertices_recursively: (shape, move_by) => {
         for (const s_id of shape.options.contains ?? []) {
             const s = m_ui.map.computed?.shape_map?.[s_id];
-            if (s == undefined)
+            if (s == undefined) {
+                console.error(`[map_draw/move_vertices_recursively] unknown shape id in contains list: ${s_id}`);
                 continue;
-            for (let i = 0; i < s.vertices.length; i++) {
-                s.vertices[i] = vector.add(s.vertices[i], move_by);
             }
+            for (let i = 0; i < s.vertices.length; i++) {
+                s.vertices[i].x = s.vertices[i].x + move_by.x;
+                s.vertices[i].y = s.vertices[i].y + move_by.y;
+            }
+            map_draw.compute_shape(s);
             map_draw.move_vertices_recursively(s, move_by);
         }
     },
@@ -342,7 +357,7 @@ export const map_draw = {
         if (shape.options.is_spawner)
             return STYLES.spawner;
         const style_maybe = shape.options.make_id != undefined ? make[shape.options.make_id]?.style : undefined;
-        return STYLES[shape.options.style ?? style_maybe ?? "error"] ?? STYLES.error;
+        return STYLES_[shape.options.style ?? style_maybe ?? "error"] ?? STYLES.error;
     },
     change: (type, shapes) => {
         if (!Array.isArray(shapes))

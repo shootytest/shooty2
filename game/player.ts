@@ -37,8 +37,9 @@ export class Player extends Thing {
     currencies_total: {},
   };
 
-  on_floor: number = 0; // 2 = safe, 1 = not safe, 0 = falllllling
+  on_floor: number = 0; // 2 = safe, 1 = not safe, 0 = fallllling
   floor_z: number = 0;
+  is_safe: boolean = true;
 
   camera_target: vector3_ = vector.create();
   camera_target_target: vector3_ = vector.create();
@@ -52,8 +53,7 @@ export class Player extends Thing {
     this.is_player = true;
     this.team = 1;
     this.make("player", true);
-    if (this.health) this.health.display = 0; // start smooth animation from 0 instead of full
-    // this.make_shape("player_basic");
+    if (this.health) this.health.display = 0; // start smooth animation from zero instead of full health
 
     this.create_id("player");
     this.position = vector3.create();
@@ -100,16 +100,18 @@ export class Player extends Thing {
       let on_floor = false;
       let safe_floor = true;
       let floor_z = (save.save.player.position?.z ?? 0) - 2;
+      let on_floor_z = floor_z;
       let z = this.target.position.z;
       for (const s of Shape.floor_shapes) {
         if (s.computed && math.is_point_in_polygon(this.position, s.computed?.vertices)) {
+          if (s.z + math.epsilon < on_floor_z) break; // gone below the first floor level that the player is above
           floor_z = s.z;
           if (!on_floor) on_floor = s.z - math.epsilon <= z;
           if (on_floor) {
+            on_floor_z = s.z;
             s.thing.is_touching_player = true;
             safe_floor = safe_floor && Boolean(s.thing.options.safe_floor);
           }
-          if (s.z + math.epsilon < z) break; // gone below player z
         }
       }
       const grounded = math.equal(z, floor_z);
@@ -129,13 +131,13 @@ export class Player extends Thing {
       }
       if (z < floor_z - 1.95) z = this.fall_back();
       else {
-        z = math.bound(z + this.target.vz, z < floor_z - 0.25 ? floor_z - 2 : floor_z, floor_z + 1000);
+        z = math.bound(z + this.target.vz, z < floor_z - 0.1 ? floor_z - 2 : floor_z, floor_z + 1000);
         this.target.vz = this.target.vz - config.physics.player_gravity;
       }
       if (controls.shoot || this.autoshoot) {
         this.shoot();
       }
-      if ((safe_floor && on_floor) && grounded && Thing.time >= this.autosave_time) { // only save while safe
+      if (this.is_safe && (safe_floor && on_floor) && grounded && Thing.time >= this.autosave_time) { // only save while safe
         if (this.autosave_time < 0) this.autosave_time = Thing.time + config.game.autosave_interval;
         else this.save();
       }
@@ -153,7 +155,7 @@ export class Player extends Thing {
     this.stats.deaths++;
     this.reset_velocity();
     this.unload_all_rooms();
-    this.change_room(this.checkpoint_room);
+    this.change_room(this.checkpoint_room, true);
     this.reload_all_rooms();
     this.target.vz = 0;
     this.teleport_to(this.checkpoint);
@@ -243,7 +245,7 @@ export class Player extends Thing {
       this.reset_velocity();
       this.teleport_to(o.position);
     }
-    this.change_room(o.room_id ?? MAP.computed?.shape_map.start.options.room_connections?.[0] ?? "");
+    this.change_room(o.room_id ?? MAP.computed?.shape_map.start.options.room_connections?.[0] ?? "", true);
     if (o.checkpoint) this.checkpoint = o.checkpoint;
     if (o.checkpoint_room) this.checkpoint_room = o.checkpoint_room;
     if (o.fov_mult) this.fov_mult = o.fov_mult;
@@ -300,11 +302,15 @@ export class Player extends Thing {
     this.checkpoint_room = thing.room_id;
   }
 
-  change_room(room_id: string) {
-    if (!room_id) return;
+  change_room(room_id: string, force: boolean = false) {
+    if (!room_id || (!force && this.room_id === room_id)) return;
     const old_room_id = this.room_id;
     this.room_id = room_id;
     this.set_rooms(this.connected_rooms(1), this.connected_rooms(2));
+    if (old_room_id !== (MAP.computed?.shape_map.start.options.room_connections?.[0] ?? "") && !this.room_list.includes(old_room_id)) {
+      console.log(this.room_list);
+      console.warn("[player/change_room] warning! player room list doesn't include the previous room id: " + old_room_id);
+    }
   }
 
   connected_rooms(depth: number = 1, room_id?: string): string[] {
@@ -313,7 +319,8 @@ export class Player extends Thing {
     const result: string[] = [];
     result.push(room_id);
     for (const id of (MAP.computed?.shape_map[room_id]?.options.room_connections ?? [])) {
-      for (const i of this.connected_rooms(depth - 1, id)) {
+      const new_depth = ["station"].includes(id) ? depth : depth - 1;
+      for (const i of this.connected_rooms(new_depth, id)) {
         if (result.includes(i)) continue;
         result.push(i);
       }
