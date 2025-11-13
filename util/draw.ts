@@ -1,6 +1,7 @@
 import { svg_paths } from "./svg.js";
 import { math } from "./math.js";
 import { circle, vector } from "./vector.js";
+import { config } from "./config.js";
 
 type color = string | CanvasGradient | CanvasPattern;
 type ctx_save = {
@@ -133,7 +134,7 @@ export class Context {
   }
 
   set lineWidth(lineWidth: number) {
-    this.ctx.lineWidth = lineWidth;
+    this.ctx.lineWidth = lineWidth; // math.bound(lineWidth, 0, config.graphics.linewidth_max);
   }
 
   set lineCap(lineCap: CanvasLineCap) {

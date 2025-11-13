@@ -64,10 +64,12 @@ export const camera = {
         const sv = this.world2screen(world_vector, scale);
         return vector.add(centre, vector.mult(vector.sub(sv, centre), this.zscale(world_vector.z)));
     },
-    zscale: function (z) {
-        let z_ = (this.z - this.look_z) / (this.z - z + ZEPSILON); // replaced this.z / this.scale
+    zscale: function (z, is_width = false) {
+        if (math.equal(this.z, z))
+            return is_width ? config.graphics.linewidth_max_mult : 1 / ZEPSILON;
+        let z_ = (this.z - this.look_z) / (this.z - z); // replaced this.z / this.scale
         if (z_ <= 0)
-            z_ = 1 / ZEPSILON;
+            z_ = is_width ? config.graphics.linewidth_max_mult : 1 / ZEPSILON;
         return z_;
     },
     zscale_inverse: function (z) {

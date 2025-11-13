@@ -103,7 +103,7 @@ export class Player extends Thing {
       let on_floor_z = floor_z;
       let z = this.target.position.z;
       for (const s of Shape.floor_shapes) {
-        if (s.computed && math.is_point_in_polygon(this.position, s.computed?.vertices)) {
+        if (s.computed && math.is_circle_in_polygon(this.position, this.radius, s.computed?.vertices)) {
           if (s.z + math.epsilon < on_floor_z) break; // gone below the first floor level that the player is above
           floor_z = s.z;
           if (!on_floor) on_floor = s.z - math.epsilon <= z;
@@ -229,6 +229,7 @@ export class Player extends Thing {
       ability: this.ability?.value ?? 0,
       xp: this.xp,
       checkpoint: this.checkpoint,
+      checkpoint_room: this.checkpoint_room,
       current_gun: this.current_gun,
       guns: this.guns,
       stats: this.stats,
@@ -246,11 +247,12 @@ export class Player extends Thing {
       this.teleport_to(o.position);
     }
     this.change_room(o.room_id ?? MAP.computed?.shape_map.start.options.room_connections?.[0] ?? "", true);
-    if (o.checkpoint) this.checkpoint = o.checkpoint;
+    if (o.checkpoint) this.checkpoint = vector3.clone(o.checkpoint);
     if (o.checkpoint_room) this.checkpoint_room = o.checkpoint_room;
     if (o.fov_mult) this.fov_mult = o.fov_mult;
     if (this.health && o.health) this.health.value = o.health;
     if (this.ability && o.ability) this.ability.value = o.ability;
+    // o.current_gun = "basic"; o.guns = ["basic"];
     if (o.guns) this.guns = o.guns;
     if (o.current_gun) {
       this.current_gun = o.current_gun;
@@ -293,12 +295,12 @@ export class Player extends Thing {
   }
 
   set_checkpoint(position: vector3, room_id?: string) {
-    this.checkpoint = position;
+    this.checkpoint = vector3.clone(position);
     this.checkpoint_room = room_id ?? this.room_id;
   }
 
-  set_checkpoint_to_thing(thing: Thing) {
-    this.checkpoint = thing.position;
+  set_checkpoint_to_thing(thing: Thing, shape_position: boolean = false) {
+    this.checkpoint = shape_position ? vector3.create2(vector.add(thing.position, vector.mean(thing.shapes[0].vertices)), thing.z) : thing.position;
     this.checkpoint_room = thing.room_id;
   }
 

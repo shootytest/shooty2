@@ -193,7 +193,7 @@ export class Thing {
     if (o.options.make_id) override_object(this.options, make_options);
     override_object(this.options, o.options);
     const _s = Shape.from_map(this, o);
-    if (this.shapes.length <= 1) this.position = /*(o.vertices.length >= 3 && !o.options.open_loop) ? Vertices.centre(o.computed.vertices) :*/ vector3.mean_but_somehow_max_z(o.computed.vertices);
+    if (this.shapes.length <= 1) this.position = this.options.force_max_z ? vector3.mean_but_somehow_max_z(o.computed.vertices) : vector3.mean(o.computed.vertices);
     else console.error("[thing/make_map] i feel this shouldn't happen...");
     vector3.add_to_list(_s.vertices, vector3.create(0, 0, -this.z)); // move shape vertices back
     this.create_id(o.id);
@@ -317,6 +317,8 @@ export class Thing {
         const sm = vector.mean(vertices);
         if (s.closed_loop) vertices.push(vertices[0]); // must be after calculating the mean!
         const [expanded, zs] = math.expand_lines(vertices, config.physics.wall_width);
+        const normals: vector[] = [];
+        if (this.options.force_wall_body) for (const vs of expanded) normals.push(vector.normalise(vector.rotate90(vector.sub(vs[2], vs[1]))));
         const b = Bodies.fromVertices(sm.x, sm.y, expanded, options);
         const walls: Matter.Body[] = [];
         b.density = 0;
@@ -325,15 +327,16 @@ export class Thing {
         // Composite.add(world, b);
         Body.setPosition(b, vector.add(this.target.position, sm));
         Body.setAngle(b, 0);
-        b.label = this.id + "_" + 0;
+        b.label = this.id + "`" + 0;
         for (let i = 0; i < expanded.length; i++) {
           const vs = expanded[i], z_offset = zs[i];
           const vm = vector.mean(vs);
           const b_ = Bodies.fromVertices(s.offset.x + vm.x, s.offset.y + vm.y, [vs], options);
-          b_.label = this.id + "_" + (i + 1);
+          b_.label = this.id + "`" + (i + 1);
           (b_ as any).thing = this;
-          if (this.options.force_wall_body && z_offset !== (this.options.force_wall_ground ?? 0)) {
+          if (this.options.force_wall_body/* && z_offset !== (this.options.force_wall_ground ?? 0)*/) {
             (b_ as any).z = z_offset;
+            (b_ as any).normal = normals[i];
           }
           // Composite.add(composite, b);
           Composite.add(world, b_);

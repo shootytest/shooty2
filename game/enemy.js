@@ -120,6 +120,7 @@ export class Spawner {
     spawn;
     waves = [];
     wave_progress = 0;
+    z = 0;
     vertices = [];
     enemies = [];
     delays = [];
@@ -143,6 +144,7 @@ export class Spawner {
             repeat: o.options.spawn_repeat,
             repeat_delay: o.options.spawn_repeat_delay,
         };
+        this.z = Number(o.z.toFixed(3));
         if (o.options.spawn_permanent)
             this.permanent = o.options.spawn_permanent;
         if (this.permanent) {
@@ -196,9 +198,9 @@ export class Spawner {
     random_position() {
         if (this.vertices.length === 0) {
             console.error("[spawner/random_position] no vertices in polygon!");
-            return vector.create();
+            return vector3.create(0, 0, this.z);
         }
-        return math.rand_point_in_polygon(this.vertices);
+        return vector3.create2(math.rand_point_in_polygon(this.vertices), this.z);
     }
     remove() {
         this.removed = true;

@@ -41,7 +41,7 @@ export interface maketype {
   restitution?: number;
   density?: number;
   force_wall_body?: boolean;
-  force_wall_ground?: number;
+  force_max_z?: boolean;
 
   // enemy stuff
   breakable?: boolean;
@@ -225,14 +225,36 @@ make.spike = {
   damage: 100,
 };
 
+make.wall_floor = {
+  wall_filter: "wall",
+  style: "wall_floor",
+  force_wall_body: true,
+  seethrough: true,
+};
+make.wall_part = {
+  wall_filter: "wall",
+  style: "wall",
+  force_wall_body: true,
+  seethrough: true,
+};
+make.rock_part = {
+  wall_filter: "wall",
+  style: "wall_filled",
+  force_wall_body: true,
+  keep_bullets: true,
+  seethrough: true,
+};
+
 make.wall_train = {
   make_parent: ["wall"],
-  force_wall_body: true,
-  force_wall_ground: 0,
   style: "train",
   style_: {
     width: 0.5,
+    opacity: 0.7,
   },
+  force_wall_body: true,
+  force_max_z: true,
+  seethrough: true,
   keep_bullets: true,
 };
 
@@ -272,21 +294,11 @@ make.wall_tutorial_fake = {
   xp: 150,
 };
 
-
-make.wall_streets = {
-  make_parent: ["wall"],
-  style: "wall",
-};
-make.wall_streets_rock = {
-  make_parent: ["wall_streets"],
-  style: "wall_filled",
-  keep_bullets: true,
-};
 make.wall_streets_fake = {
   make_parent: ["wall"],
   style: "wall",
   style_: {
-    opacity: 0.7,
+    opacity: 0.65,
   },
   hide_health: true,
   hide_health_until: 450,
@@ -411,7 +423,7 @@ for (let i = 0; i < 10; i++) {
     sides: 7,
     angle: 0.175 * i,
     radius: 330 - i * 30,
-    z: -0.3 + i * 0.03,
+    z: -(0.3 - i * 0.03),
   });
 }
 
@@ -473,20 +485,17 @@ make.enemy_breakable = {
   style: "breakable",
 };
 
+// @e tutorial
+
 make.enemy_tutorial = {
   make_parent: ["enemy"],
   team: 7,
 };
 
-make.enemy_streets = {
-  make_parent: ["enemy"],
-  team: 3,
-};
-
 // only used betwixt tutorial room 2 and tutorial room 2.5
 make.enemy_tutorial_block = {
   make_parent: ["enemy_tutorial"],
-  style: "tutorial_coin",
+  style: "coin_rock",
   movable: false,
   seethrough: false,
   angle: 0,
@@ -508,7 +517,7 @@ make_shapes.enemy_tutorial_block = [{
 make.enemy_tutorial_rocky = {
   make_parent: ["enemy_tutorial"],
   movable: false,
-  style: "tutorial_coin",
+  style: "coin_rock",
   health: {
     capacity: 400,
   },
@@ -525,7 +534,7 @@ make_shapes.enemy_tutorial_rocky = [{
   glowing: 0.1,
 }, {
   type: "polygon",
-  style: "coin_rock",
+  style: "coin_rock_coin",
   sides: 7,
   radius: 25,
   glowing: 0.5,
@@ -535,7 +544,7 @@ make_shapes.enemy_tutorial_rocky = [{
 make.enemy_tutorial_rocky_small = {
   make_parent: ["enemy_tutorial"],
   movable: false,
-  style: "tutorial_coin",
+  style: "coin_rock",
   health: {
     capacity: 500,
   },
@@ -551,7 +560,7 @@ make_shapes.enemy_tutorial_rocky_small = [{
   radius: 30,
 }, {
   type: "polygon",
-  style: "coin_rock",
+  style: "coin_rock_coin",
   sides: 7,
   radius: 15,
   glowing: 0.6,
@@ -818,6 +827,37 @@ make_shapes.enemy_tutorial_boss = [{
   shoot_: { delay: 0.5, angle: 360/14, },
 }];
 
+// @e streets
+
+make.enemy_streets = {
+  make_parent: ["enemy"],
+  team: 3,
+};
+
+// coin rock in station streets, easy to get
+make.enemy_streets_rocky_small = {
+  make_parent: ["enemy_streets"],
+  movable: false,
+  style: "coin_rock",
+  health: {
+    capacity: 250,
+  },
+  death: [
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 2 }, repeat: 5, angle_increment: 72 },
+    // { type: "collect_coin", stats: { make: "collect_coin_5", speed: 0 }, repeat: 1 },
+  ],
+  xp: 50,
+};
+make_shapes.enemy_streets_rocky_small = [{
+  type: "polygon",
+  sides: 7,
+  radius: 30,
+}, {
+  type: "polygon",
+  style: "coin_rock_coin",
+  sides: 7,
+  radius: 15,
+}];
 
 
 

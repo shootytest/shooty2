@@ -1,5 +1,5 @@
 import { engine, MAP } from "../index.js";
-import { Events, Vertices } from "../matter.js";
+import { Events } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { STYLES } from "../util/color.js";
 import { config } from "../util/config.js";
@@ -7,6 +7,7 @@ import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { Spawner } from "./enemy.js";
 import { clone_object } from "./make.js";
+import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
 /**
@@ -90,12 +91,87 @@ export const filters = {
     },
 };
 export const detector = {
+    // magic!
+    meow_check: function (pair, ba, bb, a, b, type) {
+        if (ba.z == undefined)
+            return;
+        const sc = "collisions_" + ba.parent.label.split("`")[0];
+        const sp = "pairs_" + ba.parent.label.split("`")[0];
+        if (type === "start") {
+            // collision start
+            if (bb[sc] == undefined) {
+                bb[sc] = [ba.z];
+                bb[sp] = [pair];
+                pair.isSensor = true;
+                pair.z_diff = true;
+            }
+            else {
+                bb[sc].push(ba.z);
+                bb[sp].push(pair);
+                const min_z = Number(bb[sc].reduce((z1, z2) => Math.min(z1, z2)).toFixed(3));
+                const max_z = Number(bb[sc].reduce((z1, z2) => Math.max(z1, z2)).toFixed(3));
+                if (bb[sp].length === 2)
+                    bb[sp][0].z_range = [min_z, max_z];
+                pair.z_range = [min_z, max_z];
+                if (!(min_z <= b.z && max_z > b.z)) { // doesn't hit!
+                    for (const p of bb[sp]) {
+                        p.isSensor = true;
+                        p.z_diff = true;
+                    }
+                }
+            }
+        }
+        else if (type === "middle") {
+            if (pair.z_range == undefined)
+                return;
+            const [min_z, max_z] = pair.z_range;
+            if (pair.z_diff) {
+                // suddenly same z
+                if (min_z <= b.z && max_z > b.z) { // hits!
+                    // b.teleport_to(vector.add(b.position, vector.mult(pair.collision.normal, pair.collision.depth)));
+                    for (const p of bb[sp]) {
+                        p.isSensor = false;
+                        p.z_diff = false;
+                        detector.collision_start(p, p.bodyA.parent.thing, p.bodyB.parent.thing, true);
+                        detector.collision_start(p, p.bodyB.parent.thing, p.bodyA.parent.thing, true);
+                    }
+                }
+            }
+            else {
+                // suddenly different z
+                if (!(min_z <= b.z && max_z > b.z)) {
+                    for (const p of bb[sp]) {
+                        p.isSensor = true;
+                        p.z_diff = true;
+                        detector.collision_end(p, p.bodyA.parent.thing, p.bodyB.parent.thing, true);
+                        detector.collision_end(p, p.bodyB.parent.thing, p.bodyA.parent.thing, true);
+                    }
+                }
+            }
+        }
+        else if (type === "end") {
+            // collision end
+            if (bb[sc] != undefined)
+                bb[sc].remove(ba.z);
+            if (bb[sp] != undefined)
+                bb[sp].remove(pair);
+            if (bb[sc].length >= 1) {
+                const min_z = bb[sc].length >= 2 ? Number(bb[sc].reduce((z1, z2) => Math.min(z1, z2)).toFixed(3)) : bb[sc][0];
+                const max_z = bb[sc].length >= 2 ? Number(bb[sc].reduce((z1, z2) => Math.max(z1, z2)).toFixed(3)) : bb[sc][0];
+                for (const p of bb[sp]) {
+                    p.z_range = [min_z, max_z];
+                }
+            }
+        }
+    },
     init: function () {
         Events.on(engine, "collisionStart", function (event) {
             for (const pair of event.pairs) {
                 const ba = pair.bodyA, bb = pair.bodyB;
                 const a = ba.parent.thing, b = bb.parent.thing;
-                if ((!a.cover_z || ba.z != undefined) && (!b.cover_z || bb.z != undefined) && Math.abs((bb.z ?? b.z) - (ba.z ?? a.z)) >= 0.1) {
+                detector.meow_check(pair, ba, bb, a, b, "start");
+                detector.meow_check(pair, bb, ba, b, a, "start");
+                if (!a.cover_z && !b.cover_z && Math.abs(b.z - a.z) >= 0.1) {
                     pair.isSensor = true;
                     pair.z_diff = true;
                 }
@@ -107,17 +183,20 @@ export const detector = {
             for (const pair of event.pairs) {
                 const ba = pair.bodyA, bb = pair.bodyB;
                 const a = ba.parent.thing, b = bb.parent.thing;
-                if ((!a.cover_z || ba.z != undefined) && (!b.cover_z || bb.z != undefined)) {
-                    const diff = Math.abs((bb.z ?? b.z) - (ba.z ?? a.z));
+                detector.meow_check(pair, ba, bb, a, b, "middle");
+                detector.meow_check(pair, bb, ba, b, a, "middle");
+                if (!a.cover_z && !b.cover_z) {
+                    const diff = Math.abs(b.z - a.z);
                     if (pair.z_diff) {
                         // suddenly same z
                         if (diff <= 0.1) {
+                            pair.isSensor = false;
                             pair.z_diff = false;
                             detector.collision_start(pair, a, b, true);
                             detector.collision_start(pair, b, a, true);
                         }
                     }
-                    else if (!pair.z_diff) {
+                    else {
                         // suddenly a different z
                         if (diff > 0.1) {
                             pair.isSensor = true;
@@ -133,6 +212,8 @@ export const detector = {
             for (const pair of event.pairs) {
                 const ba = pair.bodyA, bb = pair.bodyB;
                 const a = ba.parent.thing, b = bb.parent.thing;
+                detector.meow_check(pair, ba, bb, a, b, "end");
+                detector.meow_check(pair, bb, ba, b, a, "end");
                 detector.collision_end(pair, a, b);
                 detector.collision_end(pair, b, a);
             }
@@ -154,7 +235,7 @@ export const detector = {
                 b.health?.hit_all();
             }
         }
-        if (a.is_bullet) {
+        if (a.is_bullet && !pair.isSensor) {
             if (!b.options.sensor && !b.options.keep_bullets && !a.options.collectible && !b.options.breakable && different_team && !b.health?.invincible) {
                 if (b.is_player)
                     a.options.death = []; // please don't explode if it hits the player
@@ -164,10 +245,11 @@ export const detector = {
                 pair.isSensor = true;
             }
         }
-        if (a.damage > 0 && b.health && b.health.capacity > 0 && different_team) {
+        if (a.damage > 0 && b.health && b.health.capacity > 0 && different_team && !pair.isSensor) {
             // console.log(`[detector/collision_start] ${a.id} hits ${b.id} for ${a.damage} damage!`);
             b.health?.hit(a.damage);
         }
+        // player and collectibles
         if (Math.floor(a.team) === 1 && b.options.collectible) {
             const collect = b.options.collectible;
             if (collect.allow_bullet_collect || a.is_player) {
@@ -175,6 +257,7 @@ export const detector = {
                 b.die();
             }
         }
+        // player/bullets and switches
         if (Math.floor(a.team) === 1 && b.options.switch) {
             const switch_id = b.spawner.id;
             if (!save.check_switch(switch_id)) {
@@ -198,7 +281,7 @@ export const detector = {
     sensor_during_fns: {
         ["tutorial room 1 sensor"]: (thing, _dt) => {
             thing.lookup("tutorial room 1 arrow").shapes[0].style.opacity = 1 - math.bound((player.position.x - thing.position.x) / 350, 0, 1);
-            player.set_checkpoint(vector3.create_(MAP.computed?.shape_map["start"].vertices[0] ?? vector.create(100, -100), 0));
+            player.set_checkpoint(vector3.create_(MAP.computed?.shape_map["start"].vertices[0] ?? vector.create(100, -100), 0), "tutorial room 1");
         },
         ["tutorial room 2 door sensor"]: (_thing, _dt) => {
             // const style = thing.lookup("tutorial room 2 arrow 1").shapes[0].style;
@@ -208,7 +291,7 @@ export const detector = {
             const center = vector.clone(MAP.computed?.shape_map["tutorial room 4 gun"].vertices[0] ?? vector.create());
             const d = vector.length(vector.sub(player.position, center));
             if (d < 100)
-                player.set_checkpoint(vector3.create_(center, 0));
+                player.set_checkpoint(vector3.create_(center, 0), "tutorial room 4");
             player.fov_mult = 1.25 - 0.5 * math.bound(1 - d / 500, 0, 1);
             // hmmm
             let i = 0;
@@ -239,9 +322,23 @@ export const detector = {
             if (!math.equal(style.fill_opacity ?? 0, 0.5))
                 style.fill_opacity = math.lerp(style.fill_opacity ?? 0, 0.5, 0.1);
         },
-        ["station tutorial floor"]: (thing) => {
+        ["station streets sensor fall"]: (thing) => {
+            if (player.z < -0.25) {
+                player.fov_mult = 0.95 - player.z / 2;
+                if (player.checkpoint_room !== "station streets") {
+                    player.set_checkpoint(vector3.create2(thing.position, -0.4), "station streets");
+                }
+            }
+        },
+        ["station tracks"]: (thing) => {
+            const train_position = save.get_switch("train");
+            if (math.equal(player.z, 0) && !thing.lookup("train sensor").is_touching_player)
+                player.push_by(vector.create(train_position === 11.5 ? 10 : -10, 0));
+        },
+        set_train: (thing) => {
             const train = thing.lookup("train");
-            if (player.is_safe && (train.object.train_distance || 0) > 0) {
+            const train_position = save.get_switch("train");
+            if (train_position === 11 && (train.object.train_distance || 0) > 0) {
                 const dv = vector.create(-(train.object.train_distance || 0), 0);
                 for (const t of thing.all_things()) {
                     if (!t.id.startsWith("train"))
@@ -254,18 +351,15 @@ export const detector = {
                         t.object.original_position = vector.add(t.object.original_position, dv);
                 }
                 train.object.train_distance = 0;
+                thing.lookup("train floor").options.invisible = false;
+                thing.lookup("train floor broken bottom").z = 0;
+                thing.lookup("train floor broken middle").z = 0;
+                thing.lookup("train floor broken top").z = 0;
             }
-        },
-        ["train sensor"]: (thing, dt) => {
-            const train_time = (player.object.train_time ?? 0) + dt;
-            player.object.train_time = train_time;
-            if (train_time > 2.1 * config.seconds && !Boolean(player.object.train_stop)) {
-                const train = thing.lookup("train");
-                const train_speed = math.bound((train_time - 2.1 * config.seconds) / 1000, 0, Math.min(config.physics.train_speed, 6150 - (train.object.train_distance || 0)));
-                train.object.train_distance = (train.object.train_distance || 0) + train_speed;
-                const dv = vector.create(train_speed, 0);
+            else if (math.equal(train_position, 11.5) && train.object.train_distance !== 6150) {
+                const dv = vector.create(6150 - (train.object.train_distance || 0), 0);
                 for (const t of thing.all_things()) {
-                    if (!t.id.startsWith("train") && !t.parent.is_player)
+                    if (!t.id.startsWith("train"))
                         continue;
                     if (t.body)
                         t.translate(dv);
@@ -274,7 +368,82 @@ export const detector = {
                     if (t.object.original_position)
                         t.object.original_position = vector.add(t.object.original_position, dv);
                 }
-                camera.position.x += train_speed * 1.95;
+                train.object.train_distance = 6150;
+                // also do crash
+                player.object.train_time = 10 * config.seconds;
+                train.object.crashed = 1;
+                thing.lookup("train floor").options.invisible = true;
+                thing.lookup("train floor broken bottom").z = -0.4;
+                thing.lookup("train floor broken middle").z = -0.2;
+                thing.lookup("train floor broken top").z = -0.4;
+            }
+        },
+        ["station tutorial floor"]: (thing, dt) => {
+            if (player.is_safe) {
+                if (!save.check_switch("train"))
+                    save.set_switch("train", 11);
+                detector.sensor_during_fns.set_train(thing, dt);
+            }
+            else if (save.get_switch("train") === 11.5) {
+                window.setTimeout(() => player.fov_mult = 1, 100);
+                detector.sensor_during_fns.set_train(thing, dt);
+            }
+        },
+        ["station streets floor 1"]: (thing, dt) => { if (player.is_safe)
+            detector.sensor_during_fns.set_train(thing, dt); },
+        ["station streets floor 2"]: (thing, dt) => { if (player.is_safe)
+            detector.sensor_during_fns.set_train(thing, dt); },
+        ["station streets floor 3"]: (thing, dt) => { if (player.is_safe)
+            detector.sensor_during_fns.set_train(thing, dt); },
+        ["station streets floor 4"]: (thing, dt) => { if (player.is_safe)
+            detector.sensor_during_fns.set_train(thing, dt); },
+        ["station streets floor 5"]: (thing, dt) => { if (player.is_safe)
+            detector.sensor_during_fns.set_train(thing, dt); },
+        ["train sensor"]: (thing, dt) => {
+            if (player.z > -0.25)
+                player.fov_mult = 0.6;
+            if (player.z >= 0.5 || player.z < 0)
+                return;
+            const train_time = (player.object.train_time ?? 0) + dt;
+            player.object.train_time = train_time;
+            if (train_time > 2.1 * config.seconds) {
+                const train = thing.lookup("train");
+                if (Boolean(train.object.crashed)) {
+                    const t = (thing.thing_time - (train.object.crashed ?? 0)) / config.seconds;
+                    if (t > 1.1)
+                        return;
+                    const z = -0.4 * (math.bound(t, 0, 1) ** 2);
+                    thing.lookup("train floor broken bottom").z = z;
+                    thing.lookup("train floor broken middle").z = z / 2;
+                    thing.lookup("train floor broken top").z = z;
+                }
+                else {
+                    const train_speed = math.bound((train_time - 2.1 * config.seconds) / 1000, 0, Math.min(config.physics.train_speed, 6150 - (train.object.train_distance || 0)));
+                    if (train_speed === 0 && (train.object.train_distance || 0) > 6149) {
+                        // crash!
+                        train.object.crashed = thing.thing_time;
+                        thing.lookup("train floor").options.invisible = true;
+                        player.push_by(vector.create(125, 0));
+                        save.set_switch("train", 11.5);
+                        player.save();
+                    }
+                    else {
+                        // continue moving train
+                        train.object.train_distance = (train.object.train_distance || 0) + train_speed;
+                        const dv = vector.create(train_speed, 0);
+                        for (const t of thing.all_things()) {
+                            if (!t.id.startsWith("train") && !t.parent.is_player)
+                                continue;
+                            if (t.body)
+                                t.translate(dv);
+                            else
+                                t.position = vector.add(t.position, dv);
+                            if (t.object.original_position)
+                                t.object.original_position = vector.add(t.object.original_position, dv);
+                        }
+                        camera.position.x += train_speed * 1.95;
+                    }
+                }
             }
             thing.lookup("train ceiling").shapes[0].style.fill_opacity = 0.5 * math.bound(1 / (player.object.train_time / (0.2 * config.seconds)), 0, 1);
         },
@@ -285,8 +454,8 @@ export const detector = {
             thing.lookup("tutorial room 1 arrow").shapes[0].style.stroke_opacity = 0;
         },
         ["tutorial room 2.5 sensor"]: (_thing) => {
-            const centre = Vertices.centre(Spawner.spawners_lookup["tutorial room 2 breakables 4"].vertices);
-            player.set_checkpoint(vector3.create_(centre, 0)); // todo remove
+            // const centre = Vertices.centre(Spawner.spawners_lookup["tutorial room 2 breakables 4"].vertices);
+            // player.set_checkpoint(vector3.create_(centre, 0));
         },
         ["tutorial room 3 end sensor"]: (thing) => {
             thing.lookup("tutorial window 1")?.die();
@@ -302,11 +471,11 @@ export const detector = {
         },
         ["station tutorial sensor start"]: (thing) => {
             const centre = thing.position;
-            player.set_checkpoint(vector3.create_(centre, 0));
+            player.set_checkpoint(vector3.create_(centre, 0), "station tutorial");
             player.object.train_time = 0;
         },
-        ["station streets sensor fall"]: (_thing) => {
-            player.object.train_stop = true;
+        ["station streets sensor start"]: (_thing) => {
+            // player.object.train_crashed = true;
         },
         ["train sensor"]: (_thing) => {
             player.is_safe = false;
@@ -413,6 +582,61 @@ export const detector = {
         },
         ["train door right"]: (door) => {
             switch_door(door, player.object.train_time && player.object.train_time > 1 * config.seconds, "train door right path", 3, true);
+        },
+        ["station tracks"]: (thing) => {
+            if (!thing.object.first_time) {
+                thing.object.first_time = 1;
+                const shape = thing.lookup("station tracks particle")?.shapes?.[0];
+                shape.opacity = 0;
+            }
+            return;
+            // create particles
+            // todo rewrite super spaghetti hardcoding in this function
+            const opposite_direction = save.get_switch("train") === 11.5 || (player.object.train_distance || 0) > 0;
+            if (thing.object.next_time == undefined || thing.thing_time > thing.object.next_time) {
+                if (thing.object.next_time != undefined && !thing.object.first_time) {
+                    thing.object.first_time = 1;
+                    const shape = thing.lookup("station tracks particle")?.shapes?.[0];
+                    if (!shape || !shape.computed)
+                        return;
+                    shape.style.stroke_opacity = 0.6;
+                    shape.opacity = 0;
+                    const time = 15.5 * config.seconds;
+                    // particles not initialized yet! create from x = 1800 to 8300
+                    const first_p = new Particle();
+                    const p_list = [first_p];
+                    let i = 0; // prevent infinite loop
+                    while (i < 32) {
+                        const p = new Particle();
+                        p.style = clone_object(shape.style);
+                        p.time = thing.thing_time + time;
+                        p.z = shape.z;
+                        const off = 417 * 0.5 * i;
+                        p.vertices = vector3.add_list(shape.computed?.vertices ?? [], vector.create(opposite_direction ? off : 6500 - off, 0));
+                        // p.offset = vector.create(opposite_direction ? off : 6500 - off, 0);
+                        p.max_offset_length = 6500 - off;
+                        p.velocity = vector.create(opposite_direction ? 417 : -417, 0);
+                        p_list.push(p);
+                        i++;
+                    }
+                }
+                else if (thing.object.first_time) {
+                    const shape = thing.lookup("station tracks particle").shapes[0];
+                    shape.opacity = 0;
+                    if (!shape.computed)
+                        return;
+                    const time = 15.5 * config.seconds;
+                    const p = new Particle();
+                    p.style = clone_object(shape.style);
+                    p.time = thing.thing_time + time;
+                    p.z = shape.z;
+                    p.vertices = shape.computed?.vertices ?? [];
+                    p.offset = vector.create(opposite_direction ? 0 : 6500, 0);
+                    p.max_offset_length = 6500;
+                    p.velocity = vector.create(opposite_direction ? 417 : -417, 0);
+                }
+                thing.object.next_time = thing.thing_time + 0.5 * config.seconds; // todo why must i wait 0.5 seconds before triggering the first time create
+            }
         },
     },
 };

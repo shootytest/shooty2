@@ -113,7 +113,7 @@ export class Shape {
         for (const s of Shape.shapes) {
             if (s.computed == undefined || s.thing == undefined || s.thing.options.invisible)
                 continue;
-            if (s.z < camera.look_z - 1 || s.z >= camera.look_z + 1)
+            if (s.max_z < camera.look_z - 1 - math.epsilon || s.min_z > camera.look_z + 1 + math.epsilon)
                 continue; // cullingz
             s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position);
             if (memo_aabb3[s.z] == undefined) {
@@ -153,15 +153,23 @@ export class Shape {
         // sort everything
         Shape.draw_zs.sort((s1, s2) => s1 - s2);
         const draw_shapes_sort = (s1, s2) => {
-            if (math.equal(s1.z, s2.z)) {
+            if (math.equal(s1.z, s2.z)) { // in the event of equal z...
                 if (s1.thing.is_player && !s2.thing.is_player)
-                    return 1;
+                    return 1; // players always below
                 if (s2.thing.is_player && !s1.thing.is_player)
                     return -1;
+                // if (s1.thing.options.force_max_z && !s2.thing.options.force_max_z) return 1;
+                // if (s2.thing.options.force_max_z && !s1.thing.options.force_max_z) return -1;
                 if (s1.thing.options.floor && !s2.thing.options.floor)
-                    return -1;
+                    return -1; // floors always below
                 if (s2.thing.options.floor && !s1.thing.options.floor)
                     return 1;
+                if (s1.thing.options.floor && s2.thing.options.floor) {
+                    if (s1.thing.options.safe_floor && !s2.thing.options.safe_floor)
+                        return -1; // safe floors even more below
+                    if (s2.thing.options.safe_floor && !s1.thing.options.safe_floor)
+                        return 1;
+                }
                 return 0;
             }
             return Number((s1.z - s2.z).toFixed(3)); // lower z first
@@ -227,7 +235,7 @@ export class Shape {
                 continue;
             if (s.closed_loop)
                 vs.push(vs[0]);
-            const translucent = math.round_to(s.translucent, 0.0001).toFixed(4);
+            const translucent = math.round_to(s.translucent, 0.001).toFixed(3) + "|" + s.z.toFixed(3);
             if (!result[translucent])
                 result[translucent] = [];
             result[translucent]?.push(vs);
@@ -250,6 +258,18 @@ export class Shape {
     translucent = 0;
     get z() {
         return Number((this.offset.z + this.thing.z).toFixed(3));
+    }
+    get avg_z() {
+        if (!this.thing.options.force_max_z)
+            return this.z;
+        else
+            return Number((this.computed?.mean.z ?? this.z).toFixed(3));
+    }
+    get min_z() {
+        return Number((this.computed?.z_range?.[0] ?? this.z).toFixed(3));
+    }
+    get max_z() {
+        return Number((this.computed?.z_range?.[1] ?? this.z).toFixed(3));
     }
     get r() {
         return 0;
@@ -289,15 +309,17 @@ export class Shape {
         const calc_vertices = vector3.add_list(this.vertices, this.offset), vertices = vector3.clone_list(this.vertices);
         if (this.activate_scale)
             vector3.scale_to_list(calc_vertices, this.scale);
-        const aabb = vector.make_aabb(calc_vertices), aabb3 = vector3.make_aabb(calc_vertices), mean = this.closed_loop ? vector3.create2(Vertices.centre(calc_vertices), vector3.meanz(calc_vertices)) : vector3.mean(calc_vertices); // don't use mean...
+        const aabb = vector.make_aabb(calc_vertices), aabb3 = vector3.make_aabb(calc_vertices), mean = this.closed_loop ? vector3.create2(Vertices.centre(calc_vertices), vector3.meanz(calc_vertices)) : vector3.mean(calc_vertices), // don't be mean...
+        z_range = vector3.z_range(this.vertices);
         if (this.computed == undefined) {
-            this.computed = { aabb, aabb3, mean, vertices };
+            this.computed = { aabb, aabb3, mean, vertices, z_range };
         }
         else {
             this.computed.aabb = aabb;
             this.computed.aabb3 = aabb3;
             this.computed.mean = mean;
             this.computed.vertices = calc_vertices;
+            this.computed.z_range = z_range;
         }
     }
     compute_screen() {
@@ -373,7 +395,7 @@ export class Shape {
         if (style.stroke) {
             ctx.strokeStyle = color2hex(style.stroke);
             ctx.globalAlpha = this.opacity * (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
-            ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.z) * config.graphics.linewidth_mult * (this.translucent <= math.epsilon ? 1 : 1.8); // * (this.thing.options.seethrough && this.thing.is_wall ? 0.5 : 1);
+            ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.avg_z, true) * config.graphics.linewidth_mult * (this.translucent <= math.epsilon ? 1 : 1.8); // * (this.thing.options.seethrough && this.thing.is_wall ? 0.5 : 1);
             ctx.stroke();
         }
         if (style.fill && this.closed_loop) {
@@ -454,7 +476,7 @@ export class Shape {
             fill_opacity: ((this.style.stroke_opacity ?? 1) / (this.style.fill_opacity || 1)) * (frac === 0 ? 0.8 : frac),
         };
         ctx.ctx.shadowBlur = config.graphics.shadowblur;
-        ctx.ctx.shadowColor = this.style.stroke ?? color.white;
+        ctx.ctx.shadowColor = color2hex(this.style.stroke ?? color.white);
         for (let i = 0; i < glow; i++)
             this.draw(style_mult);
         ctx.ctx.shadowBlur = 0;
@@ -496,7 +518,7 @@ export class Shape {
         ctx.beginPath();
         ctx.circle_v(c, r);
         ctx.globalAlpha = 1;
-        ctx.lineWidth = (this.style.width ?? 1) * camera.scale * camera.zscale(this.z) * config.graphics.linewidth_mult;
+        ctx.lineWidth = (this.style.width ?? 1) * camera.scale * camera.zscale(this.z, true) * config.graphics.linewidth_mult;
         ctx.strokeStyle = color.white + "88";
         ctx.fillStyle = color.white + "22";
         ctx.fill();

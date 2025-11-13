@@ -231,6 +231,13 @@ export const STYLES/*: { [key: string]: style_type }*/ = {
 
   // collectible colours
   coin_rock: {
+    stroke: "alt",
+    fill: "alt",
+    health: "coin",
+    fill_opacity: 0.4,
+    health_opacity: 0.3,
+  },
+  coin_rock_coin: {
     stroke: "coin",
     stroke_opacity: 0.5,
     fill: "coin",
@@ -268,12 +275,12 @@ export const STYLES/*: { [key: string]: style_type }*/ = {
   train_floor: {
     stroke_opacity: 0,
     fill: color.train_floor,
-    fill_opacity: 1,
+    fill_opacity: 0.8,
   },
   train_track: {
     width: 3,
     stroke: color.train_floor,
-    fill_opacity: 0.8,
+    stroke_opacity: 0.7,
   },
 
 
@@ -290,6 +297,12 @@ export const STYLES/*: { [key: string]: style_type }*/ = {
     stroke_opacity: 1,
     fill: "dark",
     fill_opacity: 0.7,
+  },
+  wall_floor: {
+    stroke: "dark",
+    stroke_opacity: 0.7,
+    fill: "floor",
+    fill_opacity: 1,
   },
   tutorial_window: {
     stroke: "alt",
@@ -333,13 +346,6 @@ export const STYLES/*: { [key: string]: style_type }*/ = {
     health: "alt",
     fill_opacity: 0.4,
     health_opacity: 0.25,
-  },
-  tutorial_coin: {
-    stroke: "alt",
-    fill: "alt",
-    health: "coin",
-    fill_opacity: 0.4,
-    health_opacity: 0.3,
   },
 
 };

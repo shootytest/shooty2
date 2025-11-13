@@ -123,7 +123,7 @@ export const map_draw = {
           }
           if (m_ui.editor.layers.z >= 2) {
             for (const world_v of shape.computed.vertices)
-              shadow_vs.push(vector3.create2(camera.world3screen(vector3.create2(world_v, camera.look_z)), camera.look_z));
+              shadow_vs.push(vector3.create2(camera.world3screen(vector3.create2(world_v, camera.look_z)), 0));
           }
           shape.computed.screen_vertices = screen_vs;
           shape.computed.shadow_vertices = shadow_vs;
@@ -135,9 +135,9 @@ export const map_draw = {
       //   and only calculate screen position for all objects on screen
       //   hopefully this is fast enough? although i'll probably make a chunk-like system too?
       map_draw.shapes_on_screen = map.shapes.filter((s) => s.computed?.on_screen).sort((a, b) => {
-        if (b.z !== a.z || b.computed?.options == undefined || a.computed?.options == undefined) return a.z - b.z;
         if (a.id === m_ui.properties_selected.id) return 1;
         if (b.id === m_ui.properties_selected.id) return -1;
+        if (b.z !== a.z || b.computed?.options == undefined || a.computed?.options == undefined) return a.z - b.z;
         const o1 = a.computed.options, o2 = b.computed.options;
         if (o1.sensor && !o2.sensor) return 1;
         if (o2.sensor && !o1.sensor) return -1;
@@ -179,7 +179,7 @@ export const map_draw = {
     ctx.stroke();
     if (style.fill && !open_loop) {
       ctx.fillStyle = color2hex_map(style.fill, shape.options.room_id ?? "default");
-      ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1) * (shadow ? 0.6 : 1);
+      ctx.globalAlpha = math.bound((style.opacity ?? 1) * (style.fill_opacity ?? 1) * (shadow ? 0.6 : 1), 0, 0.75);
       ctx.fill();
     }
     if (m_ui.editor.layers.debug && shape.computed.aabb) {
@@ -214,7 +214,7 @@ export const map_draw = {
       const id_ = id_prefix + i;
       const vertex_size = (shape.id === "start") ? camera.scale * 30 : camera.sqrtscale * 5;
       const colorhex = color2hex_map((style.stroke ?? style.fill ?? color.purewhite), shape.options.room_id ?? "default");
-      if (Math.abs(v.z) <= 0.005) {
+      if (selected || math.equal(v.z, 0)) {
         ctx.begin();
         ctx.circle(v.x, v.y, vertex_size);
         ctx.fillStyle = colorhex + (shadow ? "99" : "");
@@ -284,16 +284,16 @@ export const map_draw = {
               } else {
                 ov.x = newpos.x;
                 ov.y = newpos.y;
-                // todo only run when the shift key is let go
+                // todo only run when the shift key is let go instead of when it isn't pressed
                 for (let i = 0; i < o.shape.vertices.length; i++) {
-                  if (i === o.index) continue;
-                  o.shape.vertices[i] = vector.clone(o.vertex_old[i]);
+                  if (i === o.index || !o.vertex_old[i]) continue;
+                  o.shape.vertices[i] = vector3.clone_(o.vertex_old[i]);
                 }
               }
             }
           } else {
             // this case probably doesn't occur now (hmmm maybe sometimes?)
-            const change = vector.div(mouse.drag_change[0] as vector, camera.scale * camera.zscale(o.vertex.z));
+            const change = vector.div(mouse.drag_change[0] as vector, camera.scale * camera.zscale(o.vertex.z - camera.look_z));
             const round_to_number = key.ctrl() ? 1 : 10;
             ov.x = math.round_to(ov.x + change.x, round_to_number);
             ov.y = math.round_to(ov.y + change.y, round_to_number);
@@ -306,21 +306,31 @@ export const map_draw = {
             ui.circle_menu.target = o;
           }*/
           o.new = false;
-          if (!(mouse.drag_vector_old[0] === false || vector.length2(mouse.drag_vector_old[0]) < 30)) { 
-            // if actually dragged
-            const round_to_number = key.ctrl() ? 1 : 10;
-            if (key.shift()) {
-              for (let i = 0; i < o.shape.vertices.length; i++) {
-                o.shape.vertices[i].x = math.round_to(o.shape.vertices[i].x, round_to_number);
-                o.shape.vertices[i].y = math.round_to(o.shape.vertices[i].y, round_to_number);
+          if (!(mouse.drag_vector_old[0] === false)) {
+            if (vector.length2(mouse.drag_vector_old[0]) < 30) {
+              if (o.shape.vertices.length === o.vertex_old.length) {
+                for (let i = 0; i < o.shape.vertices.length; i++) {
+                  if (!o.vertex_old[i]) continue;
+                  o.shape.vertices[i] = vector3.clone_(o.vertex_old[i]);
+                }
               }
-              map_draw.change("move shape", o.shape);
             } else {
-              o.shape.vertices[o.index].x = math.round_to(ov.x, round_to_number);
-              o.shape.vertices[o.index].y = math.round_to(ov.y, round_to_number);
-              map_draw.change("move vertex #" + o.index, o.shape);
+              // if actually dragged
+              const round_to_number = key.ctrl() ? 1 : 10;
+              if (key.shift()) {
+                for (let i = 0; i < o.shape.vertices.length; i++) {
+                  o.shape.vertices[i].x = math.round_to(o.shape.vertices[i].x, round_to_number);
+                  o.shape.vertices[i].y = math.round_to(o.shape.vertices[i].y, round_to_number);
+                }
+                map_draw.change("move shape", o.shape);
+              } else {
+                o.shape.vertices[o.index].x = math.round_to(ov.x, round_to_number);
+                o.shape.vertices[o.index].y = math.round_to(ov.y, round_to_number);
+                map_draw.change("move vertex #" + o.index, o.shape);
+              }
+              map_draw.compute_shape(o.shape);
             }
-            map_draw.compute_shape(o.shape);
+          } else {
           }
         }
       }

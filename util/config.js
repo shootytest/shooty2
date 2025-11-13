@@ -24,6 +24,7 @@ export const config = {
     graphics: {
         shape_cull_padding: 50,
         linewidth_mult: 6,
+        linewidth_max_mult: 20,
         shadowblur: 75,
         xp_hide_bar: false,
         xp_display_smoothness: 0.08,

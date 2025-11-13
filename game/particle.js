@@ -75,6 +75,7 @@ export class Particle {
     style = {};
     time = -1;
     fade_time = -1;
+    max_offset_length;
     icon = "";
     constructor() {
         Particle.particles.push(this);
@@ -101,6 +102,8 @@ export class Particle {
             this.offset = vector3.add_(this.offset, vector3.mult_(this.velocity, mult));
             this.velocity = vector3.add_(this.velocity, vector3.mult_(this.acceleration, mult));
             this.acceleration = vector3.add_(this.acceleration, vector3.mult_(this.jerk, mult));
+            if (this.max_offset_length != undefined && vector.length2(this.offset) > this.max_offset_length ** 2)
+                this.remove();
         }
         if (Thing.time > this.time) {
             this.remove();
@@ -126,7 +129,7 @@ export class Particle {
             if (style.stroke) {
                 ctx.strokeStyle = color2hex(style.stroke ?? color.error);
                 ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * this.opacity;
-                ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.total_z) * config.graphics.linewidth_mult;
+                ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.total_z, true) * config.graphics.linewidth_mult;
                 ctx.stroke();
             }
             if (style.fill) {

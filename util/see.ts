@@ -46,32 +46,60 @@ const add_wall = (p1: vector, p2: vector, force = false): void => {
 }
 
 // tick
-let time = 0;
+let see_time = 0;
+let wall_opacity = 0;
 export const do_visibility = (_dt: number) => {
-  time += _dt;
+  see_time += _dt;
 
+  // precompute stuff
   Shape.compute();
   const path = calc_visibility_path_2(player, Shape.get_vertices());
+  const other_vertices = Shape.get_other_vertices();
+  const other_list: { [z: string]: { alpha: number, z: number, inverted: Path2D }} = {};
   const inverted = invert_path(path);
-  const additional_zs: number[] = [];
-  for (let z = Math.floor(Shape.see_z_range[0] * 10) / 10 /* + ((performance.now() / 300) % 1) / 10 */; z < math.round_to(player.z + 1, 0.1); z += 0.1) {
-    additional_zs.push(Number(z.toFixed(3)));
+  for (const other_key in other_vertices) {
+    let [alpha, z] = other_key.split("|").map((n) => Number(n));
+    const inverted = invert_path(calc_visibility_path_2(player, other_vertices[other_key]));
+    other_list[z.toFixed(3)] = { alpha, z, inverted };
   }
+
+  // handle z stuff
+  const additional_zs: number[] = [];
+  const see_lowest_z = Shape.see_z_range[0];
+  wall_opacity = 0;
+  for (let z = Math.floor(see_lowest_z * 10) / 10 /* + ((performance.now() / 300) % 1) / 10 */; z < math.round_to(player.z + 1, 0.1); z += 0.1) {
+    additional_zs.push(Number(z.toFixed(3)));
+    wall_opacity += 1;
+  }
+  wall_opacity = math.bound(360 / wall_opacity, 10, 255);
   const draw_zs = [...new Set(additional_zs.concat(Shape.draw_zs))];
   draw_zs.sort((s1, s2) => s1 - s2);
+
+  // actually draw stuff
   for (const z of draw_zs) {
     ctx.save("see");
     clip_visibility_path(player, path, z);
     Shape.draw(Number(z.toFixed(3)));
     Particle.draw_particles(z);
     ctx.restore("see");
+    if (other_list[z.toFixed(3)]) {
+      const other = other_list[z.toFixed(3)];
+      for (let z2 = Math.floor(other.z * 10) / 10; z2 < math.round_to(player.z + 1, 0.1); z2 += 0.1) {
+        ctx.ctx.save();
+        ctx.fillStyle = math.equal(z2, other.z) ? chroma.mix(current_theme.dark, color.blackground, 0.5).hex("rgb") + math.component_to_hex(other.alpha * 255) : (color.blackground + math.component_to_hex(other.alpha * wall_opacity * 2));
+        clip_path(player, other.inverted, z2, true);
+        ctx.ctx.restore();
+      }
+    }
     if (math.equal(Math.floor(z * 10), z * 10)) {
       ctx.ctx.save();
       clip_inverted_path(player, inverted, z);
       ctx.ctx.restore();
     }
-    // if ((Math.floor(time / config.seconds * 5) % 11) / 10 - 0.2 < z) break;
+    // if ((Math.floor(see_time / config.seconds * 5) % 16) / 10 - 0.5 < z) break;
   }
+
+  // what is this
   // ctx.ctx.save();
   // clip_inverted_path(player, inverted, 0);
   // ctx.ctx.restore();
@@ -83,24 +111,21 @@ export const do_visibility = (_dt: number) => {
   // }
 
   // do translucent walls
-  ctx.save("see");
-  clip_visibility_path(player, path, 0);
-  const other_vertices = Shape.get_other_vertices();
-  for (const other_key in other_vertices) {
-    const other_list = other_vertices[other_key];
-    const alpha = Number(other_key);
-    const path = calc_visibility_path_2(player, other_list);
-    const inverted = invert_path(path);
-    ctx.fillStyle = color.blackground;
-    ctx.globalAlpha = alpha;
-    clip_path(player, inverted, 0, true);
-    for (let z = 0; z < 0.9; z += 0.1) {
-      ctx.fillStyle = z === 0 ? "#544bdb" : color.blackground;
-      ctx.globalAlpha = z === 0 ? alpha / 2 : alpha * 40 / 256;
-      clip_path(player, inverted, z, true);
-    }
-  }
-  ctx.restore("see");
+  // ctx.save("see");
+  // clip_visibility_path(player, path, 0);
+  // for (const other_key in other_vertices) {
+  //   const other_list = other_vertices[other_key];
+  //   const alpha = Number(other_key);
+  //   const path = calc_visibility_path_2(player, other_list);
+  //   const inverted = invert_path(path);
+  //   ctx.fillStyle = color.blackground + math.component_to_hex(alpha * 255);
+  //   clip_path(player, inverted, see_lowest_z, true);
+  //   for (let z = Math.floor(see_lowest_z * 10) / 10; z < math.round_to(player.z + 1, 0.1); z += 0.1) {
+  //     ctx.fillStyle = math.equal(z, see_lowest_z) ? (current_theme.dark + math.component_to_hex(alpha * 128)) : (color.blackground + math.component_to_hex(alpha * wall_opacity));
+  //     clip_path(player, inverted, z, true);
+  //   }
+  // }
+  // ctx.restore("see");
 
   /* // not so good
   ctx.globalAlpha = 0.1;
@@ -257,7 +282,7 @@ const invert_path = (path: Path2D): Path2D => {
 };
 
 const clip_path = (center: vector, path: Path2D, z: number, fill_instead = false) => {
-  if (z === 1) return;
+  if (z === 1) return; // todo remove
   const s = camera.world2screen(center);
   // const scale = inverted ? 1 / (1 - z) : camera.zscale(z);
   const scale = camera.zscale(z);
@@ -281,7 +306,7 @@ const clip_inverted_path = (center: vector, inverted: Path2D, z: number) => {
   clip_path(center, inverted, z);
   ctx.beginPath();
   ctx.rect(0, 0, w, h);
-  ctx.fillStyle = math.equal(z, Shape.see_z_range[0]) ? (current_theme.dark + "80") : (color.blackground + "28"); // todo replace default color
+  ctx.fillStyle = math.equal(z, Shape.see_z_range[0]) ? (current_theme.dark + "80") : (color.blackground + math.component_to_hex(wall_opacity));
   ctx.fill();
 };
 

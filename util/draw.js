@@ -80,7 +80,7 @@ export class Context {
         this.ctx.textBaseline = baseline;
     }
     set lineWidth(lineWidth) {
-        this.ctx.lineWidth = lineWidth;
+        this.ctx.lineWidth = lineWidth; // math.bound(lineWidth, 0, config.graphics.linewidth_max);
     }
     set lineCap(lineCap) {
         this.ctx.lineCap = lineCap;

@@ -141,6 +141,7 @@ export class Spawner {
   spawn?: enemy_spawn;
   waves: enemy_wave[] = [];
   wave_progress = 0;
+  z: number = 0;
   vertices: vector3_[] = [];
   enemies: Enemy[] = [];
   delays: { enemy: string, time: number }[] = [];
@@ -165,6 +166,7 @@ export class Spawner {
       repeat: o.options.spawn_repeat,
       repeat_delay: o.options.spawn_repeat_delay,
     };
+    this.z = Number(o.z.toFixed(3));
     if (o.options.spawn_permanent) this.permanent = o.options.spawn_permanent;
     if (this.permanent) {
       this.wave_progress = save.get_switch(this.id);
@@ -191,7 +193,7 @@ export class Spawner {
     });
   }
 
-  spawn_enemy(key: string, position?: vector) {
+  spawn_enemy(key: string, position?: vector3) {
     const e = new Enemy(this);
     e.make_enemy(key, position ?? this.random_position(), this.room_id);
     e.wave_number = this.wave_progress + 1;
@@ -220,9 +222,9 @@ export class Spawner {
   random_position(): vector {
     if (this.vertices.length === 0) {
       console.error("[spawner/random_position] no vertices in polygon!");
-      return vector.create();
+      return vector3.create(0, 0, this.z);
     }
-    return math.rand_point_in_polygon(this.vertices);
+    return vector3.create2(math.rand_point_in_polygon(this.vertices), this.z);
   }
 
   remove() {

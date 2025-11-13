@@ -160,13 +160,14 @@ export const math = {
         const h = vector.length(v3) + width;
         const w = width;
         const { x, y } = v0;
-        const a = math.atan2(-v3.x, v3.y);
+        const a = math.atan2(-v3.x, v3.y); // math.atan(-v3.y / v3.x) + Math.PI / 2;
         const vs = [w / 2 * Math.cos(a), h / 2 * Math.sin(a), w / 2 * Math.sin(a), h / 2 * Math.cos(a)];
-        const result = [];
-        result.push(vector.create(x + vs[0] - vs[1], y + vs[2] + vs[3]));
-        result.push(vector.create(x - vs[0] - vs[1], y - vs[2] + vs[3]));
-        result.push(vector.create(x - vs[0] + vs[1], y - vs[2] - vs[3]));
-        result.push(vector.create(x + vs[0] + vs[1], y + vs[2] - vs[3]));
+        const result = [
+            vector.create(x + vs[0] - vs[1], y + vs[2] + vs[3]),
+            vector.create(x - vs[0] - vs[1], y - vs[2] + vs[3]),
+            vector.create(x - vs[0] + vs[1], y - vs[2] - vs[3]),
+            vector.create(x + vs[0] + vs[1], y + vs[2] - vs[3]),
+        ];
         return result;
     },
     expand_lines: (vertices, width) => {
@@ -364,5 +365,27 @@ export const math = {
             }
         }
         return c;
-    }
+    },
+    distance2_from_line_segment: function (centre, p1, p2) {
+        const v1 = vector.create(p2.x - p1.x, p2.y - p1.y);
+        const v2 = vector.create(centre.x - p1.x, centre.y - p1.y);
+        const d = (v2.x * v1.x + v2.y * v1.y) / (v1.y * v1.y + v1.x * v1.x);
+        if (d >= 0 && d <= 1) {
+            const v3 = vector.create((v1.x * d + p1.x) - centre.x, (v1.y * d + p1.y) - centre.y);
+            return vector.length2(v3);
+        }
+        const v3 = vector.create(centre.x - p2.x, centre.y - p2.y);
+        return Math.min(vector.length2(v2), vector.length2(v3));
+    },
+    is_circle_in_polygon: (centre, radius, polygon) => {
+        if (math.is_point_in_polygon(centre, polygon))
+            return true;
+        // check all the line intersections
+        const radius2 = radius * radius;
+        for (let i = 0; i < polygon.length; i++) {
+            if (math.distance2_from_line_segment(centre, polygon[i], polygon[(i + 1) % polygon.length]) < radius2)
+                return true;
+        }
+        return vector.length2(vector.sub(polygon[0], centre)) < radius2; // final check: if any point on the polygon lies in the circle
+    },
 };

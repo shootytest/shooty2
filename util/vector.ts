@@ -138,6 +138,9 @@ export const vector = {
     const ny = (cos * (v.y - center.y)) + (sin * (v.x - center.x)) + center.y;
     return vector.create(nx, ny);
   },
+  rotate90: (v: vector): vector => {
+    return vector.create(-v.y, v.x);
+  },
   in_rect: (p: vector, x: number, y: number, w: number, h: number) => {
     return (p.x >= x && p.y >= y && p.x <= x + w && p.y <= y + h);
   },
@@ -478,6 +481,14 @@ export const vector3 = {
       mean += v.z;
     }
     return mean / vertices.length;
+  },
+  z_range: (vertices: vector3[]): [number, number] => {
+    let min_z = 9999999, max_z = -9999999;
+    for (const v of vertices) {
+      if (v.z < min_z) min_z = v.z;
+      if (v.z > max_z) max_z = v.z;
+    }
+    return [Number(min_z.toFixed(3)), Number(max_z.toFixed(3))];
   },
   centroid: (vertices: vector3[]): vector3 => {
     const first = vertices[0], last = vertices[vertices.length-1];
