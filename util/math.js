@@ -145,6 +145,9 @@ export const math = {
     round_to: (value, multiple) => {
         return Math.round(value / multiple) * multiple;
     },
+    round_z: (z) => {
+        return Math.round(z * 1000) / 1000;
+    },
     point_in_rect: (px, py, x, y, w, h) => {
         return (px >= x && py >= y && px <= x + w && py <= y + h);
     },

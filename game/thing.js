@@ -110,7 +110,7 @@ export class Thing {
         return this.position.y;
     }
     get z() {
-        return Number(this.target.position.z.toFixed(3));
+        return math.round_z(this.target.position.z);
     }
     set z(z) {
         this.target.position.z = z;
@@ -175,6 +175,13 @@ export class Thing {
         this.make_the_rest();
         if (this.options.spawn_permanent && save.check_switch(this.id)) {
             this.remove(); // or die?
+        }
+        if (this.options.sensor) {
+            // check if player on sensor right now... just in case the physics engine doesn't like me
+            const vs = this.shapes[0].computed?.vertices;
+            if (vs && math.is_circle_in_polygon(Thing.things_lookup.player.position, Thing.things_lookup.player.radius, vector.add_list(vs, this.position))) {
+                this.object.run_start = true;
+            }
         }
     }
     make(key, reset = false) {
@@ -468,6 +475,13 @@ export class Thing {
                 this.is_touching_player = false;
             }
         }
+        else {
+            if (this.object.run_start) { // needs to run the start function...
+                this.object.run_start = false;
+                this.is_touching_player = true;
+                detector.sensor_start_fns[this.id]?.(this);
+            }
+        }
         for (const shoot of this.shoots) {
             shoot.tick(dt);
         }
@@ -677,7 +691,7 @@ export class Thing {
             this.update_angle(b.face_smoothness ?? 1);
         }
         else if (face_mode === "wander") {
-            if (this.behaviour.wander_reached && Thing.time >= this.behaviour.wander_time) {
+            if (this.behaviour.wander_reached || Thing.time >= this.behaviour.wander_time) {
                 if (b.wander_time != undefined)
                     this.behaviour.wander_time = Thing.time + ((b.wander_time ?? 1) + (b.wander_cooldown ?? 0)) * config.seconds;
                 this.target.facing = math.rand_point_in_circle(this.original_position, b.wander_distance ?? 0);

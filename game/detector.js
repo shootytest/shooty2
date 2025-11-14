@@ -190,7 +190,7 @@ export const detector = {
                     if (pair.z_diff) {
                         // suddenly same z
                         if (diff <= 0.1) {
-                            pair.isSensor = false;
+                            // pair.isSensor = false;
                             pair.z_diff = false;
                             detector.collision_start(pair, a, b, true);
                             detector.collision_start(pair, b, a, true);
@@ -280,7 +280,9 @@ export const detector = {
     },
     sensor_during_fns: {
         ["tutorial room 1 sensor"]: (thing, _dt) => {
-            thing.lookup("tutorial room 1 arrow").shapes[0].style.opacity = 1 - math.bound((player.position.x - thing.position.x) / 350, 0, 1);
+            const style = thing.lookup("tutorial room 1 arrow").shapes[0].style;
+            if (style && (style?.stroke_opacity ?? 1) > 0)
+                style.opacity = 1 - math.bound((player.position.x - thing.position.x) / 350, 0, 1);
             player.set_checkpoint(vector3.create_(MAP.computed?.shape_map["start"].vertices[0] ?? vector.create(100, -100), 0), "tutorial room 1");
         },
         ["tutorial room 2 door sensor"]: (_thing, _dt) => {
@@ -323,7 +325,7 @@ export const detector = {
                 style.fill_opacity = math.lerp(style.fill_opacity ?? 0, 0.5, 0.1);
         },
         ["station streets sensor fall"]: (thing) => {
-            if (player.z < -0.25) {
+            if (player.z < -0.39) {
                 player.fov_mult = 0.95 - player.z / 2;
                 if (player.checkpoint_room !== "station streets") {
                     player.set_checkpoint(vector3.create2(thing.position, -0.4), "station streets");
@@ -400,7 +402,7 @@ export const detector = {
         ["station streets floor 5"]: (thing, dt) => { if (player.is_safe)
             detector.sensor_during_fns.set_train(thing, dt); },
         ["train sensor"]: (thing, dt) => {
-            if (player.z > -0.25)
+            if (player.z >= 0)
                 player.fov_mult = 0.6;
             if (player.z >= 0.5 || player.z < 0)
                 return;
@@ -423,7 +425,7 @@ export const detector = {
                         // crash!
                         train.object.crashed = thing.thing_time;
                         thing.lookup("train floor").options.invisible = true;
-                        player.push_by(vector.create(125, 0));
+                        // player.push_by(vector.create(125, 0));
                         save.set_switch("train", 11.5);
                         player.save();
                     }
@@ -506,6 +508,7 @@ export const detector = {
     },
     spawner_calc_fns: {
         ["tutorial room 3 enemy 1"]: (spawner) => {
+            console.log(spawner);
             if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 2") > 0) {
                 spawner.thing_lookup("tutorial window 1")?.die();
                 spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
@@ -513,6 +516,7 @@ export const detector = {
         },
         ["tutorial room 3 enemy 2"]: (spawner) => {
             if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 1") > 0) {
+                console.log("a");
                 spawner.thing_lookup("tutorial window 1")?.die();
                 spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
             }

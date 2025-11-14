@@ -1,7 +1,6 @@
 import { svg_paths } from "./svg.js";
 import { math } from "./math.js";
 import { circle, vector } from "./vector.js";
-import { config } from "./config.js";
 
 type color = string | CanvasGradient | CanvasPattern;
 type ctx_save = {

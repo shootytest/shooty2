@@ -47,6 +47,7 @@ export interface maketype {
   breakable?: boolean;
   behaviour?: { [key: string]: maketype_behaviour | maketype_behaviour[] };
   enemy_detect_range?: number;
+  enemy_safe?: boolean;
   focus_camera?: boolean;
   zzz_sleeping?: boolean;
   repel_range?: number;
@@ -164,6 +165,7 @@ export interface shoot_stats {
   offset?: vector3_;
   target_type?: string;
   boost_mult?: number;
+  detect_range_mult?: number;
   move?: boolean;
   always_shoot?: boolean;
   death?: bullet_death_type[];
@@ -495,7 +497,7 @@ make.enemy_tutorial = {
 // only used betwixt tutorial room 2 and tutorial room 2.5
 make.enemy_tutorial_block = {
   make_parent: ["enemy_tutorial"],
-  style: "coin_rock",
+  style: "coin_rock_1",
   movable: false,
   seethrough: false,
   angle: 0,
@@ -503,7 +505,7 @@ make.enemy_tutorial_block = {
     capacity: 500,
   },
   death: [
-    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1.5 }, repeat: 6, angle_increment: 60 },
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1.5, detect_range_mult: 2 }, repeat: 6, angle_increment: 60 },
   ],
   xp: 100,
 };
@@ -517,13 +519,13 @@ make_shapes.enemy_tutorial_block = [{
 make.enemy_tutorial_rocky = {
   make_parent: ["enemy_tutorial"],
   movable: false,
-  style: "coin_rock",
+  style: "coin_rock_1",
   health: {
     capacity: 400,
   },
   death: [
-    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 2 }, repeat: 5, angle_increment: 72 },
-    { type: "collect_coin", stats: { make: "collect_coin_5", speed: 0 }, repeat: 1 },
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 2, detect_range_mult: 2 }, repeat: 5, angle_increment: 72 },
+    { type: "collect_coin", stats: { make: "collect_coin_5", speed: 0, detect_range_mult: 2 }, repeat: 1 },
   ],
   xp: 100,
 };
@@ -534,7 +536,7 @@ make_shapes.enemy_tutorial_rocky = [{
   glowing: 0.1,
 }, {
   type: "polygon",
-  style: "coin_rock_coin",
+  style: "coin_rock_2",
   sides: 7,
   radius: 25,
   glowing: 0.5,
@@ -544,13 +546,13 @@ make_shapes.enemy_tutorial_rocky = [{
 make.enemy_tutorial_rocky_small = {
   make_parent: ["enemy_tutorial"],
   movable: false,
-  style: "coin_rock",
+  style: "coin_rock_1",
   health: {
     capacity: 500,
   },
   death: [
-    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 2 }, repeat: 10, angle_increment: 36 },
-    { type: "collect_coin", stats: { make: "collect_coin_5", speed: 0 }, repeat: 1 },
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 2, detect_range_mult: 3, }, repeat: 10, angle_increment: 36 },
+    { type: "collect_coin", stats: { make: "collect_coin_5", speed: 0, detect_range_mult: 3, }, repeat: 1 },
   ],
   xp: 150,
 };
@@ -560,7 +562,7 @@ make_shapes.enemy_tutorial_rocky_small = [{
   radius: 30,
 }, {
   type: "polygon",
-  style: "coin_rock_coin",
+  style: "coin_rock_2",
   sides: 7,
   radius: 15,
   glowing: 0.6,
@@ -834,30 +836,161 @@ make.enemy_streets = {
   team: 3,
 };
 
+// coin rock for streets
+make.enemy_streets_rocky = {
+  make_parent: ["enemy_streets"],
+  movable: false,
+  style: "coin_rock_1",
+  health: {
+    capacity: 300,
+  },
+  death: [ // 18 coins
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 2.5, detect_range_mult: 2 }, repeat: 3, angle_increment: 120 },
+    { type: "collect_coin", stats: { make: "collect_coin_5", speed: 1.5, detect_range_mult: 2 }, repeat: 3, angle_increment: 120, angle: 60 },
+  ],
+  xp: 100,
+};
+make_shapes.enemy_streets_rocky = [{
+  type: "polygon",
+  sides: 3,
+  radius: 40,
+}, {
+  type: "polygon",
+  style: "coin_rock_2",
+  sides: 3,
+  radius: 15,
+  glowing: 0.5,
+}];
+
 // coin rock in station streets, easy to get
 make.enemy_streets_rocky_small = {
   make_parent: ["enemy_streets"],
   movable: false,
-  style: "coin_rock",
+  style: "coin_rock_1",
   health: {
     capacity: 250,
   },
-  death: [
-    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 2 }, repeat: 5, angle_increment: 72 },
+  death: [ // 6 coins
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 2, detect_range_mult: 2 }, repeat: 6, angle_increment: 60 },
     // { type: "collect_coin", stats: { make: "collect_coin_5", speed: 0 }, repeat: 1 },
   ],
   xp: 50,
 };
 make_shapes.enemy_streets_rocky_small = [{
   type: "polygon",
-  sides: 7,
+  sides: 3,
   radius: 30,
 }, {
   type: "polygon",
-  style: "coin_rock_coin",
-  sides: 7,
-  radius: 15,
+  style: "coin_rock_2",
+  sides: 3,
+  radius: 10,
+  glowing: 0.5,
 }];
+
+// small breakable
+make.enemy_streets_bit = {
+  make_parent: ["enemy_streets", "enemy_breakable"],
+  behaviour: {
+    idle: {
+      face_mode: "spin",
+      move_mode: "direct",
+    }
+  },
+  enemy_detect_range: 0,
+  style_: {
+    opacity: 0.6,
+  },
+  xp: 3,
+};
+make_shapes.enemy_streets_bit = [{
+  type: "polygon",
+  sides: 3,
+  radius: 10,
+}];
+
+// scattered enemies in streets
+make.enemy_streets_easy_1 = {
+  make_parent: ["enemy_streets"],
+  behaviour: {
+    normal: {
+      shoot_mode: "normal",
+      move_mode: "direct",
+      face_mode: "direct",
+      move_speed: 3,
+    },
+    idle: {
+      face_mode: "wander",
+      move_mode: "wander",
+      move_speed: 0.4,
+      wander_time: 1.5,
+      wander_distance: 100,
+      wander_cooldown: 0.6,
+      face_smoothness: 0.05,
+    },
+  },
+  enemy_detect_range: 500,
+  health: {
+    capacity: 350,
+  },
+  death: [
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.6, spread_angle: -1 }, repeat: 3 },
+  ],
+  xp: 60,
+};
+make_shapes.enemy_streets_easy_1 = [{
+  type: "polygon",
+  sides: 3,
+  radius: 30,
+}, {
+  type: "line",
+  v2: vector.createpolar_deg(0, 30),
+  shoot: "enemy_easy",
+}];
+
+// scattered cameras in streets
+make.enemy_streets_camera_small = {
+  make_parent: ["enemy_streets"],
+  style: "enemy_camera",
+  movable: false,
+  behaviour: {
+    normal: {
+      // shoot_mode: "normal",
+      move_mode: "static",
+      face_mode: "direct",
+    },
+    idle: {
+      move_mode: "static",
+      face_mode: "wander",
+      wander_time: 1.5,
+      wander_distance: 100,
+      wander_cooldown: 1,
+      face_smoothness: 0.05,
+    },
+  },
+  enemy_detect_range: 400,
+  enemy_safe: true,
+  health: {
+    capacity: 250,
+  },
+  death: [
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1, spread_angle: -1 }, repeat: 1 },
+  ],
+  xp: 10,
+};
+make_shapes.enemy_streets_camera_small = [{
+  type: "polygon",
+  sides: 3,
+  radius: 30,
+}, {
+  type: "line",
+  v1: vector.create(6, 0),
+  v2: vector.create(6, 0),
+}, /*{
+  type: "line",
+  v2: vector.createpolar_deg(0, 30),
+  shoot: "enemy_easy",
+}*/];
 
 
 

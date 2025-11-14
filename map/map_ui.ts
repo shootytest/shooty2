@@ -779,8 +779,8 @@ export const m_ui = {
     });
 
     for (const shape of [m_ui.all_shape].concat(sorted_shapes ?? [])) {
-      if (rooms_only && m_ui.map.computed?.shape_room[shape.id]) continue;
       const id = shape.id;
+      if (rooms_only && m_ui.map.computed?.shape_room[shape.id] && !shape.options.is_room && !shape.computed?.options?.is_room && id !== "all") continue; // m_ui.map.computed?.shape_room[shape.id]
       if (id !== "all") {
         m_ui.all_shape.options.contains?.push(id);
         if (shape.computed) m_ui.all_aabb = vector.aabb_combine(m_ui.all_aabb, shape.computed.aabb);
@@ -1035,6 +1035,12 @@ export const m_ui = {
           const contains = shape_map[shape.options.parent].options.contains;
           const index = contains?.indexOf(old_id);
           if (contains != undefined && index != undefined && index >= 0) contains[index] = new_id;
+        }
+        for (const c of shape.options.room_connections ?? []) {
+          const arr = shape_map[c].options.room_connections;
+          if (!arr) return;
+          const index = arr.indexOf(old_id) ?? -1;
+          if (index > -1) arr[index] = new_id;
         }
         shape.id = new_id;
         map_serialiser.compute(m_ui.map);

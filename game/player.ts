@@ -75,7 +75,7 @@ export class Player extends Thing {
       down: keys["ArrowDown"] === true || (keys["KeyS"] === true),
       left: keys["ArrowLeft"] === true || (keys["KeyA"] === true),
       right: keys["ArrowRight"] === true || (keys["KeyD"] === true),
-      jump: false && keys["Space"] === true,
+      jump: (config.game.debug_mode || save.check_switch("jump")) && keys["Space"] === true,
       shoot: keys["Mouse"] === true,
       rshoot: keys["MouseRight"] === true || ((keys["ShiftLeft"] === true || keys["ShiftRight"] === true)),
       facingx: Math.floor(camera.mouse_v.x),

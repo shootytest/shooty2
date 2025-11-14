@@ -115,13 +115,16 @@ export class Shape {
     const memo_aabb3: { [key: string]: AABB3 } = {};
     for (const s of Shape.shapes) {
       if (s.computed == undefined || s.thing == undefined || s.thing.options.invisible) continue;
-      if (s.max_z < camera.look_z - 1 - math.epsilon || s.min_z > camera.look_z + 1 + math.epsilon) continue; // cullingz
+      const z = s.z, z_string = Number(s.z.toFixed(3));
+      // cullingz
+      if (s.computed.z_range) if (s.max_z < camera.look_z - 1 - math.epsilon || s.min_z > camera.z + math.epsilon) continue;
+      else if (z < camera.look_z - 1 - math.epsilon || z > camera.z + math.epsilon) continue;
       s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position);
-      if (memo_aabb3[s.z] == undefined) {
-        const z_scale = camera.zscale_inverse(s.z >= 0 ? 0 : s.z);
-        memo_aabb3[s.z] = vector3.aabb_scale(screen_aabb, vector3.create(z_scale, z_scale, 1));
+      if (memo_aabb3[z_string] == undefined) {
+        const z_scale = camera.zscale_inverse(z >= 0 ? 0 : z);
+        memo_aabb3[z_string] = vector3.aabb_scale(screen_aabb, vector3.create(z_scale, z_scale, 1));
       }
-      const inside = vector3.aabb_intersect(s.computed_aabb, memo_aabb3[s.z]);
+      const inside = vector3.aabb_intersect(s.computed_aabb, memo_aabb3[z_string]);
       s.computed.on_screen = inside;
       if (inside) {
         result.push(s);
@@ -170,8 +173,7 @@ export class Shape {
           if (s2.thing.options.safe_floor && !s1.thing.options.safe_floor) return 1;
         }
         return 0;
-      }
-      return Number((s1.z - s2.z).toFixed(3)); // lower z first
+      } else return s1.z - s2.z; // lower z first
     };
     Shape.draw_shapes.sort(draw_shapes_sort);
     Shape.floor_shapes.sort((s1, s2) => -draw_shapes_sort(s1, s2)); // reverse of draw_shapes
@@ -248,20 +250,20 @@ export class Shape {
   translucent = 0;
 
   get z(): number {
-    return Number((this.offset.z + this.thing.z).toFixed(3));
+    return this.offset.z + this.thing.z;
   }
 
   get avg_z(): number {
     if (!this.thing.options.force_max_z) return this.z;
-    else return Number((this.computed?.mean.z ?? this.z).toFixed(3));
+    else return this.computed?.mean.z ?? this.z;
   }
 
   get min_z(): number {
-    return Number((this.computed?.z_range?.[0] ?? this.z).toFixed(3));
+    return this.computed?.z_range?.[0] ?? this.z;
   }
 
   get max_z(): number {
-    return Number((this.computed?.z_range?.[1] ?? this.z).toFixed(3));
+    return this.computed?.z_range?.[1] ?? this.z;
   }
 
   get r(): number {
@@ -311,15 +313,17 @@ export class Shape {
     if (this.activate_scale) vector3.scale_to_list(calc_vertices, this.scale);
     const aabb = vector.make_aabb(calc_vertices),
       aabb3 = vector3.make_aabb(calc_vertices),
-      mean = this.closed_loop ? vector3.create2(Vertices.centre(calc_vertices), vector3.meanz(calc_vertices)) : vector3.mean(calc_vertices), // don't be mean...
-      z_range = vector3.z_range(this.vertices);
+      mean = this.closed_loop ? vector3.create2(Vertices.centre(calc_vertices), vector3.meanz(calc_vertices)) : vector3.mean(calc_vertices); // don't be mean...
     if (this.computed == undefined) {
-      this.computed = { aabb, aabb3, mean, vertices, z_range };
+      this.computed = { aabb, aabb3, mean, vertices };
     } else {
       this.computed.aabb = aabb;
       this.computed.aabb3 = aabb3;
       this.computed.mean = mean;
       this.computed.vertices = calc_vertices;
+    }
+    const z_range = vector3.z_range(this.vertices);
+    if (!math.equal(z_range[0], z_range[1])) {
       this.computed.z_range = z_range;
     }
   }

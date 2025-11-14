@@ -8,6 +8,7 @@ import { vector } from "../util/vector.js";
 import { shallow_clone_array } from "./make.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
+import { Shape } from "./shape.js";
 export const ui = {
     time: 0,
     tick_time: 0,
@@ -125,6 +126,8 @@ export const ui = {
         ctx.set_font_mono(size);
         ctx.textAlign = "left";
         ctx.text(`${display_fps.toFixed(2)} fps`, x, y);
+        ctx.textAlign = "right";
+        ctx.text(`${Shape.draw_shapes.length}`, x + size * 10, y);
         const real_max = math.max(...ui.debug.dt_queue);
         const display_max = math.lerp(ui.debug.dt_max, real_max, real_max > ui.debug.dt_max ? 0.1 : 0.08);
         ui.debug.dt_max = display_max;

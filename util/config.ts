@@ -5,7 +5,7 @@ export const config = {
   timescale: 1,
   game: {
     version: "0.1.0",
-    debug_mode: ["127.0.0.1", "localhost"].includes(window.location.hostname),
+    debug_mode: ["127.0.0.1", "localhost", "shooty3.surge.sh"].includes(window.location.hostname),
     invincibility_time: 1.5 * SECONDS,
     autosave_interval: 1 * SECONDS,
     level_1_xp: 1000,

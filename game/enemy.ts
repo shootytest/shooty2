@@ -54,7 +54,7 @@ export class Enemy extends Thing {
   }
 
   tick(dt: number) {
-    if (this.is_seeing_player) player.enemy_can_see = true;
+    if (this.is_seeing_player && !this.options.enemy_safe) player.enemy_can_see = true;
     super.tick(dt);
   }
 

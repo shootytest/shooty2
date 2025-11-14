@@ -164,7 +164,7 @@ export const THEMES/*: { [key: string]: color_theme }*/ = {
   streets: {
     uid: 8,
     main: "#77adea",
-    alt: "#77dfea",
+    alt: "#778eea",
     dark: "#4b98db",
     dark2: "#478baf",
     floor: "#21323d",
@@ -230,18 +230,20 @@ export const STYLES/*: { [key: string]: style_type }*/ = {
   },
 
   // collectible colours
-  coin_rock: {
+  coin_rock_1: {
     stroke: "alt",
     fill: "alt",
-    health: "coin",
     fill_opacity: 0.4,
+    health: "coin",
     health_opacity: 0.3,
   },
-  coin_rock_coin: {
+  coin_rock_2: {
     stroke: "coin",
     stroke_opacity: 0.5,
     fill: "coin",
     fill_opacity: 0.1,
+    health: "main",
+    health_opacity: 1,
   },
   collect_coin: {
     stroke: "coin",
@@ -346,6 +348,13 @@ export const STYLES/*: { [key: string]: style_type }*/ = {
     health: "alt",
     fill_opacity: 0.4,
     health_opacity: 0.25,
+  },
+  enemy_camera: {
+    stroke: "alt",
+    stroke_opacity: 1,
+    health: "enemy",
+    fill: "alt",
+    fill_opacity: 0.5,
   },
 
 };

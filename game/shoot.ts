@@ -136,15 +136,16 @@ export class Shoot {
     body_options.density = S.density ?? body_options.density ?? 0;
     bullet.create_body(body_options);
 
+    // do recoil
     if (S.recoil !== 0 && speed && S.speed) {
       let recoil = (S.recoil == undefined) ? 1 : S.recoil;
       recoil *= speed * (bullet.body?.mass || 0) * config.physics.force_factor * config.physics.recoil_factor;
       this.thing.push_in_direction(angle, -recoil);
     }
 
-    if (S.death != undefined) {
-      bullet.options.death = (clone_object({ a: S.death }).a) as bullet_death_type[];
-    }
+    // other miscellaneous bullet options
+    if (S.death != undefined) bullet.options.death = (clone_object({ a: S.death }).a) as bullet_death_type[];
+    if (S.detect_range_mult != undefined && bullet.options.enemy_detect_range) bullet.options.enemy_detect_range *= S.detect_range_mult;
 
     return bullet;
 

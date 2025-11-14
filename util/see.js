@@ -50,10 +50,17 @@ export const do_visibility = (_dt) => {
     const other_vertices = Shape.get_other_vertices();
     const other_list = {};
     const inverted = invert_path(path);
+    let has_other_vertices = false;
     for (const other_key in other_vertices) {
         let [alpha, z] = other_key.split("|").map((n) => Number(n));
         const inverted = invert_path(calc_visibility_path_2(player, other_vertices[other_key]));
-        other_list[z.toFixed(3)] = { alpha, z, inverted };
+        for (let z2 = Math.floor(z * 10) / 10; z2 < math.round_to(player.z + 1, 0.1); z2 += 0.1) {
+            const s = z2.toFixed(3);
+            if (!other_list[s])
+                other_list[s] = [];
+            other_list[s].push({ alpha, z, inverted });
+        }
+        has_other_vertices = true;
     }
     // handle z stuff
     const additional_zs = [];
@@ -68,20 +75,19 @@ export const do_visibility = (_dt) => {
     draw_zs.sort((s1, s2) => s1 - s2);
     // actually draw stuff
     for (const z of draw_zs) {
-        ctx.save("see");
+        ctx.ctx.save();
         clip_visibility_path(player, path, z);
         Shape.draw(Number(z.toFixed(3)));
         Particle.draw_particles(z);
-        ctx.restore("see");
-        if (other_list[z.toFixed(3)]) {
-            const other = other_list[z.toFixed(3)];
-            for (let z2 = Math.floor(other.z * 10) / 10; z2 < math.round_to(player.z + 1, 0.1); z2 += 0.1) {
+        if (has_other_vertices && other_list[z.toFixed(3)]) {
+            for (const other of other_list[z.toFixed(3)]) {
                 ctx.ctx.save();
-                ctx.fillStyle = math.equal(z2, other.z) ? chroma.mix(current_theme.dark, color.blackground, 0.5).hex("rgb") + math.component_to_hex(other.alpha * 255) : (color.blackground + math.component_to_hex(other.alpha * wall_opacity * 2));
-                clip_path(player, other.inverted, z2, true);
+                ctx.fillStyle = math.equal(z, other.z) ? chroma.mix(current_theme.dark, color.blackground, 0.5).hex("rgb") + math.component_to_hex(other.alpha * 255) : (color.blackground + math.component_to_hex(other.alpha * wall_opacity * 2));
+                clip_path(player, other.inverted, z, true);
                 ctx.ctx.restore();
             }
         }
+        ctx.ctx.restore();
         if (math.equal(Math.floor(z * 10), z * 10)) {
             ctx.ctx.save();
             clip_inverted_path(player, inverted, z);
