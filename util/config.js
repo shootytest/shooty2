@@ -22,6 +22,10 @@ export const config = {
         velocity_shoot_boost: 0.3,
     },
     graphics: {
+        fps: 60,
+        resolution_mult: 1,
+        debug_display: false,
+        fullscreen: false,
         shape_cull_padding: 50,
         linewidth_mult: 6,
         linewidth_max_mult: 20,

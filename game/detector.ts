@@ -1,13 +1,12 @@
 import { engine, MAP } from "../index.js";
-import { Events, Vertices } from "../matter.js";
+import { Events } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { STYLES } from "../util/color.js";
 import { config } from "../util/config.js";
-import { key } from "../util/key.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { Enemy, Spawner } from "./enemy.js";
-import { clone_object } from "./make.js";
+import { clone_object, maketype_behaviour } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
@@ -217,8 +216,9 @@ export const detector = {
       }
     });
   },
-  collision_start: (pair: Matter.Pair, a: Thing, b: Thing, z_diff: boolean = false) => {
+  collision_start: (pair: Matter.Pair, a: Thing, b: Thing, suddenlyz: boolean = false) => {
     const different_team = Math.floor(a.team) !== Math.floor(b.team);
+    const hittingz = (!pair.isSensor || suddenlyz);
     // console.log(`[detector/collision_start] Collision started betwixt ${ba.label} & ${bb.label}!`);
     if (a.is_player) {
       if (b.options.sensor) {
@@ -227,19 +227,19 @@ export const detector = {
         if (!b.options.sensor_dont_set_room) player.change_room(b.room_id);
         b.is_touching_player = true;
       }
-      if (b.health && b.options.breakable && different_team) {
+      if (b.health && b.options.breakable && different_team && hittingz) {
         b.health?.hit_all();
       }
     }
-    if (a.is_bullet && !pair.isSensor) {
+    if (a.is_bullet && hittingz) {
       if (!b.options.sensor && !b.options.keep_bullets && !a.options.collectible && !b.options.breakable && different_team && !b.health?.invincible) {
-        if (b.is_player) a.options.death = []; // please don't explode if it hits the player
+        if (b.is_player) a.options.death = []; // please don't explode if it hits the player // todo how about exploding coins?
         a.die();
       } else if (b.options.breakable || (!different_team && a.team > 0)) {
         pair.isSensor = true;
       }
     }
-    if (a.damage > 0 && b.health && b.health.capacity > 0 && different_team && !pair.isSensor) {
+    if (a.damage > 0 && b.health && b.health.capacity > 0 && different_team && hittingz) {
       // console.log(`[detector/collision_start] ${a.id} hits ${b.id} for ${a.damage} damage!`);
       b.health?.hit(a.damage);
     }
@@ -252,7 +252,7 @@ export const detector = {
       }
     }
     // player/bullets and switches
-    if (Math.floor(a.team) === 1 && b.options.switch) {
+    if (Math.floor(a.team) === 1 && b.options.switch && hittingz) {
       const switch_id = (b as Enemy).spawner.id;
       if (!save.check_switch(switch_id)) {
         save.set_switch(switch_id);
@@ -260,7 +260,8 @@ export const detector = {
       }
       b.shapes[0].options.glowing = 1;
     }
-    if (b.options.breakable) b.velocity = vector.mult(a.velocity, 0.5);
+    // handle breakable effect
+    // if (b.options.breakable) b.velocity = vector.mult(a.velocity, 0.5);
   },
   collision_end: (pair: Matter.Pair, a: Thing, b: Thing, z_diff: boolean = false) => {
     // console.log(`[detector/collision_end] Collision ended betwixt ${ba.label} & ${bb.label}!`);
@@ -316,7 +317,7 @@ export const detector = {
       const style = thing.lookup("train ceiling").shapes[0].style;
       if (!math.equal(style.fill_opacity ?? 0, 0.5)) style.fill_opacity = math.lerp(style.fill_opacity ?? 0, 0.5, 0.1);
     },
-    ["station streets sensor fall"]: (thing) => {
+    ["station streets sensor end"]: (thing) => {
       if (player.z < -0.39) {
         player.fov_mult = 0.95 - player.z / 2;
         if (player.checkpoint_room !== "station streets") {
@@ -381,9 +382,10 @@ export const detector = {
       if (player.z >= 0.5 || player.z < 0) return;
       const train_time = (player.object.train_time ?? 0) + dt;
       player.object.train_time = train_time;
-      if (train_time > 2.1 * config.seconds) {
-        const train = thing.lookup("train");
-        if (Boolean(train.object.crashed)) {
+      const train = thing.lookup("train");
+      if (train_time > 2.1 * config.seconds || train.object.crashed) {
+        if (train.object.crashed) {
+          if (train_time < 2 * config.seconds) player.object.train_time += 2 * config.seconds;
           const t = (thing.thing_time - (train.object.crashed ?? 0)) / config.seconds;
           if (t > 1.1) return;
           const z = -0.4 * (math.bound(t, 0, 1) ** 2);
@@ -460,6 +462,35 @@ export const detector = {
     },
   } as { [thing_id: string]: (thing: Thing) => void },
 
+
+  // spawner/enemy functions
+
+  before_spawn_fns: {
+    ["enemy_streets_camera_small"]: (thing) => {
+      if (save.check_switch("jump")) {
+        const b = thing.options.behaviour?.normal;
+        if (b) (b as maketype_behaviour).shoot_mode = "normal";
+        thing.options.enemy_safe = false;
+        thing.health?.set_capacity(350);
+        thing.options.xp = 60;
+        const d = thing.options.death?.[0];
+        if (d) d.repeat = 3;
+        thing.make_shape({
+          type: "line",
+          style: "enemy",
+          v1: vector.create(12, 0),
+          v2: vector.create(30, 0),
+          style_: {
+            opacity: 0.6,
+          },
+          shoot: "enemy_easy",
+        });
+      }
+    },
+  } as {
+    [spawner_id: string]: // can choose spawner_id or make_id
+      (thing: Enemy) => void
+  },
 
   before_death_fns: {
     // nothing for now

@@ -1,3 +1,4 @@
+import { config } from "./config.js";
 import { Context } from "./draw.js";
 
 export const canvas_ = document.createElement("canvas");
@@ -32,12 +33,14 @@ export const resize_canvas = () => {
   const h = window.innerHeight;
   view.width = w;
   view.height = h;
-  const resolution_mult = 1;
+  const resolution_mult = config.graphics.resolution_mult;
   canvas.width = w * pixel_ratio * resolution_mult;
   canvas.height = h * pixel_ratio * resolution_mult;
   (window as any).canvas_ratio = pixel_ratio * resolution_mult;
   // canvas.style.width = w + "";
   // canvas.style.height = h + "";
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
   ctx.resetTransform();
 };
 

@@ -707,6 +707,7 @@ make.enemy_streets_camera_small = {
             // shoot_mode: "normal",
             move_mode: "static",
             face_mode: "direct",
+            face_smoothness: 0.1,
         },
         idle: {
             move_mode: "static",
@@ -723,7 +724,7 @@ make.enemy_streets_camera_small = {
         capacity: 250,
     },
     death: [
-        { type: "collect_coin", stats: { make: "collect_coin_1", speed: 1, spread_angle: -1 }, repeat: 1 },
+        { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.9, spread_angle: -1 }, repeat: 1 },
     ],
     xp: 10,
 };

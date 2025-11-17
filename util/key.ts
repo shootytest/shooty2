@@ -1,8 +1,8 @@
-import { canvas, canvas_ } from "./canvas.js";
+import { canvas_ } from "./canvas.js";
 import { vector } from "./vector.js";
 
 export const keys: { [key: string]: boolean } = {};
-const key_listeners: { [key: string]: (() => void)[] } = {};
+const key_listeners: { [key: string]: (() => void | boolean)[] } = {};
 const keydown_listeners: ((event: KeyboardEvent) => void)[] = [];
 const keyup_listeners: ((event: KeyboardEvent) => void)[] = [];
 let key_changed = false;
@@ -78,7 +78,7 @@ export const key = {
       if (!event.repeat) {
         if (key_listeners[key] != null) {
           for (const f of key_listeners[key]) {
-            f();
+            if (f()) event.preventDefault();
           }
         }
       }
@@ -86,7 +86,7 @@ export const key = {
         f(event);
       }
     });
-    
+
     /*
     window.addEventListener("keypress", function(event) {
       key_changed = true;
@@ -97,7 +97,7 @@ export const key = {
       keys[key] = true;
     });
     */
-    
+
     window.addEventListener("keyup", function(event) {
       if ((event.target as HTMLElement).matches("input")) return;
       key_changed = true;
@@ -107,14 +107,14 @@ export const key = {
         f(event);
       }
     });
-    
+
     window.addEventListener("focus", function(event) {
       key_changed = true;
       for (const key in keys) {
         keys[key] = false;
       }
     });
-  
+
     window.addEventListener("mousemove", function(event) {
       key_changed = true;
       mouse.x = event.clientX;
@@ -144,20 +144,20 @@ export const key = {
       mouse.drag_vector[b] = false;
       mouse.drag_vector_old[b] = false;
     };
-    
+
     canvas_.addEventListener("mousedown", function(event) {
       key_changed = true;
       mousedown(event);
       event.preventDefault();
       update_mouse(event.buttons);
     });
-    
+
     canvas_.addEventListener("touchstart", function(event) {
       key_changed = true;
       mousedown(event);
       event.preventDefault();
     });
-    
+
     canvas_.addEventListener("contextmenu", function(event) {
       key_changed = true;
       event.preventDefault();
@@ -179,14 +179,14 @@ export const key = {
       mouse.drag_vector[b] = false;
       // mouse.drag_vector_old[b] = false;
     };
-    
+
     window.addEventListener("mouseup", function(event) {
       key_changed = true;
       mouseup(event);
       event.preventDefault();
       update_mouse(event.buttons);
     });
-    
+
     window.addEventListener("touchend", function(event) {
       key_changed = true;
       mouseup(event);
@@ -214,11 +214,11 @@ export const key = {
     canvas_.addEventListener("dblclick", function(event) {
       dblclick(event);
     });
-    
+
   },
 
   update_controls: {
-    
+
   },
 
   shift: () => {
@@ -258,7 +258,7 @@ export const key = {
   remove_keyup_listeners: () => {
     keyup_listeners.length = 0;
   },
-  
+
   check_keys: function(key_array: string[]) {
     if (!Array.isArray(key_array)) {
       key_array = [key_array];

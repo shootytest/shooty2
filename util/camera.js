@@ -85,12 +85,20 @@ export const camera = {
     tick: function (dt) {
         this.time += dt;
         // lerp
-        this.position = vector.lerp(this.position, this.position_target, this.lerp_factor);
-        if (!math.equal(this.scale, this.scale_target)) {
-            this.scale = 1 / math.lerp(1 / this.scale, 1 / this.scale_target, this.lerp_factor);
+        if (this.lerp_factor >= 1 - math.epsilon) {
+            this.lerp_factor--;
+            if (this.lerp_factor <= 0)
+                this.lerp_factor = config.graphics.camera_smoothness;
+            this.position = vector.clone(this.position_target);
+            this.scale = this.scale_target;
         }
-        if (math.equal(this.lerp_factor, config.graphics.camera_smoothness) || this.lerp_factor === 1)
-            this.lerp_factor = config.graphics.camera_smoothness;
+        else {
+            const lerp_mult = math.bound(dt / 167, 0, 3);
+            this.position = vector.lerp(this.position, this.position_target, this.lerp_factor * lerp_mult);
+            if (!math.equal(this.scale, this.scale_target)) {
+                this.scale = 1 / math.lerp(1 / this.scale, 1 / this.scale_target, this.lerp_factor * lerp_mult);
+            }
+        }
     },
     position_jump: function () {
         this.position = this.position_target;

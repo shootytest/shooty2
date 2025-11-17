@@ -43,7 +43,7 @@ export class Health {
             this.invincible = o.invincible;
     }
     tick() {
-        this.display = math.lerp(this.display, this.value, config.graphics.health_display_smoothness);
+        this.do_display();
         const time = Thing.time;
         if (this.hit_tick > math.epsilon) {
             this.hit(this.hit_tick);
@@ -58,6 +58,9 @@ export class Health {
         if (this.invincible && time >= this.invincible_time) {
             this.invincible = false;
         }
+    }
+    do_display() {
+        this.display = math.lerp(this.display, this.value, config.graphics.health_display_smoothness);
     }
     hit(amount) {
         if (this.invincible)

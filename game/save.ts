@@ -1,4 +1,6 @@
+import { canvas_ } from "../util/canvas.js";
 import { config } from "../util/config.js";
+import { math } from "../util/math.js";
 import type { vector3, vector3_ } from "../util/vector.js";
 import { clone_object } from "./make.js";
 import { player } from "./player.js";
@@ -37,6 +39,11 @@ export interface player_stats {
   bullets_shot: { [key: string]: number };
   currencies_total: { [key: string]: number };
 };
+
+export interface settings_save {
+  graphics: [ number, number, boolean, boolean ];
+};
+
 
 
 export const save = {
@@ -141,6 +148,31 @@ export const save = {
     save.saves = o.saves;
     save.current_slot = o.slot;
     save.load_from_slot();
+  },
+
+  save_settings: () => {
+    const o: settings_save = {
+      graphics: [
+        Math.round(config.graphics.fps),
+        math.round_to(config.graphics.resolution_mult, 0.1),
+        config.graphics.debug_display,
+        config.graphics.fullscreen,
+      ],
+    };
+    localStorage.setItem("settings", zipson.stringify(o));
+  },
+
+  load_settings: () => {
+    const raw = localStorage.getItem("settings");
+    if (!raw) {
+      save.save_settings();
+      return;
+    }
+    const o = zipson.parse(raw) as settings_save;
+    config.graphics.fps = o.graphics[0];
+    config.graphics.resolution_mult = o.graphics[1];
+    config.graphics.debug_display = o.graphics[2];
+    config.graphics.fullscreen = o.graphics[3];
   },
 
 };

@@ -1,19 +1,21 @@
 import { camera } from "../util/camera.js";
-import { canvas, ctx } from "../util/canvas.js";
-import { color } from "../util/color.js";
+import { canvas, canvas_, ctx, resize_canvas } from "../util/canvas.js";
+import { color, current_theme } from "../util/color.js";
 import { config } from "../util/config.js";
 import { key, keys, mouse } from "../util/key.js";
 import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
 import { shallow_clone_array } from "./make.js";
+import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
 import { Shape } from "./shape.js";
+import { Thing } from "./thing.js";
 export const ui = {
     time: 0,
     tick_time: 0,
     width: canvas.width,
-    height: canvas.width,
+    height: canvas.height,
     size: 0,
     debug: {
         dt_queue: [],
@@ -49,21 +51,38 @@ export const ui = {
     init: function () {
         const pause_fn = () => {
             player.paused = !player.paused;
+            ui.settings.open = false;
+            ui.settings.start_time = -1;
             ui.pause.start_time = player.paused ? ui.time : -1;
+            if (!player.paused)
+                return true;
         };
         key.add_key_listener("KeyP", pause_fn);
         key.add_key_listener("Escape", pause_fn);
         key.add_key_listener("KeyF", () => {
             player.autoshoot = !player.autoshoot;
         });
+        window.addEventListener("keydown", function (event) {
+            if (event.code === "Enter" && key.alt()) {
+                ui.toggle_fullscreen();
+            }
+        });
     },
     tick: function (dt) {
         ui.tick_time++;
         ui.time += dt;
-        ui.debug.dt_queue.push(dt);
-        ui.debug.dt_total += dt;
-        while (ui.debug.dt_queue.length > 100) {
-            ui.debug.dt_total -= ui.debug.dt_queue.shift() ?? 0;
+        if (dt <= config.seconds) {
+            ui.debug.dt_queue.push(dt);
+            ui.debug.dt_total += dt;
+            while (ui.debug.dt_queue.length > 100) {
+                ui.debug.dt_total -= ui.debug.dt_queue.shift() ?? 0;
+            }
+        }
+        if (player.paused) {
+            // don't forget to do health display stuff for things
+            for (const thing of Thing.things) {
+                thing.health?.do_display();
+            }
         }
     },
     draw: function () {
@@ -110,10 +129,11 @@ export const ui = {
         },
     },
     draw_debug: function () {
-        if (!config.game.debug_mode)
+        if (!config.graphics.debug_display)
             return;
         const size = ui.size * 1.2;
-        const fps = ui.debug.dt_queue.length === 100 ? 1000000 / ui.debug.dt_total : ui.debug.dt_queue.length * 10000 / ui.debug.dt_total; // wow a million
+        const total = ui.debug.dt_total === 0 ? 1 : ui.debug.dt_total;
+        const fps = ui.debug.dt_queue.length === 100 ? 1000000 / total : ui.debug.dt_queue.length * 10000 / total; // wow a million
         const display_fps = math.lerp(ui.debug.fps_display, fps, 0.1);
         ui.debug.fps_display = display_fps;
         let x = ui.width - size * 10.5;
@@ -127,7 +147,7 @@ export const ui = {
         ctx.textAlign = "left";
         ctx.text(`${display_fps.toFixed(2)} fps`, x, y);
         ctx.textAlign = "right";
-        ctx.text(`${Shape.draw_shapes.length}`, x + size * 10, y);
+        ctx.text(`${Shape.draw_shapes.length + Particle.particles.length}`, x + size * 10, y);
         const real_max = math.max(...ui.debug.dt_queue);
         const display_max = math.lerp(ui.debug.dt_max, real_max, real_max > ui.debug.dt_max ? 0.1 : 0.08);
         ui.debug.dt_max = display_max;
@@ -279,56 +299,151 @@ export const ui = {
         },
         menu: [
             {
-                logo: "x",
+                icon: "x",
                 color: color.green,
                 fn: function () {
                     player.paused = false;
                 },
             },
             {
-                logo: "settings",
+                icon: "settings",
                 color: color.blue,
                 fn: function () {
+                    ui.settings.open = true;
+                    ui.settings.start_time = ui.time;
                 },
             },
             {
-                logo: "logout",
+                icon: "logout",
                 color: color.red,
                 fn: function () {
                 },
             },
             {
-                logo: "map",
+                icon: "map",
                 color: color.gold,
                 fn: function () {
                 },
             },
             {
-                logo: "info",
+                icon: "info",
                 color: color.dimgrey,
                 fn: function () {
                 },
             },
             {
-                logo: "load",
+                icon: "load",
                 color: color.purple,
                 fn: function () {
                 },
             },
         ],
     },
+    settings: {
+        open: false,
+        animation_time: 0.2 * config.seconds,
+        get really_open() {
+            return (this.open && this.time > this.animation_time) || (!this.open && this.time < this.animation_time);
+        },
+        start_time: -1,
+        get time() {
+            return ui.time - this.start_time;
+        },
+        menu: [
+            {
+                icon: "x",
+                color: color.red,
+                fn: function () {
+                    ui.settings.open = false;
+                    ui.settings.start_time = ui.time;
+                    ui.pause.start_time = ui.time;
+                },
+            },
+            {
+                icon: "resize",
+                color: color.blue,
+                fn: function () {
+                    let r = config.graphics.resolution_mult;
+                    r = r - 0.1;
+                    if (r < 0.6 - math.epsilon)
+                        r = 1;
+                    config.graphics.resolution_mult = r;
+                    camera.lerp_factor = 1;
+                    resize_canvas();
+                    window.dispatchEvent(new Event("resize"));
+                    save.save_settings();
+                },
+                texts: ["-4", "-3", "-2", "-1", ""],
+                text: function () {
+                    const r = config.graphics.resolution_mult;
+                    return this.texts[Math.round(r * 10) - 6];
+                },
+            },
+            {
+                get icon() {
+                    return "fps_" + config.graphics.fps;
+                },
+                color: color.green,
+                fn: function () {
+                    const fps = config.graphics.fps;
+                    if (fps === 60)
+                        config.graphics.fps = 30;
+                    if (fps === 30)
+                        config.graphics.fps = 24;
+                    if (fps === 24)
+                        config.graphics.fps = 60;
+                    ui.debug.dt_queue = [];
+                    ui.debug.dt_total = 0;
+                    save.save_settings();
+                },
+            },
+            {
+                get icon() {
+                    return document.fullscreenElement ? "fullscreen_exit" : "fullscreen";
+                },
+                color: color.gold,
+                fn: function () {
+                    config.graphics.fullscreen = !document.fullscreenElement;
+                    ui.toggle_fullscreen();
+                    save.save_settings();
+                },
+            },
+            {
+                get icon() {
+                    return config.graphics.debug_display ? "debug" : "debug_outline";
+                },
+                color: color.purple,
+                fn: function () {
+                    config.graphics.debug_display = !config.graphics.debug_display;
+                    save.save_settings();
+                },
+            },
+        ],
+    },
     draw_pause_menu: function () {
-        const size = ui.size;
         const centre = camera.world2screen(player.position);
+        const menu = ui.settings.really_open ? ui.settings.menu : ui.pause.menu;
+        const switch_animation = ui.settings.time < 2 * ui.settings.animation_time;
+        const switch_ratio = switch_animation ? math.bound(Math.abs(ui.settings.time / ui.settings.animation_time - 1) ** 1.5, math.epsilon, 1) : 1;
         let r = 8 * camera.scale;
-        const length = ui.pause.menu.length;
+        // const pause_ratio = math.bound(ui.pause.time / 50, 0, 168);
+        ctx.fillStyle = current_theme.floor + math.component_to_hex(160);
+        ctx.beginPath();
+        ctx.circle_v(centre, player.radius * camera.scale);
+        ctx.fill();
+        ctx.ctx.save();
+        player.shapes[0].draw();
+        ctx.ctx.restore();
+        const length = menu.length;
         ctx.strokeStyle = color.white;
+        ctx.lineWidth = r * 0.15;
+        const angle_offset = (ui.settings.open ? ui.settings.time : ui.pause.time) / 1000;
         for (let i = 0; i < length; i++) {
-            const a = ((i - 1) * 360 / (length - 1) + ui.pause.time / 1000) % 360;
+            const a = ((i - 1) * 360 / (length - 1) + angle_offset) % 360;
             const v = i === 0 ? centre : vector.add(centre, vector.createpolar_deg(a, r * 1.5));
-            const o = ui.pause.menu[i];
+            const o = menu[i];
             ctx.fillStyle = color.white;
-            ctx.svg_v(o.logo, v, r);
+            ctx.svg_v(o.icon, v, r);
             ctx.beginPath();
             ctx.circle_v(v, r * 0.7);
             const hovering = ctx.point_in_path_v(mouse.position);
@@ -340,9 +455,16 @@ export const ui = {
             ctx.fill();
             if (hovering)
                 ctx.stroke();
+            if (o.icon === "resize") {
+                ctx.fillStyle = color.white;
+                ctx.set_font_mono(r * 0.35);
+                ctx.text_v(`${o.text()}`, v);
+            }
             if (i === 0)
-                r *= 1.25;
+                r *= 1.25 * switch_ratio;
         }
+    },
+    draw_items: function () {
     },
     items: {
         coin: {
@@ -356,6 +478,14 @@ export const ui = {
                 ctx.donut(x, y, r * 0.6, r);
                 ctx.fill();
             },
+        }
+    },
+    toggle_fullscreen: () => {
+        if (!document.fullscreenElement) {
+            canvas_.requestFullscreen();
+        }
+        else {
+            document.exitFullscreen?.();
         }
     },
 };

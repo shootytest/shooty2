@@ -1,7 +1,9 @@
 import { config } from "../util/config.js";
+import { math } from "../util/math.js";
 import { clone_object } from "./make.js";
 import { player } from "./player.js";
 import { Thing } from "./thing.js";
+;
 ;
 ;
 ;
@@ -93,5 +95,28 @@ export const save = {
         save.saves = o.saves;
         save.current_slot = o.slot;
         save.load_from_slot();
+    },
+    save_settings: () => {
+        const o = {
+            graphics: [
+                Math.round(config.graphics.fps),
+                math.round_to(config.graphics.resolution_mult, 0.1),
+                config.graphics.debug_display,
+                config.graphics.fullscreen,
+            ],
+        };
+        localStorage.setItem("settings", zipson.stringify(o));
+    },
+    load_settings: () => {
+        const raw = localStorage.getItem("settings");
+        if (!raw) {
+            save.save_settings();
+            return;
+        }
+        const o = zipson.parse(raw);
+        config.graphics.fps = o.graphics[0];
+        config.graphics.resolution_mult = o.graphics[1];
+        config.graphics.debug_display = o.graphics[2];
+        config.graphics.fullscreen = o.graphics[3];
     },
 };

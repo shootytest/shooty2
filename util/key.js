@@ -77,7 +77,8 @@ export const key = {
             if (!event.repeat) {
                 if (key_listeners[key] != null) {
                     for (const f of key_listeners[key]) {
-                        f();
+                        if (f())
+                            event.preventDefault();
                     }
                 }
             }

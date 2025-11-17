@@ -189,17 +189,25 @@ export class Thing {
         if (reset)
             this.options = {};
         override_object(this.options, o);
-        this.make_shape(key, reset);
+        this.make_shape_key(key, reset);
         this.make_shoot(this.options.shoots, reset);
         this.make_the_rest();
         return this.options;
     }
-    make_shape(key, reset = false) {
+    make_shape_key(key, reset = false) {
         if (reset)
             for (const shape of shallow_clone_array(this.shapes))
                 shape.remove();
         const shapes = make_shapes[key] ?? [];
         for (const o of shapes) {
+            Shape.from_make(this, o);
+        }
+    }
+    make_shape(m, reset = false) {
+        if (reset)
+            for (const shape of shallow_clone_array(this.shapes))
+                shape.remove();
+        for (const o of Array.isArray(m) ? m : [m]) {
             Shape.from_make(this, o);
         }
     }
@@ -609,7 +617,8 @@ export class Thing {
             vector3.add(player.position, vector3.create(0, -player_size, 0)),
         ];
         for (const check of checks) {
-            if (Query.ray(Thing.body_list, this.position, check).length === 0) {
+            if (!math.is_line_intersecting_polygons(this.position, check, Shape.see_vertices)) {
+                // if (Query.ray(Thing.body_list, this.position, check).length === 0) {
                 this.is_seeing_player = true;
                 this.player_position = check;
                 return check;

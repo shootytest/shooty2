@@ -317,7 +317,7 @@ export const m_ui = {
     {
       name: "debug",
       get icon(): string {
-        return (m_ui.editor.layers.debug) ? "debug_" : "debug";
+        return (m_ui.editor.layers.debug) ? "debug_frame" : "debug";
       },
       action: () => { m_ui.editor.layers.debug = !m_ui.editor.layers.debug; },
       color: (): string => m_ui.editor.layers.debug ? "#ad1818" : color.black,
@@ -378,6 +378,7 @@ export const m_ui = {
             0,
             vector.add(target.shape.vertices[target.index], vector.create(10, 10))
           );
+          target.vertex_old = vector3.clone_list_(target.shape.vertices);
           map_draw.change("insert vertex", target.shape);
         },
         enabled: () => true,
@@ -393,8 +394,9 @@ export const m_ui = {
             m_ui.circle_menu.options[3].fn(); // run delete shape function
           } else {
             target.shape.vertices.splice(target.index, 1);
+            target.vertex_old = vector3.clone_list_(target.shape.vertices);
             m_ui.circle_menu.deactivate();
-            map_draw.change("delete vertex", target.shape);
+            map_draw.change("delete vertex #" + target.index, target.shape);
           }
         },
         enabled: () => true,
@@ -413,6 +415,7 @@ export const m_ui = {
           }
           if (insert_index >= 0) m_ui.map.shapes.splice(insert_index, 0, new_shape);
           m_ui.update_directory();
+          // todo switch focus to newly duplicated shape
           map_draw.change("duplicate shape", new_shape);
         },
         enabled: () => true,

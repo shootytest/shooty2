@@ -156,6 +156,8 @@ export class Shape {
       }
     }
 
+    if (player.paused) Shape.draw_shapes.remove(player.shapes[0]);
+
     Shape.draw_zs = [...new Set(Shape.draw_shapes.map(s => s.z))];
 
     // sort everything
@@ -189,6 +191,9 @@ export class Shape {
       return p1.z - p2.z;
     });
 
+    Shape.calc_vertices();
+    Shape.calc_other_vertices();
+
   };
 
   static draw(z?: number) {
@@ -199,10 +204,12 @@ export class Shape {
     ctx.globalAlpha = 1;
   };
 
-  static see_z_range = [0, 0] as [number, number];
-  // gets screen vertices for everything on screen
-  // for visibility purposes
-  static get_vertices() {
+  // calculates world vertices for everything on screen for visibility purposes
+  static see_z_range: [number, number] = [0, 0];
+  static see_vertices: vector3[][] = [];
+  static see_other_vertices: { [ key: string ]: vector3[][] } = {};
+
+  static calc_vertices() {
     const result: vector3[][] = [];
     let min_z = 9999999, max_z = -9999999;
     for (const s of Shape.draw_shapes) {
@@ -216,10 +223,11 @@ export class Shape {
       result.push(vs);
     }
     if (Shape.draw_shapes.length > 0) Shape.see_z_range = [min_z, max_z];
+    Shape.see_vertices = result;
     return result;
   };
 
-  static get_other_vertices() {
+  static calc_other_vertices() {
     const result: { [ key: string ]: vector3[][] } = {};
     for (const s of Shape.draw_shapes) {
       const vs = s.computed?.vertices;
@@ -394,8 +402,6 @@ export class Shape {
     }
     ctx.beginPath();
     this.draw_path(shadow ? this.computed.shadow_vertices : this.computed.screen_vertices);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
     const override_pause_opacity: boolean = this.thing.is_player && this.index >= 1 && player.paused;
     if (style.stroke) {
       ctx.strokeStyle = color2hex(style.stroke);

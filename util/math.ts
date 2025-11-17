@@ -385,4 +385,24 @@ export const math = {
     return vector.length2(vector.sub(polygon[0], centre)) < radius2; // final check: if any point on the polygon lies in the circle
   },
 
+  line_segment_intersection: (line1: [vector, vector], line2: [vector, vector]): boolean => {
+    const [ p, p_ ] = line1, [ q, q_ ] = line2,
+      r = vector.sub(p_, p), s = vector.sub(q_, q),
+      c = vector.cross(r, s);
+    if (math.equal(c, 0)) return false;
+    const d = vector.sub(q, p),
+      t = vector.cross(d, s), u = vector.cross(d, r),
+      zero = -math.epsilon, one = c + math.epsilon;
+    return (t >= zero && t <= one && u >= zero && u <= one);
+  },
+
+  is_line_intersecting_polygons: (v1: vector, v2: vector, polygons: vector[][]): boolean => {
+    for (const polygon of polygons) {
+      for (let i = 0; i < polygon.length - 1; i++) {
+        if (math.line_segment_intersection([v1, v2], [polygon[i], polygon[i + 1]])) return true;
+      }
+    }
+    return false;
+  },
+
 };

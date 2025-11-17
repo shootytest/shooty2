@@ -53,8 +53,8 @@ export const do_visibility = (_dt: number) => {
 
   // precompute stuff
   Shape.compute();
-  const path = calc_visibility_path_2(player, Shape.get_vertices());
-  const other_vertices = Shape.get_other_vertices();
+  const path = calc_visibility_path_2(player, Shape.see_vertices);
+  const other_vertices = Shape.see_other_vertices;
   const other_list: { [z: string]: { alpha: number, z: number, inverted: Path2D }[]} = {};
   const inverted = invert_path(path);
   let has_other_vertices = false;
@@ -207,7 +207,7 @@ const calc_visibility_path = (v: vector): Path2D => {
   add_wall({ x: -BIG_NUMBER, y: -BIG_NUMBER, }, { x: BIG_NUMBER, y: -BIG_NUMBER }, true);
   add_wall({ x: -BIG_NUMBER, y: BIG_NUMBER, }, { x: BIG_NUMBER, y: BIG_NUMBER }, true);
 
-  for (const vertices of Shape.get_vertices()) {
+  for (const vertices of Shape.see_vertices) {
     for (let i = 0; i < vertices.length - 1; i++) {
       add_wall(vertices[i], vertices[i + 1]);
     }

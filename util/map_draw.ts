@@ -307,7 +307,8 @@ export const map_draw = {
           }*/
           o.new = false;
           if (!(mouse.drag_vector_old[0] === false)) {
-            if (vector.length2(mouse.drag_vector_old[0]) < 30) {
+            if (vector.length2(mouse.drag_vector_old[0]) < 25) {
+              // dragged but for less than 5 pixels so it doesn't count
               if (o.shape.vertices.length === o.vertex_old.length) {
                 for (let i = 0; i < o.shape.vertices.length; i++) {
                   if (!o.vertex_old[i]) continue;

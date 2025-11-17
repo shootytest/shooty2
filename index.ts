@@ -52,19 +52,31 @@ let time = Number(document.timeline.currentTime ?? 0);
 const tick_all = (timestamp: number) => {
 
   const now = Math.round(timestamp * 10);
-  const real_dt = Math.min(300, ((time > -1) ? now - time : 0));
+  let real_dt = (time > -1) ? now - time : 0;
   const dt = real_dt * engine.timing.timeScale;
-  time = now;
-  camera.tick(dt);
+  if (config.graphics.fps < 60) {
+    const interval = config.seconds / config.graphics.fps;
+    if (real_dt < interval) {
+      requestAnimationFrame(tick_all);
+      return;
+    }
+    real_dt = interval;
+    time += real_dt;
+  }
+  else time = now;
   camera.location_target = player.camera_position();
   camera.scale_target = player.camera_scale();
   [ camera.z, camera.look_z ] = player.camera_zs();
   camera.scale_adjust2(camera.halfscreen);
+  camera.tick(dt);
   player.tick(real_dt);
   if (!player.paused) Thing.tick_things(dt);
   Spawner.tick_spawners();
   Particle.tick_particles(dt);
-  if (!player.paused && Thing.time > 500) Engine.update(engine, real_dt / 10);
+  if (!player.paused && Thing.time > 500) {
+    if (config.graphics.fps < 60) Engine.update(engine, 1000 / config.graphics.fps);
+    else Engine.update(engine); // , real_dt / 10);
+  }
   // ctx.clear();
   ctx.fill_screen(color.black);
   tick_colours(real_dt);
@@ -103,6 +115,7 @@ player.set_checkpoint(player.position);
 player.fov_mult = MAP.computed?.shape_map.start.options.sensor_fov_mult ?? 1;
 player.create_player();
 save.load_from_storage();
+save.load_settings();
 tick_colours(99 * config.seconds);
 
 // const shapelist = MAP.shapes?.sort((s1, s2) => (s1.computed?.depth ?? 0) - (s2.computed?.depth ?? 0)) ?? [];

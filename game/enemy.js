@@ -177,6 +177,8 @@ export class Spawner {
         e.wave_number = this.wave_progress + 1;
         e.create_room(this.room_id);
         this.enemies.push(e);
+        detector.before_spawn_fns[this.id]?.(e);
+        detector.before_spawn_fns[key]?.(e);
         return e;
     }
     do_waves() {

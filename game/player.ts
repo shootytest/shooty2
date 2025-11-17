@@ -18,6 +18,7 @@ export class Player extends Thing {
   fov_mult: number = 1;
   autosave_time: number = -1;
   last_floor_time: number = -1;
+  die_time: number = -1;
   old_position: vector3_ = vector.create();
   checkpoint: vector3 = vector3.create();
   checkpoint_room: string = "";
@@ -65,7 +66,6 @@ export class Player extends Thing {
   }
 
   tick(dt: number) {
-    if (!this.paused) super.tick(dt);
     if (vector.equal(this.camera_target_target, this.position)) {
       this.camera_target = this.position;
     }
@@ -131,8 +131,11 @@ export class Player extends Thing {
       }
       if (z < floor_z - 1.95) z = this.fall_back();
       else {
-        z = math.bound(z + this.target.vz, z < floor_z - 0.1 ? floor_z - 2 : floor_z, floor_z + 1000);
-        this.target.vz = this.target.vz - config.physics.player_gravity;
+        const v_mult = math.bound(dt / 167, 0, 3);
+        z = math.bound(z + this.target.vz * v_mult, z < floor_z - 0.1 ? floor_z - 2 : floor_z, floor_z + 1000);
+        if (Thing.time - this.die_time >= 0.5 * config.seconds) {
+          this.target.vz = this.target.vz - config.physics.player_gravity * v_mult;
+        }
       }
       if (controls.shoot || this.autoshoot) {
         this.shoot();
@@ -144,17 +147,21 @@ export class Player extends Thing {
       this.target.position.z = z;
       this.on_floor = (safe_floor && on_floor) ? 2 : (on_floor ? 1 : 0);
       this.floor_z = floor_z;
+      // only do thing tick after all that
+      super.tick(dt);
     }
   }
 
   jump(power = 1) {
     this.target.vz = power * config.physics.player_jump;
+    this.die_time -= config.seconds;
   }
 
   die() {
+    console.log(this.checkpoint, this.checkpoint_room);
     this.stats.deaths++;
     this.reset_velocity();
-    this.unload_all_rooms();
+    // this.unload_all_rooms();
     this.change_room(this.checkpoint_room, true);
     this.reload_all_rooms();
     this.target.vz = 0;
@@ -163,6 +170,7 @@ export class Player extends Thing {
     if (this.health) {
       this.health.heal_all();
       this.health.set_invincible(config.game.invincibility_time);
+      this.die_time = Thing.time;
     }
   }
 
@@ -206,8 +214,8 @@ export class Player extends Thing {
 
   remake_shoot(shoot_id?: string) {
     if (!shoot_id) shoot_id = this.current_gun;
-    this.make_shape("player", true);
-    this.make_shape("player_" + shoot_id);
+    this.make_shape_key("player", true);
+    this.make_shape_key("player_" + shoot_id);
   }
 
   save_but_health_only() {
