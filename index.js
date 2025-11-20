@@ -12,6 +12,7 @@ import { color } from "./util/color.js";
 import { config } from "./util/config.js";
 import { key, mouse } from "./util/key.js";
 import { map_serialiser, TEST_MAP } from "./util/map_type.js";
+import { math } from "./util/math.js";
 import { do_visibility, tick_colours } from "./util/see.js";
 import { vector, vector3 } from "./util/vector.js";
 Object.defineProperty(Array.prototype, "remove", { value: function (val) {
@@ -28,18 +29,20 @@ engine.timing.timeScale = config.timescale;
 export let MAP = map_serialiser.load("auto");
 if (MAP.shapes.length <= 0)
     MAP = TEST_MAP;
+let time = -1; // Number(document.timeline.currentTime ?? 0);
 const init_all = () => {
     init_canvas();
     // ui.init();
     detector.init();
     key.init();
     ui.init();
+    requestAnimationFrame(tick_all);
 };
-window.addEventListener("load", init_all);
-let time = Number(document.timeline.currentTime ?? 0);
 const tick_all = (timestamp) => {
     const now = Math.round(timestamp * 10);
-    let real_dt = (time > -1) ? now - time : 0;
+    if (time < 0)
+        time = now;
+    let real_dt = math.bound(now - time, 0, config.seconds * 100000);
     const dt = real_dt * engine.timing.timeScale;
     if (config.graphics.fps < 60) {
         const interval = config.seconds / config.graphics.fps;
@@ -77,7 +80,6 @@ const tick_all = (timestamp) => {
     mouse.tick();
     requestAnimationFrame(tick_all);
 };
-requestAnimationFrame(tick_all);
 map_serialiser.compute(MAP);
 export const make_from_map_shape = function (map_shape) {
     if (map_shape.options.is_spawner) {
@@ -106,10 +108,8 @@ player.create_player();
 save.load_from_storage();
 save.load_settings();
 tick_colours(99 * config.seconds);
-// const shapelist = MAP.shapes?.sort((s1, s2) => (s1.computed?.depth ?? 0) - (s2.computed?.depth ?? 0)) ?? [];
-// for (const map_shape of shapelist) {
-//   make_from_map_shape(map_shape);
-// }
+// init!
+window.addEventListener("load", init_all);
 // autoreload map
 window.localStorage.removeItem("reload");
 window.addEventListener("storage", function (event) {

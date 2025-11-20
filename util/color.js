@@ -141,6 +141,19 @@ export const color2hex_map = (c, theme_string) => {
     else
         return c;
 };
+export const mix_lookup = {};
+export const color_mix = (c1, c2, amount) => {
+    if (amount < 0.001)
+        return c1;
+    else if (amount > 0.999)
+        return c2;
+    const s = c1 + "|" + c2 + "|" + amount.toFixed(3);
+    if (mix_lookup[s])
+        return mix_lookup[s];
+    const result = chroma.mix(c1, c2, amount, "lab").hex();
+    mix_lookup[s] = result;
+    return result;
+};
 export const STYLES /*: { [key: string]: style_type }*/ = {
     // test colours
     error: {

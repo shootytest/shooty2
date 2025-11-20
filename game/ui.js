@@ -62,7 +62,7 @@ export const ui = {
         key.add_key_listener("KeyF", () => {
             player.autoshoot = !player.autoshoot;
         });
-        window.addEventListener("keydown", function (event) {
+        key.add_keydown_listener(function (event) {
             if (event.code === "Enter" && key.alt()) {
                 ui.toggle_fullscreen();
             }
@@ -71,7 +71,7 @@ export const ui = {
     tick: function (dt) {
         ui.tick_time++;
         ui.time += dt;
-        if (dt <= config.seconds) {
+        if (dt <= config.seconds && ui.tick_time >= 5) {
             ui.debug.dt_queue.push(dt);
             ui.debug.dt_total += dt;
             while (ui.debug.dt_queue.length > 100) {
@@ -148,13 +148,15 @@ export const ui = {
         ctx.text(`${display_fps.toFixed(2)} fps`, x, y);
         ctx.textAlign = "right";
         ctx.text(`${Shape.draw_shapes.length + Particle.particles.length}`, x + size * 10, y);
-        const real_max = math.max(...ui.debug.dt_queue);
-        const display_max = math.lerp(ui.debug.dt_max, real_max, real_max > ui.debug.dt_max ? 0.1 : 0.08);
-        ui.debug.dt_max = display_max;
         const points = [];
-        points.push(vector.create(x, y + size * 3));
-        for (let i = 0; i < ui.debug.dt_queue.length; i++) {
-            points.push(vector.create(ui.width - size / 10 * (105 - i), y + size + size * 2 * (1 - math.bound(ui.debug.dt_queue[i] / display_max, 0, 1))));
+        if (ui.debug.dt_queue.length) {
+            const real_max = math.max(...ui.debug.dt_queue);
+            const display_max = math.lerp(ui.debug.dt_max, real_max, real_max > ui.debug.dt_max ? 0.1 : 0.08);
+            ui.debug.dt_max = display_max;
+            points.push(vector.create(x, y + size * 3));
+            for (let i = 0; i < ui.debug.dt_queue.length; i++) {
+                points.push(vector.create(ui.width - size / 10 * (105 - i), y + size + size * 2 * (1 - math.bound(ui.debug.dt_queue[i] / display_max, 0, 1))));
+            }
         }
         points.push(vector.create(ui.width - size * 0.6, y + size * 3));
         ctx.lineWidth = size / 8;
@@ -189,7 +191,7 @@ export const ui = {
         ctx.beginPath();
         ctx.rectangle(x + r * 0.625 + w_ / 2, y, w_, r * 3);
         ctx.fill();
-        ctx.lineWidth = 1.25 * config.graphics.linewidth_mult;
+        ctx.lineWidth = r * 0.45;
         x = size * 7;
         const angle = -ui.time / config.seconds * config.graphics.health_rotate_speed;
         for (let i = 0; i < total_health; i++) {
@@ -209,7 +211,7 @@ export const ui = {
                 ctx.fillStyle = color.white + "33";
             }
             ctx.beginPath();
-            ctx.circle(x, y, r + config.graphics.linewidth_mult / 2);
+            ctx.circle(x, y, r + ctx.lineWidth / 2);
             ctx.fill();
             x += size * 3.5;
             if (i === health_ipart && health_fpart < 0.1)
@@ -230,9 +232,11 @@ export const ui = {
         if (!is_showing && ui.xp.change)
             ui.xp.change = 0;
         const old_x = x, old_y = y;
-        ctx.lineWidth = config.graphics.linewidth_mult * 2;
+        ctx.lineWidth = r * 0.75;
         ctx.set_font_mono(r * 1.5, "bold");
         ctx.strokeStyle = color.green + "aa";
+        x += ctx.lineWidth / 2;
+        w -= ctx.lineWidth;
         y += r * 2;
         if (config.graphics.xp_hide_bar) {
             ctx.ctx.save();
@@ -432,7 +436,7 @@ export const ui = {
         ctx.circle_v(centre, player.radius * camera.scale);
         ctx.fill();
         ctx.ctx.save();
-        player.shapes[0].draw();
+        player.shapes[0].draw_all();
         ctx.ctx.restore();
         const length = menu.length;
         ctx.strokeStyle = color.white;

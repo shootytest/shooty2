@@ -5,7 +5,7 @@ import { Shape } from "../game/shape.js";
 import { Common } from "../matter.js";
 import { camera } from "./camera.js";
 import { canvas, ctx } from "./canvas.js";
-import { color, color_theme, current_theme, THEMES, THEMES_UID_MAX } from "./color.js";
+import { color, color_mix, color_theme, current_theme, THEMES, THEMES_UID_MAX } from "./color.js";
 import { config } from "./config.js";
 import { math } from "./math.js";
 import { circle, segment, segment_point, vector, vector3 } from "./vector.js";
@@ -59,17 +59,17 @@ export const do_visibility = (_dt: number) => {
   const inverted = invert_path(path);
   let has_other_vertices = false;
   for (const other_key in other_vertices) {
-    let [alpha, z] = other_key.split("|").map((n) => Number(n));
+    const [alpha, z] = other_key.split("|").map((n) => Number(n));
     const inverted = invert_path(calc_visibility_path_2(player, other_vertices[other_key]));
     for (let z2 = Math.floor(z * 10) / 10; z2 < math.round_to(player.z + 1, 0.1); z2 += 0.1) {
-      const s = z2.toFixed(3);
-      if (!other_list[s]) other_list[s] = [];
-      other_list[s].push({ alpha, z, inverted });
+      const zs = z2.toFixed(3);
+      if (!other_list[zs]) other_list[zs] = [];
+      other_list[zs].push({ alpha, z, inverted });
     }
     has_other_vertices = true;
   }
 
-  // handle z stuff
+  // handle z stuff and calculate wall opacity
   const additional_zs: number[] = [];
   const see_lowest_z = Shape.see_z_range[0];
   wall_opacity = 0;
@@ -85,12 +85,13 @@ export const do_visibility = (_dt: number) => {
   for (const z of draw_zs) {
     ctx.ctx.save();
     clip_visibility_path(player, path, z);
-    Shape.draw(Number(z.toFixed(3)));
+    Shape.draw(z);
     Particle.draw_particles(z);
-    if (has_other_vertices && other_list[z.toFixed(3)]) {
-      for (const other of other_list[z.toFixed(3)]) {
+    const zs = z.toFixed(3);
+    if (has_other_vertices && other_list[zs]) {
+      for (const other of other_list[zs]) {
         ctx.ctx.save();
-        ctx.fillStyle = math.equal(z, other.z) ? chroma.mix(current_theme.dark, color.blackground, 0.5).hex("rgb") + math.component_to_hex(other.alpha * 255) : (color.blackground + math.component_to_hex(other.alpha * wall_opacity * 2));
+        ctx.fillStyle = math.equal(z, other.z) ? color_mix(current_theme.dark, color.blackground, 0.5) + math.component_to_hex(other.alpha * 255) : (color.blackground + math.component_to_hex(other.alpha * wall_opacity * 2));
         clip_path(player, other.inverted, z, true);
         ctx.ctx.restore();
       }
@@ -162,8 +163,8 @@ export const tick_colours = (dt: number) => {
       else current_theme.uid = math.lerp(current_theme.uid, theme.uid, math.bound(0.04 * dt / 160, 0, 1));
     } else {
       const c1 = current_theme[key as keyof color_theme], c2 = theme[key as keyof color_theme];
-      if (c1 == undefined || c2 == undefined) continue;
-      (current_theme as any)[key] = chroma.color(c1).mix(chroma.color(c2), mix_factor, "lab").hex(); // any >:(
+      if (c1 == undefined || c2 == undefined || typeof c1 === "number" || typeof c2 === "number") continue;
+      (current_theme as any)[key] = color_mix(c1, c2, mix_factor); // any >:(
     }
   }
 };

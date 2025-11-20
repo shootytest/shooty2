@@ -171,10 +171,13 @@ export const THEMES/*: { [key: string]: color_theme }*/ = {
   },
 
 };
+
 // export const THEMES_: { [key: string]: color_theme } = THEMES;
+
 export const THEMES_UID_MAX = Object.values(THEMES as { [key: string]: color_theme }).map((t) => t.uid).reduce((id1, id2) => Math.max(id1, id2)); // i don't normally put everything in 1 line lol
 
 export const current_theme: color_theme = clone_object(THEMES.default) as color_theme;
+
 
 export const color2hex = (c: string) => {
   return "" + ((current_theme as any)[c] ?? (THEMES.default as any)[c] ?? c);
@@ -188,7 +191,21 @@ export const color2hex_map = (c: string, theme_string: string) => {
   const tc = t[c] ?? (THEMES.default as any)[c];
   if (tc) return "" + tc;
   else return c;
-}
+};
+
+
+export const mix_lookup: { [key: string]: string } = {};
+
+export const color_mix = (c1: string, c2: string, amount: number) => {
+  if (amount < 0.001) return c1;
+  else if (amount > 0.999) return c2;
+  const s = c1 + "|" + c2 + "|" + amount.toFixed(3);
+  if (mix_lookup[s]) return mix_lookup[s];
+  const result = chroma.mix(c1, c2, amount, "lab").hex();
+  mix_lookup[s] = result;
+  return result;
+};
+
 
 export const STYLES/*: { [key: string]: style_type }*/ = {
 

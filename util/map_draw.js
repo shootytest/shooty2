@@ -203,12 +203,13 @@ export const map_draw = {
         const id_prefix = shape.id + "__";
         const selected = shape.id === m_ui.mouse.drag_target[0]?.shape?.id;
         for (const [i, v] of screen_vertices.entries()) {
-            if (!math.equal(v.z, 0) && shape.id !== m_ui.properties_selected.id)
+            if (!math.equal(v.z, 0) && shape.id !== m_ui.properties_selected.id && screen_vertices.length >= 2)
                 continue;
             const id_ = id_prefix + i;
             const vertex_size = (shape.id === "start") ? camera.scale * 30 : camera.sqrtscale * 5;
             const colorhex = color2hex_map((style.stroke ?? style.fill ?? color.purewhite), shape.options.room_id ?? "default");
-            if (selected || math.equal(v.z, 0)) {
+            // draw vertex circle
+            if (selected || math.equal(v.z, 0) || screen_vertices.length < 2) {
                 ctx.begin();
                 ctx.circle(v.x, v.y, vertex_size);
                 ctx.fillStyle = colorhex + (shadow ? "99" : "");
@@ -228,6 +229,22 @@ export const map_draw = {
                     }
                 }
             }
+            // draw room
+            if (shape.options.is_room && shape.options.room_connections && m_ui.editor.layers.rooms) {
+                for (const cid of shape.options.room_connections) {
+                    const connection = m_ui.map.computed?.shape_map[cid];
+                    if (!connection)
+                        continue;
+                    const cv = camera.world3screen(vector3.create_(connection.vertices[0], connection.z));
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = color.white + "55";
+                    ctx.lineWidth = camera.sqrtscale * 5;
+                    ctx.line_v(v, cv);
+                }
+            }
+            if (!math.equal(v.z, 0) && shape.id !== m_ui.properties_selected.id)
+                continue;
+            // draw hover circle (faint)
             const hove_r = Math.max(6, vertex_size + camera.sqrtscale * 5);
             if (vector.in_circle(mouse.position, v, hove_r)) {
                 // mouse hover
@@ -254,6 +271,7 @@ export const map_draw = {
                     m_ui.select_shape(target); // ui.circle_menu.target = target;
                 }, 2);
             }
+            // draw selected circle (stroke)
             if (m_ui.mouse.drag_target[0].id === id_) {
                 ctx.begin();
                 ctx.circle(v.x, v.y, hove_r);
@@ -297,6 +315,7 @@ export const map_draw = {
                         ov.y = math.round_to(ov.y + change.y, round_to_number);
                     }
                 }
+                // handle vertex drag end
                 if (m_ui.mouse.release_click) {
                     /*if (vector.in_circle(mouse.position, v, 10) && (mouse.drag_vector_old[0] === false || vector.length2(mouse.drag_vector_old[0]) < 30)) {
                       ui.circle_menu.active = true;
@@ -335,19 +354,6 @@ export const map_draw = {
                     }
                     else {
                     }
-                }
-            }
-            // draw room
-            if (shape.options.is_room && shape.options.room_connections && m_ui.editor.layers.rooms) {
-                for (const cid of shape.options.room_connections) {
-                    const connection = m_ui.map.computed?.shape_map[cid];
-                    if (!connection)
-                        continue;
-                    const cv = camera.world3screen(vector3.create_(connection.vertices[0], connection.z));
-                    ctx.globalAlpha = 1;
-                    ctx.strokeStyle = color.white + "55";
-                    ctx.lineWidth = camera.sqrtscale * 5;
-                    ctx.line_v(v, cv);
                 }
             }
         }

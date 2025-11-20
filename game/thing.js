@@ -332,7 +332,7 @@ export class Thing {
                     b_.thing = this;
                     if (this.options.force_wall_body /* && z_offset !== (this.options.force_wall_ground ?? 0)*/) {
                         b_.z = z_offset;
-                        b_.normal = normals[i];
+                        b_.normal = normals[i]; // unused for now
                     }
                     // Composite.add(composite, b);
                     Composite.add(world, b_);

@@ -18,7 +18,7 @@ export class Player extends Thing {
   fov_mult: number = 1;
   autosave_time: number = -1;
   last_floor_time: number = -1;
-  die_time: number = -1;
+  die_time: number = 0;
   old_position: vector3_ = vector.create();
   checkpoint: vector3 = vector3.create();
   checkpoint_room: string = "";
@@ -76,8 +76,9 @@ export class Player extends Thing {
       left: keys["ArrowLeft"] === true || (keys["KeyA"] === true),
       right: keys["ArrowRight"] === true || (keys["KeyD"] === true),
       jump: (config.game.debug_mode || save.check_switch("jump")) && keys["Space"] === true,
-      shoot: keys["Mouse"] === true,
-      rshoot: keys["MouseRight"] === true || ((keys["ShiftLeft"] === true || keys["ShiftRight"] === true)),
+      dash: (config.game.debug_mode || save.check_switch("dash")) && (keys["ShiftLeft"] === true || keys["ShiftRight"] === true),
+      shoot: keys["Mouse"] === true || keys["KeyJ"] === true,
+      rshoot: keys["MouseRight"] === true || keys["KeyK"] === true,
       facingx: Math.floor(camera.mouse_v.x),
       facingy: Math.floor(camera.mouse_v.y),
     };
@@ -255,6 +256,7 @@ export class Player extends Thing {
       this.teleport_to(o.position);
     }
     this.change_room(o.room_id ?? MAP.computed?.shape_map.start.options.room_connections?.[0] ?? "", true);
+    this.target.vz = 0;
     if (o.checkpoint) this.checkpoint = vector3.clone(o.checkpoint);
     if (o.checkpoint_room) this.checkpoint_room = o.checkpoint_room;
     if (o.fov_mult) this.fov_mult = o.fov_mult;
@@ -325,11 +327,11 @@ export class Player extends Thing {
 
   connected_rooms(depth: number = 1, room_id?: string): string[] {
     if (!room_id) room_id = this.room_id;
-    if (depth === 0) return [room_id];
+    if (depth <= 0) return [room_id];
     const result: string[] = [];
     result.push(room_id);
     for (const id of (MAP.computed?.shape_map[room_id]?.options.room_connections ?? [])) {
-      const new_depth = ["station"].includes(id) ? depth : depth - 1;
+      const new_depth = ["station streets", "station tutorial"].includes(id) ? depth : depth - 1;
       for (const i of this.connected_rooms(new_depth, id)) {
         if (result.includes(i)) continue;
         result.push(i);

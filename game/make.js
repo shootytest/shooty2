@@ -39,6 +39,15 @@ make.wall_floor = {
     force_wall_body: true,
     seethrough: true,
 };
+make.wall_floor_halfwidth = {
+    wall_filter: "wall",
+    style: "wall_floor",
+    force_wall_body: true,
+    seethrough: true,
+    style_: {
+        width: 0.5,
+    },
+};
 make.wall_part = {
     wall_filter: "wall",
     style: "wall",
@@ -1028,6 +1037,14 @@ export const make_rooms = {
     },
     ["streets room 1"]: {
         theme: "streets",
+    },
+    ["streets room 2"]: {
+        theme: "streets",
+    },
+    ["streets side room 1"]: {
+        theme: "streets",
+        theme_mix: "tutorial",
+        theme_mix_strength: 0.2,
     },
 };
 const calculated_keys = ["default"];

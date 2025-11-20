@@ -50,7 +50,7 @@ export class Shoot {
 
   tick(dt: number) {
     if (this.time < (this.stats.reload ?? 0)) {
-      this.time += dt / config.seconds;
+      this.time += math.bound(dt / config.seconds, 0, (this.stats.reload ?? 0));
       this.update_shape();
     }
     if (this.delayed > 0 && Thing.time >= this.delayed) {

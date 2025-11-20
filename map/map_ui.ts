@@ -9,6 +9,7 @@ import { TEST_MAP, map_serialiser, map_shape_options_type, map_shape_type, map_t
 import { settings_default } from "./settings.js";
 import { SVG } from "../util/svg.js";
 import { make, override_object } from "../game/make.js";
+import { save_map_settings } from "./map_index.js";
 
 // globals, why not?
 let width = canvas.width;
@@ -113,6 +114,7 @@ export const m_ui = {
         } else {
           if (event.code === "KeyR") dz -= camera.look_z;
           camera.look_z = math.round_to(camera.look_z + dz, 0.1);
+          save_map_settings();
         }
       }
       if (event.code === "KeyZ" && event.ctrlKey) {
@@ -212,11 +214,17 @@ export const m_ui = {
       if (keys.KeyS) dy += 1;
       if (keys.KeyA) dx -= 1;
       if (keys.KeyD) dx += 1;
-      if (dx !== 0 || dy !== 0) camera.move_by(vector.mult(vector.normalise(vector.create(dx, dy)), MOVE_SPEED / camera.scale));
+      if (dx !== 0 || dy !== 0) {
+        camera.move_by(vector.mult(vector.normalise(vector.create(dx, dy)), MOVE_SPEED / camera.scale));
+        save_map_settings();
+      }
       let dz = 1;
       if (keys.KeyQ) dz *= 1.08;
       if (keys.KeyE) dz /= 1.08;
-      if (dz !== 1) camera.scale_by(camera.halfscreen, dz);
+      if (dz !== 1) {
+        camera.scale_by(camera.halfscreen, dz);
+        save_map_settings();
+      }
     }
   },
 
@@ -715,6 +723,7 @@ export const m_ui = {
   update_camera: function() {
     if (m_ui.mouse.click && m_ui.mouse.drag_target[0]?.id == undefined) {
       camera.move_by_mouse();
+      save_map_settings();
     }
     if (m_ui.mouse.rclick) {
       // camera.move_by_mouse();
@@ -725,6 +734,7 @@ export const m_ui = {
       } else {
         camera.scale_by(vector.clone(mouse.position), 1 / 1.3);
       }
+      save_map_settings();
     }
   },
 

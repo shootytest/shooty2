@@ -119,7 +119,7 @@ export class Shape {
       // cullingz
       if (s.computed.z_range) if (s.max_z < camera.look_z - 1 - math.epsilon || s.min_z > camera.z + math.epsilon) continue;
       else if (z < camera.look_z - 1 - math.epsilon || z > camera.z + math.epsilon) continue;
-      s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position);
+      s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position); // bottleneck
       if (memo_aabb3[z_string] == undefined) {
         const z_scale = camera.zscale_inverse(z >= 0 ? 0 : z);
         memo_aabb3[z_string] = vector3.aabb_scale(screen_aabb, vector3.create(z_scale, z_scale, 1));
@@ -191,14 +191,14 @@ export class Shape {
       return p1.z - p2.z;
     });
 
-    Shape.calc_vertices();
-    Shape.calc_other_vertices();
+    Shape.see_vertices = Shape.calc_vertices();
+    Shape.see_other_vertices = Shape.calc_other_vertices();
 
   };
 
   static draw(z?: number) {
     for (const s of Shape.draw_shapes) {
-      if (z != undefined && s.z !== z) continue;
+      if (z != undefined && !math.equal(s.z, z)) continue;
       s.draw_all();
     }
     ctx.globalAlpha = 1;
@@ -223,7 +223,6 @@ export class Shape {
       result.push(vs);
     }
     if (Shape.draw_shapes.length > 0) Shape.see_z_range = [min_z, max_z];
-    Shape.see_vertices = result;
     return result;
   };
 

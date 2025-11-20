@@ -350,7 +350,7 @@ export class Thing {
           (b_ as any).thing = this;
           if (this.options.force_wall_body/* && z_offset !== (this.options.force_wall_ground ?? 0)*/) {
             (b_ as any).z = z_offset;
-            (b_ as any).normal = normals[i];
+            (b_ as any).normal = normals[i]; // unused for now
           }
           // Composite.add(composite, b);
           Composite.add(world, b_);
