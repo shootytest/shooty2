@@ -237,6 +237,8 @@ export const detector = {
         a.die();
       } else if (b.options.breakable || (!different_team && a.team > 0)) {
         pair.isSensor = true;
+        a.object.breakables_hit = (a.object.breakables_hit ?? 0) + 1;
+        if (b.options.xp) b.options.xp *= a.object.breakables_hit;
       }
     }
     if (a.damage > 0 && b.health && b.health.capacity > 0 && different_team && hittingz) {

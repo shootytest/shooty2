@@ -1,7 +1,10 @@
+import { color, STYLES_ } from "../util/color.js";
+import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
-import { make } from "./make.js";
+import { make, make_shapes, make_waves, shallow_clone_array } from "./make.js";
+import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
 import { Thing } from "./thing.js";
@@ -34,7 +37,7 @@ export class Enemy extends Thing {
             this.team += (Enemy.cumulative_team_ids[this.team]++) * 0.000000000001; // a trillion possible enemies per team
         }
         this.position = position;
-        this.original_position = vector3.create_(position);
+        this.original_position = vector3.clone(position);
         if (!this.options.angle)
             this.angle = math.rand(0, Math.PI * 2);
         if (!this.options.decoration)
@@ -66,8 +69,11 @@ export class Enemy extends Thing {
         super.remove();
     }
     remove_spawner() {
-        this.spawner.enemies.remove(this);
-        this.spawner.calc_progress();
+        const s = this.spawner;
+        s.enemies.remove(this);
+        if (s.parent !== s)
+            s.parent.enemies.remove(this);
+        s.calc_progress();
     }
     remove_static() {
         this.remove_spawner();
@@ -117,17 +123,33 @@ export class Spawner {
     uid = ++Spawner.cumulative_id;
     id = "generic spawner #" + this.uid;
     room_id = "";
-    spawn;
-    waves = [];
-    wave_progress = 0;
     z = 0;
     vertices = [];
+    spawn;
+    wave;
+    waves = [];
+    wave_progress = 0;
     enemies = [];
+    total_enemies = -1;
     delays = [];
+    contains = [];
+    parent = this;
+    children = [];
     permanent = false;
     removed = false;
     constructor() {
         Spawner.spawners.push(this);
+    }
+    get is_done() {
+        if (this.spawn) {
+            return this.wave_progress >= 1;
+        }
+        else if (this.wave) {
+            return this.wave_progress >= this.waves.length;
+        }
+        else {
+            return false;
+        }
     }
     make_map(o) {
         this.vertices = vector.clone_list(o.vertices);
@@ -138,17 +160,33 @@ export class Spawner {
                 Spawner.spawners_rooms[this.room_id] = [];
             Spawner.spawners_rooms[this.room_id].push(this);
         }
-        this.spawn = {
-            enemy: o.options.spawn_enemy ?? "enemy",
-            delay: o.options.spawn_delay,
-            repeat: o.options.spawn_repeat,
-            repeat_delay: o.options.spawn_repeat_delay,
-        };
         this.z = Number(o.z.toFixed(3));
+        if (make_waves[o.id]) {
+            this.contains = shallow_clone_array(o.options.contains ?? []);
+            this.wave = make_waves[o.id];
+            this.waves = this.wave.rounds;
+        }
+        else if (o.options.spawn_enemy) {
+            this.spawn = {
+                type: o.options.spawn_enemy ?? "enemy",
+                delay: o.options.spawn_delay,
+                repeat: o.options.spawn_repeat,
+                repeat_delay: o.options.spawn_repeat_delay,
+            };
+        }
+        else {
+            // just a shape for others to use, do nothing
+        }
         if (o.options.spawn_permanent)
-            this.permanent = o.options.spawn_permanent;
+            this.permanent = Boolean(o.options.spawn_permanent);
         if (this.permanent) {
-            this.wave_progress = save.get_switch(this.id);
+            const stored = save.get_switch(this.id);
+            if (this.spawn) {
+                this.wave_progress = stored;
+            }
+            else if (this.wave && this.wave_progress >= this.waves.length) {
+                this.wave_progress = stored;
+            }
         }
     }
     create_id(id) {
@@ -156,46 +194,114 @@ export class Spawner {
         Spawner.spawners_lookup[id] = this;
     }
     tick() {
-        if (this.spawn && this.wave_progress <= 0 && this.enemies.length <= 0) {
-            for (let i = 0; i < (this.spawn.repeat ?? 1); i++) {
-                this.delays.push({ enemy: this.spawn.enemy, time: Thing.time + (this.spawn.delay ?? 0) + i * (this.spawn.repeat_delay ?? 0) });
+        if (this.spawn && this.wave_progress <= 0 && this.total_enemies < 0) {
+            this.total_enemies = this.do_spawn(this.spawn);
+        }
+        else if (this.wave && this.waves.length >= 1 && this.wave_progress < this.waves.length) {
+            if (this.total_enemies < 0) {
+                this.do_waves(this.waves[this.wave_progress]);
+            }
+            else {
+                // todo other types of wave?
             }
         }
-        else if (this.waves.length >= 1 && this.wave_progress < this.waves.length + 1) {
-            // todo waves
+        else {
+            // ???
         }
         this.delays = this.delays.filter((d) => {
             if (Thing.time < d.time)
                 return true;
-            this.spawn_enemy(d.enemy);
+            this.spawn_enemy(d.type, d.position);
             return false;
         });
     }
-    spawn_enemy(key, position) {
+    do_spawn(spawn) {
+        for (let i = 0; i < (spawn.repeat ?? 1); i++) {
+            const seconds = ((spawn.delay ?? 0) + i * (spawn.repeat_delay ?? 0));
+            const delay = {
+                type: spawn.type,
+                time: Thing.time + seconds * config.seconds,
+                position: vector3.create2(this.random_position(), this.z),
+            };
+            if (seconds > 0) {
+                const p = Particle.make_icon("spawn", (make_shapes[spawn.type]?.[0]?.radius ?? 30) * 2, delay.position);
+                p.time = delay.time;
+                const style = make[spawn.type]?.style;
+                if (style !== undefined) {
+                    p.style.fill = STYLES_[style].fill;
+                }
+                else {
+                    p.style.fill = color.spawner;
+                }
+                p.style.opacity = 0.8;
+                p.z = this.z;
+                delay.particle = p;
+            }
+            this.delays.push(delay);
+        }
+        return spawn.repeat ?? 1;
+    }
+    do_waves(wave) {
+        let total = 0;
+        for (const e of wave.enemies) {
+            let spawner = this;
+            if (typeof e.spawner === "number") {
+                spawner = this.spawner_lookup(this.contains[e.spawner]);
+            }
+            else if (typeof e.spawner === "string") {
+                spawner = this.spawner_lookup(e.spawner);
+            }
+            if (spawner == undefined)
+                return;
+            spawner.parent = this;
+            if (!this.children.includes(spawner))
+                this.children.push(spawner);
+            total += spawner.do_spawn(e);
+        }
+        this.total_enemies = total;
+    }
+    spawn_enemy(type, position) {
         const e = new Enemy(this);
-        e.make_enemy(key, position ?? this.random_position(), this.room_id);
+        e.make_enemy(type, position ?? vector3.create2(this.random_position(), this.z), this.room_id);
         e.wave_number = this.wave_progress + 1;
         e.create_room(this.room_id);
         this.enemies.push(e);
+        if (this.parent !== this)
+            this.parent.enemies.push(e);
         detector.before_spawn_fns[this.id]?.(e);
-        detector.before_spawn_fns[key]?.(e);
+        detector.before_spawn_fns[type]?.(e);
         return e;
-    }
-    do_waves() {
     }
     calc_progress() {
         if (this.removed)
             return;
+        if (this.parent !== this)
+            this.parent.calc_progress();
         if (this.spawn) {
             this.wave_progress = (this.enemies.length <= 0) ? 1 : 0;
         }
+        else if (this.wave) {
+            if (this.enemies.length <= 0 && this.children_delay_count() <= 0) {
+                this.wave_progress += 1;
+                if (this.wave_progress < this.waves.length) {
+                    this.do_waves(this.waves[this.wave_progress]);
+                }
+            }
+        }
         else {
-            // todo waves
+            // ???
         }
         if (this.permanent && this.wave_progress > -1) {
             save.set_switch(this.id, this.wave_progress);
         }
         detector.spawner_calc_fns[this.id]?.(this);
+    }
+    children_delay_count() {
+        let total = 0;
+        for (const c of this.children) {
+            total += c.delays.length;
+        }
+        return total;
     }
     random_position() {
         if (this.vertices.length === 0) {
@@ -217,6 +323,9 @@ export class Spawner {
         return Thing.things_lookup[thing_id];
         // if (!thing) console.error("[enemy/thing_lookup] thing id not found: " + thing_id);
         // return thing;
+    }
+    spawner_lookup(spawner_id) {
+        return Spawner.spawners_lookup[spawner_id];
     }
 }
 ;

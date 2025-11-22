@@ -1,6 +1,7 @@
 import { STYLES, THEMES } from "../util/color.js";
 import { style_type } from "../util/map_type.js";
 import { vector, vector3_ } from "../util/vector.js";
+import { enemy_spawn } from "./enemy.js";
 
 
 // types
@@ -269,16 +270,15 @@ make.wall_train = {
   keep_bullets: true,
 };
 
-make.wall_tutorial_window = {
-  // make_parent: ["wall"], // hmmm it's not needed for now
-  style: "tutorial_window",
+make.wall_window = {
   wall_filter: "window",
+  style: "wall_window",
   keep_bullets: true,
   seethrough: true,
 };
 make.wall_tutorial_curtain = {
-  style: "tutorial_curtain",
   wall_filter: "curtain",
+  style: "tutorial_curtain",
   seethrough: true,
 };
 make.wall_tutorial_rock_breakable = {
@@ -1353,6 +1353,62 @@ export const make_rooms = {
   },
 
 } as { [key: string]: maketype_room };
+
+
+
+
+
+// @waves
+
+
+export interface maketype_wave {
+  rounds: maketype_wave_round[];
+};
+
+export interface maketype_wave_round {
+  enemies: maketype_wave_enemy[];
+};
+
+export interface maketype_wave_enemy extends enemy_spawn {
+  // enemy_spawn for reference
+  // type: string;
+  // delay?: number;
+  // repeat?: number;
+  // repeat_delay?: number;
+  spawner?: number | string; // index or id both accepted
+};
+
+export const make_waves = {
+
+  ["streets side room 1 test"]: {
+    rounds: [{
+      enemies: [
+        {
+          type: "enemy_streets_camera_small",
+          repeat: 3,
+          repeat_delay: 1,
+          spawner: 0,
+        },
+      ],
+    }, {
+      enemies: [
+        {
+          type: "enemy_streets_camera_small",
+          repeat: 3,
+          repeat_delay: 1,
+          spawner: 0,
+        },
+        {
+          type: "enemy_streets_rocky_small",
+          repeat: 2,
+          repeat_delay: 1,
+          spawner: 1,
+        },
+      ],
+    }],
+  },
+
+} as { [key: string]: maketype_wave };
 
 
 

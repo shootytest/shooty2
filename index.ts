@@ -93,8 +93,14 @@ map_serialiser.compute(MAP);
 
 export const make_from_map_shape = function(map_shape: map_shape_type) {
   if (map_shape.options.is_spawner) {
-    const s = new Spawner();
-    s.make_map(map_shape);
+    if (map_shape.options.spawn_enemy) {
+      const s = new Spawner();
+      s.make_map(map_shape);
+    } else {
+      // is a wave
+      const s = new Spawner();
+      s.make_map(map_shape);
+    }
   } else {
     if (map_shape.vertices.length < 2) return;
     if (map_shape.options.parent && map_shape.options.merge) {

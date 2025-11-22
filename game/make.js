@@ -73,16 +73,15 @@ make.wall_train = {
     seethrough: true,
     keep_bullets: true,
 };
-make.wall_tutorial_window = {
-    // make_parent: ["wall"], // hmmm it's not needed for now
-    style: "tutorial_window",
+make.wall_window = {
     wall_filter: "window",
+    style: "wall_window",
     keep_bullets: true,
     seethrough: true,
 };
 make.wall_tutorial_curtain = {
-    style: "tutorial_curtain",
     wall_filter: "curtain",
+    style: "tutorial_curtain",
     seethrough: true,
 };
 make.wall_tutorial_rock_breakable = {
@@ -1045,6 +1044,38 @@ export const make_rooms = {
         theme: "streets",
         theme_mix: "tutorial",
         theme_mix_strength: 0.2,
+    },
+};
+;
+;
+;
+export const make_waves = {
+    ["streets side room 1 test"]: {
+        rounds: [{
+                enemies: [
+                    {
+                        type: "enemy_streets_camera_small",
+                        repeat: 3,
+                        repeat_delay: 1,
+                        spawner: 0,
+                    },
+                ],
+            }, {
+                enemies: [
+                    {
+                        type: "enemy_streets_camera_small",
+                        repeat: 3,
+                        repeat_delay: 1,
+                        spawner: 0,
+                    },
+                    {
+                        type: "enemy_streets_rocky_small",
+                        repeat: 2,
+                        repeat_delay: 1,
+                        spawner: 1,
+                    },
+                ],
+            }],
     },
 };
 const calculated_keys = ["default"];

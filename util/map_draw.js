@@ -1,4 +1,4 @@
-import { make } from "../game/make.js";
+import { clone_object, make, override_object } from "../game/make.js";
 import { m_ui } from "../map/map_ui.js";
 import { camera } from "./camera.js";
 import { color, color2hex_map, STYLES, STYLES_ } from "./color.js";
@@ -150,21 +150,21 @@ export const map_draw = {
                 return 0;
             });
             for (const shape of map_draw.shapes_on_screen) {
-                map_draw.draw_shape(ctx, shape);
-                map_draw.draw_shape_ui(ctx, shape);
+                const style = map_draw.get_style(shape);
+                map_draw.draw_shape(ctx, shape, style);
+                map_draw.draw_shape_ui(ctx, shape, style);
                 if (m_ui.editor.layers.z >= 2 && Math.abs(shape.z - camera.look_z) > math.epsilon) {
-                    map_draw.draw_shape(ctx, shape, true);
-                    map_draw.draw_shape_ui(ctx, shape, true);
+                    map_draw.draw_shape(ctx, shape, style, true);
+                    map_draw.draw_shape_ui(ctx, shape, style, true);
                 }
             }
         }
     },
-    draw_shape: (ctx, shape, shadow = false) => {
+    draw_shape: (ctx, shape, style, shadow = false) => {
         if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0 || shape.computed.shadow_vertices == undefined)
             return;
-        const style = map_draw.get_style(shape);
         const open_loop = Boolean(shape.options.open_loop);
-        ctx.save("draw_shape");
+        ctx.ctx.save();
         ctx.beginPath();
         ctx.lines_v((shadow ? shape.computed.shadow_vertices : shape.computed.screen_vertices), !open_loop);
         ctx.lineCap = "square";
@@ -173,9 +173,9 @@ export const map_draw = {
         if (style.stroke) {
             ctx.strokeStyle = color2hex_map(style.stroke, shape.options.room_id ?? "default");
             ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
+            ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (shadow ? 0.6 : 1);
+            ctx.stroke();
         }
-        ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (shadow ? 0.6 : 1);
-        ctx.stroke();
         if (style.fill && !open_loop) {
             ctx.fillStyle = color2hex_map(style.fill, shape.options.room_id ?? "default");
             ctx.globalAlpha = math.bound((style.opacity ?? 1) * (style.fill_opacity ?? 1) * (shadow ? 0.6 : 1), 0, 0.75);
@@ -193,13 +193,12 @@ export const map_draw = {
             ctx.rect(aabb2.min_x, aabb2.min_y, aabb2.max_x - aabb2.min_x, aabb2.max_y - aabb2.min_y);
             ctx.stroke();
         }
-        ctx.restore("draw_shape");
+        ctx.ctx.restore();
     },
-    draw_shape_ui: (ctx, shape, shadow = false) => {
+    draw_shape_ui: (ctx, shape, style, shadow = false) => {
         if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0 || shape.computed.shadow_vertices == undefined)
             return;
         const screen_vertices = shadow ? shape.computed.shadow_vertices : shape.computed.screen_vertices;
-        const style = map_draw.get_style(shape);
         const id_prefix = shape.id + "__";
         const selected = shape.id === m_ui.mouse.drag_target[0]?.shape?.id;
         for (const [i, v] of screen_vertices.entries()) {
@@ -208,6 +207,19 @@ export const map_draw = {
             const id_ = id_prefix + i;
             const vertex_size = (shape.id === "start") ? camera.scale * 30 : camera.sqrtscale * 5;
             const colorhex = color2hex_map((style.stroke ?? style.fill ?? color.purewhite), shape.options.room_id ?? "default");
+            // draw room
+            if (shape.options.is_room && shape.options.room_connections && m_ui.editor.layers.rooms) {
+                for (const cid of shape.options.room_connections) {
+                    const connection = m_ui.map.computed?.shape_map[cid];
+                    if (!connection)
+                        continue;
+                    const cv = camera.world3screen(vector3.create_(connection.vertices[0], connection.z));
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = color.white + "55";
+                    ctx.lineWidth = camera.sqrtscale * 5;
+                    ctx.line_v(v, cv);
+                }
+            }
             // draw vertex circle
             if (selected || math.equal(v.z, 0) || screen_vertices.length < 2) {
                 ctx.begin();
@@ -227,19 +239,6 @@ export const map_draw = {
                         ctx.set_font_mono(size);
                         ctx.text("" + i, v.x + size, v.y + size);
                     }
-                }
-            }
-            // draw room
-            if (shape.options.is_room && shape.options.room_connections && m_ui.editor.layers.rooms) {
-                for (const cid of shape.options.room_connections) {
-                    const connection = m_ui.map.computed?.shape_map[cid];
-                    if (!connection)
-                        continue;
-                    const cv = camera.world3screen(vector3.create_(connection.vertices[0], connection.z));
-                    ctx.globalAlpha = 1;
-                    ctx.strokeStyle = color.white + "55";
-                    ctx.lineWidth = camera.sqrtscale * 5;
-                    ctx.line_v(v, cv);
                 }
             }
             if (!math.equal(v.z, 0) && shape.id !== m_ui.properties_selected.id)
@@ -376,8 +375,22 @@ export const map_draw = {
     get_style: (shape) => {
         if (shape.options.is_spawner)
             return STYLES.spawner;
-        const style_maybe = shape.options.make_id != undefined ? make[shape.options.make_id]?.style : undefined;
-        return STYLES_[shape.options.style ?? style_maybe ?? "error"] ?? STYLES.error;
+        if (shape.options.is_room && shape.id !== "start")
+            return STYLES.room;
+        if (shape.options.make_id != undefined) {
+            const m = make[shape.options.make_id];
+            if (!m)
+                return STYLES.error;
+            if (!m.style && m.style_)
+                return clone_object(m.style_);
+            const result = clone_object(STYLES_[shape.options.style ?? m.style ?? "error"] ?? STYLES.error);
+            if (m.style_)
+                override_object(result, m.style_);
+            return result;
+        }
+        else {
+            return STYLES_[shape.options.style ?? "error"] ?? STYLES.error;
+        }
     },
     change: (type, shapes) => {
         if (!Array.isArray(shapes))

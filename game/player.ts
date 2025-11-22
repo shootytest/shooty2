@@ -331,7 +331,7 @@ export class Player extends Thing {
     const result: string[] = [];
     result.push(room_id);
     for (const id of (MAP.computed?.shape_map[room_id]?.options.room_connections ?? [])) {
-      const new_depth = ["station streets", "station tutorial"].includes(id) ? depth : depth - 1;
+      const new_depth = id.startsWith("station") ? depth - 0.5 : depth - 1;
       for (const i of this.connected_rooms(new_depth, id)) {
         if (result.includes(i)) continue;
         result.push(i);

@@ -54,7 +54,7 @@ export const color /*: { [key: string]: `#${string}` }*/ = {
     error: "#ff0000",
     test: "#abcdef",
     testy: "#123456",
-    start: "#00ddff99",
+    start: "#00ddff",
     player: "#eeeeee",
     home: "#cadbca",
     home_floor: "#445544",
@@ -118,7 +118,7 @@ export const THEMES /*: { [key: string]: color_theme }*/ = {
     streets: {
         uid: 8,
         main: "#77adea",
-        alt: "#778eea",
+        alt: "#7977ea",
         dark: "#4b98db",
         dark2: "#478baf",
         floor: "#21323d",
@@ -165,9 +165,9 @@ export const STYLES /*: { [key: string]: style_type }*/ = {
         fill: color.test + "99",
         fill_opacity: 0.8,
     },
-    // map colours
+    // map maker styles
     start: {
-        stroke: color.start,
+        stroke: color.start + "99",
     },
     switch: {
         stroke: color.sensor,
@@ -189,6 +189,10 @@ export const STYLES /*: { [key: string]: style_type }*/ = {
         stroke_opacity: 0,
         fill: color.spawner,
         fill_opacity: 0.3,
+    },
+    room: {
+        fill: color.start,
+        stroke: color.start,
     },
     // collectible colours
     coin_rock_1: {
@@ -262,7 +266,7 @@ export const STYLES /*: { [key: string]: style_type }*/ = {
         fill: "floor",
         fill_opacity: 1,
     },
-    tutorial_window: {
+    wall_window: {
         stroke: "alt",
         fill: "alt",
         fill_opacity: 0.2,

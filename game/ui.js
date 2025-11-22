@@ -195,27 +195,33 @@ export const ui = {
         x = size * 7;
         const angle = -ui.time / config.seconds * config.graphics.health_rotate_speed;
         for (let i = 0; i < total_health; i++) {
+            ctx.fillStyle = color.white + "33";
             if (i < health_display - math.epsilon_bigger) {
-                if (i === health_ipart && health_fpart < 0.1)
-                    ctx.globalAlpha = 0.5 + health_fpart * 5;
-                ctx.fillStyle = color.white + "66";
                 ctx.strokeStyle = color.white;
                 ctx.beginPath();
-                if (i === health_ipart)
+                if (i === health_ipart) {
+                    if (health_fpart < 0.1) {
+                        ctx.strokeStyle = color.white + math.component_to_hex(255 * (health_fpart * 10) ** 2);
+                        ctx.fillStyle = color.white + math.component_to_hex(51 * (health_fpart * 10) ** 2);
+                    }
                     ctx.arc(x, y, r, angle % (Math.PI * 2), (angle - health_fpart * Math.PI * 2) % (Math.PI * 2));
-                else
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.circle(x, y, r * 1.2);
+                    ctx.fill();
+                }
+                else {
                     ctx.circle(x, y, r);
-                ctx.stroke();
+                    ctx.stroke();
+                    ctx.fill();
+                }
             }
-            else {
+            if (i === health_ipart && health_fpart < 0.1)
                 ctx.fillStyle = color.white + "33";
-            }
             ctx.beginPath();
             ctx.circle(x, y, r + ctx.lineWidth / 2);
             ctx.fill();
             x += size * 3.5;
-            if (i === health_ipart && health_fpart < 0.1)
-                ctx.globalAlpha = 1;
         }
         x = size * 7 - r * 2;
         // xp
