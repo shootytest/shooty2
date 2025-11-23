@@ -11,6 +11,7 @@ export const save = {
     save: {
         version: config.game.version,
         player: {},
+        map: {},
         switches: {},
         currencies: {},
     },
@@ -21,7 +22,7 @@ export const save = {
         return save.save.switches[id] ?? -1;
     },
     check_switch: (id) => {
-        return save.save.switches[id] > 0;
+        return save.get_switch(id) > 0;
     },
     set_switch: (id, number = 1) => {
         save.save.switches[id] = number;
@@ -33,6 +34,18 @@ export const save = {
     },
     set_switch_time: (id, time = -1) => {
         save.switch_times[id] = time;
+    },
+    get_map: (id) => {
+        return save.save.map[id] ?? -1;
+    },
+    check_map: (id) => {
+        return save.get_map(id) > 0;
+    },
+    visit_map: (id) => {
+        if (!save.save.map[id])
+            save.save.map[id] = 0;
+        save.save.map[id]++;
+        save.changed(true);
     },
     get_currency: (name) => {
         return save.save.currencies[name] ?? 0;
@@ -57,6 +70,7 @@ export const save = {
         return {
             version: config.game.version,
             player: {},
+            map: {},
             switches: {},
             currencies: {},
         };

@@ -48,20 +48,30 @@ export const ui = {
             ui.click.new_fns_exist = [false, false, false];
         },
     },
+    pause_fn: () => {
+        player.paused = !player.paused;
+        player.map_mode = false;
+        ui.settings.open = false;
+        ui.settings.start_time = -1;
+        ui.pause.start_time = player.paused ? ui.time : -1;
+        if (!player.paused)
+            return true;
+    },
+    map_fn: () => {
+        player.paused = player.map_mode;
+        ui.pause_fn();
+        player.map_mode = player.paused;
+        if (player.map_mode)
+            player.activate_map();
+    },
     init: function () {
-        const pause_fn = () => {
-            player.paused = !player.paused;
-            ui.settings.open = false;
-            ui.settings.start_time = -1;
-            ui.pause.start_time = player.paused ? ui.time : -1;
-            if (!player.paused)
-                return true;
-        };
-        key.add_key_listener("KeyP", pause_fn);
-        key.add_key_listener("Escape", pause_fn);
+        key.add_key_listener("KeyP", ui.pause_fn);
+        key.add_key_listener("Escape", ui.pause_fn);
         key.add_key_listener("KeyF", () => {
             player.autoshoot = !player.autoshoot;
         });
+        key.add_key_listener("Tab", ui.map_fn);
+        key.add_key_listener("KeyM", ui.map_fn);
         key.add_keydown_listener(function (event) {
             if (event.code === "Enter" && key.alt()) {
                 ui.toggle_fullscreen();
@@ -333,6 +343,7 @@ export const ui = {
                 icon: "map",
                 color: color.gold,
                 fn: function () {
+                    ui.map_fn();
                 },
             },
             {
@@ -431,6 +442,8 @@ export const ui = {
         ],
     },
     draw_pause_menu: function () {
+        if (player.map_mode)
+            return;
         const centre = camera.world2screen(player.position);
         const menu = ui.settings.really_open ? ui.settings.menu : ui.pause.menu;
         const switch_animation = ui.settings.time < 2 * ui.settings.animation_time;

@@ -133,6 +133,23 @@ export const m_ui = {
           }
         }
       }
+      if (event.code === "Tab") m_ui.top[0].action(); // toggle map
+      if (event.code === "Digit0") {
+        // show all
+        m_ui.editor.map_mode = false;
+        m_ui.editor.layers.z = 1;
+        m_ui.editor.layers.floors = true;
+        m_ui.editor.layers.spawners = true;
+        m_ui.editor.layers.sensors = true;
+        m_ui.editor.layers.rooms = true;
+        m_ui.editor.layers.decoration = true;
+        m_ui.editor.layers.debug = false;
+      }
+      for (let i = 1; i <= 6; i++) {
+        if (event.code === "Digit" + i) {
+          m_ui.top[i].action();
+        }
+      }
     });
 
     key.add_key_listener("Escape", () => {
@@ -245,6 +262,7 @@ export const m_ui = {
 
   editor: {
     mode: "none",
+    map_mode: false,
     layers: {
       z: 1,
       floors: true,
@@ -260,18 +278,27 @@ export const m_ui = {
   top: [
     {
       name: "clear",
-      icon: "x",
+      icon: "map",
       action: () => {
-        m_ui.editor.layers.z = 1;
-        m_ui.editor.layers.floors = true;
-        m_ui.editor.layers.spawners = true;
-        m_ui.editor.layers.sensors = true;
-        m_ui.editor.layers.rooms = true;
-        m_ui.editor.layers.decoration = true;
-        m_ui.editor.layers.debug = false;
+        m_ui.editor.map_mode = !m_ui.editor.map_mode;
+        m_ui.update_directory();
       },
-      color: (): string => color.black,
+      color: (): string => m_ui.editor.map_mode ? "#6958ed" : color.black,
     },
+    // {
+    //   name: "clear",
+    //   icon: "x",
+    //   action: () => {
+    //     m_ui.editor.layers.z = 1;
+    //     m_ui.editor.layers.floors = true;
+    //     m_ui.editor.layers.spawners = true;
+    //     m_ui.editor.layers.sensors = true;
+    //     m_ui.editor.layers.rooms = true;
+    //     m_ui.editor.layers.decoration = true;
+    //     m_ui.editor.layers.debug = false;
+    //   },
+    //   color: (): string => color.black,
+    // },
     {
       name: "z",
       get icon(): string {
@@ -287,13 +314,13 @@ export const m_ui = {
       name: "wall",
       icon: "wall",
       action: () => { m_ui.editor.layers.floors = !m_ui.editor.layers.floors; },
-      color: (): string => m_ui.editor.layers.floors ? "#bc4a3c" : color.black,
+      color: (): string => m_ui.editor.layers.floors ? "#004ab3" : color.black,
     },
     {
       name: "spawner",
       icon: "spawner",
       action: () => { m_ui.editor.layers.spawners = !m_ui.editor.layers.spawners; },
-      color: (): string => m_ui.editor.layers.spawners ? "#6958ed" : color.black,
+      color: (): string => m_ui.editor.layers.spawners ? color.spawner : color.black,
     },
     {
       name: "sensor",
@@ -793,7 +820,10 @@ export const m_ui = {
 
     for (const shape of [m_ui.all_shape].concat(sorted_shapes ?? [])) {
       const id = shape.id;
-      if (rooms_only && m_ui.map.computed?.shape_room[shape.id] && !shape.options.is_room && !shape.computed?.options?.is_room && id !== "all") continue; // m_ui.map.computed?.shape_room[shape.id]
+      const not_room = (m_ui.map.computed?.shape_room[shape.id] && !shape.options.is_room && !shape.computed?.options?.is_room && id !== "all");
+      if (rooms_only && not_room) continue;
+      if (m_ui.editor.map_mode && !shape.computed?.options?.is_map && not_room) continue;
+      if (!m_ui.editor.map_mode && shape.computed?.options?.is_map) continue;
       if (id !== "all") {
         m_ui.all_shape.options.contains?.push(id);
         if (shape.computed) m_ui.all_aabb = vector.aabb_combine(m_ui.all_aabb, shape.computed.aabb);
@@ -987,6 +1017,10 @@ export const m_ui = {
         show: "is_room",
         name: "room connections",
         type: "button",
+      },
+      is_map: {
+        name: "part of map",
+        type: "checkbox",
       },
     },
   } as { [key: string]: { [key: string]: { name: string, type: string, min?: number, max?: number, step?: number, show?: string | string[] } } },

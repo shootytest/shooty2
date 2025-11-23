@@ -114,7 +114,7 @@ export const map_draw = {
                         const v = camera.world3screen(world_v);
                         screen_vs.push(vector3.create2(v, world_v.z - camera.look_z));
                     }
-                    if (m_ui.editor.layers.z >= 2) {
+                    if (m_ui.editor.layers.z >= 2 || m_ui.editor.map_mode) {
                         for (const world_v of shape.computed.vertices)
                             shadow_vs.push(vector3.create2(camera.world3screen(vector3.create2(world_v, camera.look_z)), 0));
                     }
@@ -135,6 +135,10 @@ export const map_draw = {
                 if (b.z !== a.z || b.computed?.options == undefined || a.computed?.options == undefined)
                     return a.z - b.z;
                 const o1 = a.computed.options, o2 = b.computed.options;
+                if (o1.is_map && !o2.is_map)
+                    return 1;
+                if (o2.is_map && !o1.is_map)
+                    return -1;
                 if (o1.sensor && !o2.sensor)
                     return 1;
                 if (o2.sensor && !o1.sensor)
@@ -149,13 +153,30 @@ export const map_draw = {
                     return 1;
                 return 0;
             });
-            for (const shape of map_draw.shapes_on_screen) {
-                const style = map_draw.get_style(shape);
-                map_draw.draw_shape(ctx, shape, style);
-                map_draw.draw_shape_ui(ctx, shape, style);
-                if (m_ui.editor.layers.z >= 2 && Math.abs(shape.z - camera.look_z) > math.epsilon) {
-                    map_draw.draw_shape(ctx, shape, style, true);
-                    map_draw.draw_shape_ui(ctx, shape, style, true);
+            if (m_ui.editor.map_mode) {
+                for (const shape of map_draw.shapes_on_screen) {
+                    const style = map_draw.get_style(shape);
+                    const is_map = Boolean(shape.computed?.options?.is_map);
+                    if (is_map) {
+                        map_draw.draw_shape(ctx, shape, style);
+                        map_draw.draw_shape_ui(ctx, shape, style);
+                    }
+                    else if (m_ui.editor.layers.z < 2) {
+                        map_draw.draw_shape(ctx, shape, style, true);
+                    }
+                }
+            }
+            else {
+                for (const shape of map_draw.shapes_on_screen) {
+                    const style = map_draw.get_style(shape);
+                    if (shape.computed?.options?.is_map)
+                        continue;
+                    map_draw.draw_shape(ctx, shape, style);
+                    map_draw.draw_shape_ui(ctx, shape, style);
+                    if (m_ui.editor.layers.z >= 2 && !math.equal(shape.z, camera.look_z)) {
+                        map_draw.draw_shape(ctx, shape, style, true);
+                        map_draw.draw_shape_ui(ctx, shape, style, true);
+                    }
                 }
             }
         }
@@ -173,12 +194,12 @@ export const map_draw = {
         if (style.stroke) {
             ctx.strokeStyle = color2hex_map(style.stroke, shape.options.room_id ?? "default");
             ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
-            ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (shadow ? 0.6 : 1);
+            ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (shadow ? 0.5 : 1);
             ctx.stroke();
         }
         if (style.fill && !open_loop) {
             ctx.fillStyle = color2hex_map(style.fill, shape.options.room_id ?? "default");
-            ctx.globalAlpha = math.bound((style.opacity ?? 1) * (style.fill_opacity ?? 1) * (shadow ? 0.6 : 1), 0, 0.75);
+            ctx.globalAlpha = math.bound((style.opacity ?? 1) * (style.fill_opacity ?? 1) * (shadow ? 0.5 : 1), 0, 0.75);
             ctx.fill();
         }
         if (m_ui.editor.layers.debug && shape.computed.aabb) {
@@ -224,7 +245,7 @@ export const map_draw = {
             if (selected || math.equal(v.z, 0) || screen_vertices.length < 2) {
                 ctx.begin();
                 ctx.circle(v.x, v.y, vertex_size);
-                ctx.fillStyle = colorhex + (shadow ? "99" : "");
+                ctx.fillStyle = colorhex + (shadow ? "88" : "");
                 ctx.lineWidth = camera.sqrtscale * 2;
                 ctx.fill();
                 if (selected && shape.vertices.length > 1) {
@@ -375,6 +396,8 @@ export const map_draw = {
     get_style: (shape) => {
         if (shape.options.is_spawner)
             return STYLES.spawner;
+        if (shape.options.is_map)
+            return STYLES.map;
         if (shape.options.is_room && shape.id !== "start")
             return STYLES.room;
         if (shape.options.make_id != undefined) {

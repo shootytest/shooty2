@@ -349,8 +349,8 @@ export class Thing {
         }
         this.body = body;
         this.body.thing = this;
-        if ( /*s.z === 0 &&*/add_body)
-            Composite.add(world, this.body); // todo handle other z?
+        if (add_body)
+            Composite.add(world, this.body);
         Body.setVelocity(body, this.target.velocity);
     }
     die() {

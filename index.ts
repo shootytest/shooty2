@@ -53,7 +53,7 @@ const tick_all = (timestamp: number) => {
 
   const now = Math.round(timestamp * 10);
   if (time < 0) time = now;
-  let real_dt = math.bound(now - time, 0, config.seconds * 100000);
+  let real_dt = math.bound(now - time, 0, config.seconds * 1);
   const dt = real_dt * engine.timing.timeScale;
   if (config.graphics.fps < 60) {
     const interval = config.seconds / config.graphics.fps;
@@ -109,6 +109,12 @@ export const make_from_map_shape = function(map_shape: map_shape_type) {
     } else {
       const t = new Thing();
       t.make_map(map_shape);
+      if (t.options.is_map && t.options.parent) {
+        const parent_shape = MAP.computed?.shape_map[t.options.parent];
+        if (parent_shape?.options?.is_map) {
+          t.options.map_parent = parent_shape.options.map_parent ?? parent_shape.id;
+        }
+      }
     }
   }
 };
@@ -136,7 +142,7 @@ window.addEventListener("storage", function(event) {
 window.addEventListener("beforeunload", function(event) {
   if (player.enemy_can_see) {
     player.save_but_health_only();
-    save.changed(true);
+    save.changed(true, true);
     event.preventDefault();
     event.returnValue = true;
     return true;

@@ -21,6 +21,7 @@ export class Particle {
   }
 
   static draw_particles(z?: number) {
+    if (player.map_mode) return;
     if (z) z = math.round_dp(z, 3);
     for (const particle of Particle.particles) {
       if (z != undefined && particle.z !== z) continue;

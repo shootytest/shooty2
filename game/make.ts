@@ -130,6 +130,7 @@ export interface maketype_shape {
   shoot?: string;
   shoot_?: shoot_stats;
   floor?: boolean;
+  is_map?: boolean;
 
 };
 
@@ -382,23 +383,25 @@ make.checkpoint = {
 };
 make_shapes.checkpoint = [{
   type: "circle",
-  radius: 50,
+  radius: 60,
 }, {
   type: "polygon",
-  sides: 7,
-  radius: 50,
+  sides: 3,
+  radius: 120,
   z: 0.2,
   floor: true,
-}, {
-  type: "circle",
-  radius: 50,
-  z: 0.1,
-  style_: { stroke_opacity: 0, }
+  style_: { stroke_opacity: 0 },
 }];
 
 
 
 // @decorations
+
+make.map_shape = {
+  decoration: true,
+  seethrough: true,
+  style: "map",
+};
 
 make.icon = {
   decoration: true,
@@ -423,7 +426,7 @@ make.deco_gun_basic = {
   make_parent: ["deco"],
   style: "collect_gun",
   style_: {
-    stroke_opacity: 0.3,
+    stroke_opacity: 0.1,
     fill_opacity: 0,
   },
 };
@@ -434,7 +437,7 @@ for (let i = 0; i < 10; i++) {
     sides: 7,
     angle: 0.175 * i,
     radius: 330 - i * 30,
-    z: -(0.3 - i * 0.03),
+    z: (0.3 - i * 0.03),
   });
 }
 
@@ -986,7 +989,7 @@ make.enemy_streets_camera_small = {
   death: [
     { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.9, spread_angle: -1 }, repeat: 1 },
   ],
-  xp: 10,
+  xp: 20,
 };
 make_shapes.enemy_streets_camera_small = [{
   type: "polygon",

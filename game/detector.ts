@@ -473,8 +473,8 @@ export const detector = {
         const b = thing.options.behaviour?.normal;
         if (b) (b as maketype_behaviour).shoot_mode = "normal";
         thing.options.enemy_safe = false;
-        thing.health?.set_capacity(350);
-        thing.options.xp = 60;
+        thing.health?.set_capacity(333);
+        thing.options.xp = 75;
         const d = thing.options.death?.[0];
         if (d) d.repeat = 3;
         thing.make_shape({

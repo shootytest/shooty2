@@ -38,10 +38,12 @@ export class Player extends Thing {
     on_floor = 0; // 2 = safe, 1 = not safe, 0 = fallllling
     floor_z = 0;
     is_safe = true;
+    map_room = "";
     camera_target = vector.create();
     camera_target_target = vector.create();
     room_list = [];
     paused = false;
+    map_mode = false;
     constructor() {
         super();
         this.is_player = true;
@@ -84,21 +86,22 @@ export class Player extends Thing {
                 this.push_by(vector.mult(move_v, config.physics.player_speed));
             this.update_angle();
         }
-        this.old_position = this.position;
         // update stats
         if (!this.paused)
             this.stats.game_time += dt;
         this.stats.total_time += dt;
-        this.stats.pixels_walked += Math.floor(vector.length(vector.sub(this.position, this.old_position)));
+        this.stats.pixels_walked += math.round(vector.length(vector.sub(this.position, this.old_position)));
+        this.old_position = this.position;
         // handle floor checking, z movement, shooting, and autosaving only when unpaused
         if (!this.paused) {
+            // floors and z stuff
             let on_floor = false;
             let safe_floor = true;
             let floor_z = (save.save.player.position?.z ?? 0) - 2;
             let on_floor_z = floor_z;
             let z = this.target.position.z;
             for (const s of Shape.floor_shapes) {
-                if (s.computed && math.is_circle_in_polygon(this.position, this.radius, s.computed?.vertices)) {
+                if (s.computed && math.is_circle_in_polygon(this.position, this.radius, s.computed.vertices)) {
                     if (s.z + math.epsilon < on_floor_z)
                         break; // gone below the first floor level that the player is above
                     floor_z = s.z;
@@ -137,6 +140,18 @@ export class Player extends Thing {
                     this.target.vz = this.target.vz - config.physics.player_gravity * v_mult;
                 }
             }
+            // map
+            for (const s of Shape.map_shapes) {
+                if (s.computed && math.is_point_in_polygon(this.position, s.computed.vertices)) {
+                    const id = s.thing.id;
+                    if (id !== this.map_room) {
+                        save.visit_map(id);
+                        this.map_room = id;
+                    }
+                    continue;
+                }
+            }
+            // shoot
             if (controls.shoot || this.autoshoot) {
                 this.shoot();
             }
@@ -158,7 +173,6 @@ export class Player extends Thing {
         this.die_time -= config.seconds;
     }
     die() {
-        console.log(this.checkpoint, this.checkpoint_room);
         this.stats.deaths++;
         this.reset_velocity();
         // this.unload_all_rooms();
@@ -190,7 +204,8 @@ export class Player extends Thing {
     camera_position() {
         this.camera_target = vector.lerp(this.camera_target, this.camera_target_target, config.graphics.camera_target_smoothness);
         const position = vector.lerp(this.camera_target, this.position, 0.5);
-        // if (this.paused) return position;
+        if (this.map_mode)
+            return position;
         return vector.add(position, vector.mult(vector.sub(camera.mouse_v, camera.halfscreen), config.graphics.camera_mouse_look_factor / camera.scale));
         // todo remove
         // let v = vector.sub(this.target.facing, camera.world2screen(this.position));
@@ -200,7 +215,9 @@ export class Player extends Thing {
     camera_scale() {
         const v = camera.halfscreen;
         let s = Math.sqrt(v.x * v.y) / 500 / this.fov_mult;
-        if (this.paused)
+        if (this.map_mode)
+            s /= 5 / this.fov_mult;
+        else if (this.paused)
             s *= 10 * this.fov_mult;
         return s;
     }
@@ -221,25 +238,29 @@ export class Player extends Thing {
     save() {
         if (this.enemy_can_see) {
             this.enemy_can_see = false; // hmmm
+            player.save_but_health_only();
+            save.changed();
             return false;
         }
-        this.autosave_time = Thing.time + config.game.autosave_interval;
-        const o = {
-            position: this.position,
-            room_id: this.room_id,
-            fov_mult: this.fov_mult,
-            health: this.health?.value ?? 0,
-            ability: this.ability?.value ?? 0,
-            xp: this.xp,
-            checkpoint: this.checkpoint,
-            checkpoint_room: this.checkpoint_room,
-            current_gun: this.current_gun,
-            guns: this.guns,
-            stats: this.stats,
-        };
-        save.save.player = o;
-        save.changed();
-        return true;
+        else {
+            this.autosave_time = Thing.time + config.game.autosave_interval;
+            const o = {
+                position: this.position,
+                room_id: this.room_id,
+                fov_mult: this.fov_mult,
+                health: this.health?.value ?? 0,
+                ability: this.ability?.value ?? 0,
+                xp: this.xp,
+                checkpoint: this.checkpoint,
+                checkpoint_room: this.checkpoint_room,
+                current_gun: this.current_gun,
+                guns: this.guns,
+                stats: this.stats,
+            };
+            save.save.player = o;
+            save.changed();
+            return true;
+        }
     }
     load(o) {
         if (o.position) {
@@ -381,6 +402,10 @@ export class Player extends Thing {
         for (const room_id of shallow_clone_array(this.room_list)) {
             this.reload_room(room_id);
         }
+    }
+    activate_map() {
+    }
+    deactivate_map() {
     }
 }
 ;

@@ -194,6 +194,12 @@ export const STYLES /*: { [key: string]: style_type }*/ = {
         fill: color.start,
         stroke: color.start,
     },
+    map: {
+        fill: "main",
+        stroke: "main",
+        fill_opacity: 0.3,
+        stroke_opacity: 0,
+    },
     // collectible colours
     coin_rock_1: {
         stroke: "alt",

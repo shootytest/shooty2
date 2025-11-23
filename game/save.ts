@@ -11,6 +11,7 @@ import { Thing } from "./thing.js";
 export interface save_type {
   version: string;
   player: player_save;
+  map: { [key: string]: number };
   switches: { [key: string]: number };
   currencies: { [key: string]: number };
 };
@@ -51,6 +52,7 @@ export const save = {
   save: {
     version: config.game.version,
     player: {},
+    map: {},
     switches: {},
     currencies: {},
   } as save_type,
@@ -64,7 +66,7 @@ export const save = {
   },
 
   check_switch: (id: string): boolean => {
-    return save.save.switches[id] > 0;
+    return save.get_switch(id) > 0;
   },
 
   set_switch: (id: string, number = 1) => {
@@ -81,7 +83,21 @@ export const save = {
     save.switch_times[id] = time;
   },
 
-  get_currency: (name: string) => {
+  get_map: (id: string): number => {
+    return save.save.map[id] ?? -1;
+  },
+
+  check_map: (id: string): boolean => {
+    return save.get_map(id) > 0;
+  },
+
+  visit_map: (id: string) => {
+    if (!save.save.map[id]) save.save.map[id] = 0;
+    save.save.map[id]++;
+    save.changed(true);
+  },
+
+  get_currency: (name: string): number => {
     return save.save.currencies[name] ?? 0;
   },
 
@@ -107,6 +123,7 @@ export const save = {
     return {
       version: config.game.version,
       player: {},
+      map: {},
       switches: {},
       currencies: {},
     };

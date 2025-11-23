@@ -20,6 +20,7 @@ export class Shape {
   static shapes: Shape[] = [];
   static draw_shapes: Shape[] = [];
   static floor_shapes: Shape[] = [];
+  static map_shapes: Shape[] = [];
   static draw_zs: number[] = [];
 
   static cumulative_id = 0;
@@ -114,12 +115,12 @@ export class Shape {
     const result: Shape[] = [];
     const memo_aabb3: { [key: string]: AABB3 } = {};
     for (const s of Shape.shapes) {
-      if (s.computed == undefined || s.thing == undefined || s.thing.options.invisible) continue;
-      const z = s.z, z_string = Number(s.z.toFixed(3));
+      if (s.computed == undefined || s.thing == undefined || s.thing.options.invisible || (player.map_mode && !s.is_map && !s.thing.is_player)) continue;
       // cullingz
+      const z = s.z, z_string = Number(s.z.toFixed(3));
       if (s.computed.z_range) if (s.max_z < camera.look_z - 1 - math.epsilon || s.min_z > camera.z + math.epsilon) continue;
       else if (z < camera.look_z - 1 - math.epsilon || z > camera.z + math.epsilon) continue;
-      s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position); // bottleneck
+      s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position); // bottleneck :(
       if (memo_aabb3[z_string] == undefined) {
         const z_scale = camera.zscale_inverse(z >= 0 ? 0 : z);
         memo_aabb3[z_string] = vector3.aabb_scale(screen_aabb, vector3.create(z_scale, z_scale, 1));
@@ -143,20 +144,18 @@ export class Shape {
 
     Shape.draw_shapes = Shape.filter(screen_aabb);
     Shape.floor_shapes = [];
+    Shape.map_shapes = [];
     for (const s of Shape.draw_shapes) {
-      if (s.thing.options.floor || s.options.floor) {
-        Shape.floor_shapes.push(s);
-      }
+      if (s.thing.options.floor || s.options.floor) Shape.floor_shapes.push(s);
+      if ((s.thing.options.is_map || s.options.is_map) && !s.thing.options.map_parent) Shape.map_shapes.push(s);
       if (s.computed == undefined) {
         s.init_computed();
       }
-      if (s.computed != undefined) { // always true at this point
-        // compute location on screen using camera transformation
-        s.compute_screen();
-      }
+      // compute location on screen using camera transformation
+      s.compute_screen();
     }
 
-    if (player.paused) Shape.draw_shapes.remove(player.shapes[0]);
+    if (player.paused && !player.map_mode) Shape.draw_shapes.remove(player.shapes[0]);
 
     Shape.draw_zs = [...new Set(Shape.draw_shapes.map(s => s.z))];
 
@@ -178,6 +177,7 @@ export class Shape {
       } else return s1.z - s2.z; // lower z first
     };
     Shape.draw_shapes.sort(draw_shapes_sort);
+    Shape.map_shapes.sort((s1, s2) => draw_shapes_sort(s1, s2));
     Shape.floor_shapes.sort((s1, s2) => -draw_shapes_sort(s1, s2)); // reverse of draw_shapes
 
     // nowhere else to put this... handle particles
@@ -187,9 +187,7 @@ export class Shape {
         if (!Shape.draw_zs.includes(z)) Shape.draw_zs.push(z);
       }
     }
-    Particle.particles.sort((p1, p2) => {
-      return p1.z - p2.z;
-    });
+    Particle.particles.sort((p1, p2) => p1.z - p2.z);
 
     Shape.see_vertices = Shape.calc_vertices();
     Shape.see_other_vertices = Shape.calc_other_vertices();
@@ -216,7 +214,6 @@ export class Shape {
       const vs = s.computed?.vertices;
       if (!vs) continue;
       if (s.seethrough) continue;
-      if (s.thing.is_player) continue;
       if (s.z < min_z) min_z = s.z;
       if (s.z > max_z) max_z = s.z;
       if (s.closed_loop) vs.push(vs[0]);
@@ -284,6 +281,10 @@ export class Shape {
   set seethrough(see: boolean) {
     if (see) this.translucent = 0;
     else this.translucent = 1;
+  }
+
+  get is_map(): boolean {
+    return Boolean(this.thing.options.is_map || this.options.is_map);
   }
 
   // computed
@@ -382,6 +383,7 @@ export class Shape {
   }
 
   draw_all() {
+    if (!player.map_mode && this.is_map) return;
     if (this.options.clip) this.draw_clip();
     else this.draw();
     this.draw_glow();
@@ -401,7 +403,7 @@ export class Shape {
     }
     ctx.beginPath();
     this.draw_path(shadow ? this.computed.shadow_vertices : this.computed.screen_vertices);
-    const override_pause_opacity: boolean = this.thing.is_player && this.index >= 1 && player.paused;
+    const override_pause_opacity: boolean = this.thing.is_player && this.index >= 1 && player.paused && !player.map_mode;
     if (style.stroke) {
       ctx.strokeStyle = color2hex(style.stroke);
       ctx.globalAlpha = this.opacity * (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
@@ -644,7 +646,7 @@ export class Polygon extends Shape {
   compute_screen() {
     if (this.sides === 0) {
       if (this.computed == undefined) return;
-      let c = vector3.create();
+      let c = vector3.clone(this.offset);
       let r = vector3.create(this.radius, 0, 0);
       const rotated = vector.rotate(vector.create(), c, this.thing.angle);
       c.x = rotated.x;

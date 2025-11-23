@@ -7,7 +7,7 @@ import { math } from "../util/math.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
 import { Health } from "./health.js";
-import { make, make_shapes, shoot_stats, override_object, make_shoot, shallow_clone_array, multiply_and_override_object, clone_object, maketype_shape, shoot_mode, face_mode, move_mode, multiply_object, maketype_behaviour } from "./make.js";
+import { make, make_shapes, shoot_stats, override_object, make_shoot, shallow_clone_array, clone_object, maketype_shape, multiply_object, maketype_behaviour } from "./make.js";
 import type { Player } from "./player.js";
 import { save } from "./save.js";
 import { Polygon, Shape } from "./shape.js";
@@ -367,7 +367,7 @@ export class Thing {
     }
     this.body = body;
     (this.body as any).thing = this;
-    if (/*s.z === 0 &&*/ add_body) Composite.add(world, this.body); // todo handle other z?
+    if (add_body) Composite.add(world, this.body);
     Body.setVelocity(body, this.target.velocity);
   }
 
