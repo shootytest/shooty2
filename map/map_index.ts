@@ -45,12 +45,20 @@ window.addEventListener("load", init_all);
 export interface editor_save {
   camera: vector3;
   scale: number;
+  editor: {
+    map: boolean, // map_mode
+    oldz: number, // old_look_z
+  },
 };
 
 export const save_map_settings = function() {
   const o: editor_save = {
     camera: vector3.create2(vector.round(camera.position_target), +camera.look_z.toFixed(1)),
     scale: camera.scale_target,
+    editor: {
+      map: m_ui.editor.map_mode,
+      oldz: m_ui.editor.old_look_z,
+    },
   };
   const raw = zipson.stringify(o);
   localStorage.setItem("editor", raw);
@@ -63,4 +71,9 @@ const load_map_settings = function() {
   camera.position_target = o.camera;
   camera.look_z = math.round_to(o.camera.z, 0.1);
   camera.scale_target = o.scale;
+  m_ui.editor.map_mode = o.editor.map;
+  m_ui.editor.old_look_z = o.editor.oldz;
+  m_ui.update_directory();
+  m_ui.update_properties();
+  m_ui.update_right_sidebar();
 };

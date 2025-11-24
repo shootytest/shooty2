@@ -200,6 +200,12 @@ export const STYLES /*: { [key: string]: style_type }*/ = {
         fill_opacity: 0.3,
         stroke_opacity: 0,
     },
+    map_inverse: {
+        fill: color.black,
+        stroke: "main",
+        fill_opacity: 1,
+        stroke_opacity: 0,
+    },
     // collectible colours
     coin_rock_1: {
         stroke: "alt",

@@ -133,10 +133,8 @@ export const m_ui = {
                     }
                 }
             }
-            if (event.code === "Tab")
-                m_ui.top[0].action(); // toggle map
+            // show all
             if (event.code === "Digit0") {
-                // show all
                 m_ui.editor.map_mode = false;
                 m_ui.editor.layers.z = 1;
                 m_ui.editor.layers.floors = true;
@@ -146,6 +144,10 @@ export const m_ui = {
                 m_ui.editor.layers.decoration = true;
                 m_ui.editor.layers.debug = false;
             }
+            // toggle map
+            if (event.code === "Tab" || event.code === "KeyM")
+                m_ui.top[0].action();
+            // top buttons
             for (let i = 1; i <= 6; i++) {
                 if (event.code === "Digit" + i) {
                     m_ui.top[i].action();
@@ -257,6 +259,7 @@ export const m_ui = {
     editor: {
         mode: "none",
         map_mode: false,
+        old_look_z: 0,
         layers: {
             z: 1,
             floors: true,
@@ -275,6 +278,13 @@ export const m_ui = {
             action: () => {
                 m_ui.editor.map_mode = !m_ui.editor.map_mode;
                 m_ui.update_directory();
+                if (m_ui.editor.map_mode) {
+                    m_ui.editor.old_look_z = camera.look_z;
+                    camera.look_z = 0;
+                }
+                else
+                    camera.look_z = m_ui.editor.old_look_z;
+                save_map_settings();
             },
             color: () => m_ui.editor.map_mode ? "#6958ed" : color.black,
         },
@@ -799,7 +809,7 @@ export const m_ui = {
         });
         for (const shape of [m_ui.all_shape].concat(sorted_shapes ?? [])) {
             const id = shape.id;
-            const not_room = (m_ui.map.computed?.shape_room[shape.id] && !shape.options.is_room && !shape.computed?.options?.is_room && id !== "all");
+            const not_room = (m_ui.map.computed?.shape_room[shape.id] && !shape.options.is_room && !shape.computed?.options?.is_room && id !== "all" && id !== "train");
             if (rooms_only && not_room)
                 continue;
             if (m_ui.editor.map_mode && !shape.computed?.options?.is_map && not_room)
@@ -1018,6 +1028,16 @@ export const m_ui = {
             is_map: {
                 name: "part of map",
                 type: "checkbox",
+            },
+            force_above: {
+                show: "is_map",
+                name: "force top layer",
+                type: "checkbox",
+            },
+            map_hide_when: {
+                show: "map_parent",
+                name: "hide when",
+                type: "text",
             },
         },
     },

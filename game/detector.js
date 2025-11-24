@@ -6,7 +6,7 @@ import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { Spawner } from "./enemy.js";
-import { clone_object } from "./make.js";
+import { clone_object, make_data } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
@@ -540,7 +540,6 @@ export const detector = {
     },
     spawner_calc_fns: {
         ["tutorial room 3 enemy 1"]: (spawner) => {
-            console.log(spawner);
             if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 2") > 0) {
                 spawner.thing_lookup("tutorial window 1")?.die();
                 spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
@@ -548,7 +547,6 @@ export const detector = {
         },
         ["tutorial room 3 enemy 2"]: (spawner) => {
             if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 1") > 0) {
-                console.log("a");
                 spawner.thing_lookup("tutorial window 1")?.die();
                 spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
             }
@@ -592,6 +590,7 @@ export const detector = {
                 thing.lookup("tutorial room 2 arrow 2").shapes[0].style.opacity = 0;
             }
         },
+        // tutorial doors
         ["tutorial room 2 door 1"]: (door) => {
             do_door(door, "tutorial room 2 door sensor");
         },
@@ -601,23 +600,48 @@ export const detector = {
         ["tutorial room 3 door"]: (door) => {
             do_door(door, "tutorial room 3 door sensor");
         },
+        // tutorial rocks
         ["tutorial rock 7"]: (door) => {
             switch_door(door, "tutorial room 2 switch", "tutorial room 2 switch path", 1);
         },
-        ["tutorial rock 11"]: (door) => {
-            switch_door(door, Spawner.check_progress("tutorial room 2 enemy shooter") > 0 || door.lookup("tutorial room 2.1 sensor").is_touching_player, "tutorial room 2.1 switch path", 1);
+        ["tutorial room 2 map rock 1"]: (thing) => {
+            // map_copy_position(thing, "tutorial rock 7");
+            map_switch_door(thing, "tutorial room 2 switch", "tutorial room 2 switch path");
         },
+        ["tutorial rock 11"]: (door) => {
+            switch_door(door, Spawner.check_progress("tutorial room 2 enemy shooter") > 0 || door.lookup("tutorial room 2.1 sensor")?.is_touching_player, "tutorial room 2.1 switch path", 1);
+        },
+        ["tutorial room 2 map rock 9"]: (thing) => {
+            map_copy_position(thing, "tutorial rock 11");
+            // map_switch_door(thing, Spawner.check_progress("tutorial room 2 enemy shooter") > 0 || door.lookup("tutorial room 2.1 sensor")?.is_touching_player, "tutorial room 2.1 switch path");
+        },
+        // tutorial boss doors
         ["tutorial room 5 door start"]: (door) => {
             switch_door(door, Spawner.get_enemy("tutorial room 5 boss")?.object?.start_activated, "tutorial room 5 door start path", 6);
         },
         ["tutorial room 5 door end"]: (door) => {
             switch_door(door, Spawner.get_enemy("tutorial room 5 boss")?.object?.end_activated, "tutorial room 5 door end path", 6);
         },
+        // station stuff
         ["train door left"]: (door) => {
             switch_door(door, player.object.train_time && player.object.train_time > 1 * config.seconds, "train door left path", 3, true);
         },
         ["train door right"]: (door) => {
             switch_door(door, player.object.train_time && player.object.train_time > 1 * config.seconds, "train door right path", 3, true);
+        },
+        ["station map train"]: (thing) => {
+            const train = thing.lookup("train floor");
+            if (train)
+                map_copy_position(thing, train);
+            else {
+                const n = save.get_switch("train");
+                let x = make_data.train_centre.x;
+                for (const [d, v] of Object.entries(make_data.train_stations)) {
+                    if (math.equal(n, +d))
+                        x += v.distance;
+                }
+                thing.position = vector.create(x, make_data.train_centre.y);
+            }
         },
         ["station tracks"]: (thing) => {
             if (!thing.object.first_time) {
@@ -746,4 +770,33 @@ const switch_door = (door, switch_ids, path_id, speed = [5], reversible = false,
             door.translate(vector.normalise(door_dv, sped));
         }
     }
+};
+const map_switch_door = (door, switch_ids, path_id) => {
+    let step = door.object.step ?? 1;
+    if (door.object.step == undefined) {
+        door.object.original_position = vector.clone(door.position);
+        door.object.step = step;
+    }
+    if (!Array.isArray(switch_ids))
+        switch_ids = [switch_ids];
+    if (step > switch_ids.length)
+        return;
+    const sid = switch_ids[step - 1];
+    if (typeof sid === "boolean" ? sid : save.check_switch(sid)) {
+        const vs = MAP.computed?.shape_map[path_id].vertices;
+        if (!vs || step >= vs.length)
+            return;
+        const v = vector.sub(vs[step], vs[0]);
+        door.position = vector.add(door.object.original_position, v);
+        step++;
+        door.object.step = step;
+    }
+    else
+        return;
+};
+const map_copy_position = (thing, other) => {
+    if (typeof other === "string")
+        other = thing.lookup(other);
+    if (other?.position)
+        thing.position = vector.clone(other.position);
 };

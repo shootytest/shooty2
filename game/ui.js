@@ -62,7 +62,9 @@ export const ui = {
         ui.pause_fn();
         player.map_mode = player.paused;
         if (player.map_mode)
-            player.activate_map();
+            ui.map.activate();
+        else
+            ui.map.deactivate();
     },
     init: function () {
         key.add_key_listener("KeyP", ui.pause_fn);
@@ -81,6 +83,7 @@ export const ui = {
     tick: function (dt) {
         ui.tick_time++;
         ui.time += dt;
+        ui.map.tick();
         if (dt <= config.seconds && ui.tick_time >= 5) {
             ui.debug.dt_queue.push(dt);
             ui.debug.dt_total += dt;
@@ -139,6 +142,11 @@ export const ui = {
         },
     },
     draw_debug: function () {
+        // teleport!
+        if (keys.KeyT && config.game.debug_mode) {
+            player.teleport_to(camera.screen2world(mouse.position));
+            player.map_offset = vector.create();
+        }
         if (!config.graphics.debug_display)
             return;
         const size = ui.size * 1.2;
@@ -177,9 +185,6 @@ export const ui = {
         ctx.lines_v(points, false);
         ctx.stroke();
         ctx.fill();
-        if (keys.KeyT) {
-            player.teleport_to(camera.screen2world(mouse.position));
-        }
     },
     draw_health: function () {
         if (!player.health)
@@ -359,6 +364,33 @@ export const ui = {
                 },
             },
         ],
+    },
+    map: {
+        start_time: -999 * config.seconds,
+        opacity: 0,
+        hide_map: false,
+        hide_background: false,
+        get time() {
+            return ui.time - this.start_time;
+        },
+        tick: () => {
+            if (ui.map.time > config.graphics.map_fade_time)
+                ui.map.opacity = player.map_mode ? 1 : 0;
+            else {
+                const ratio = ui.map.time / config.graphics.map_fade_time;
+                ui.map.opacity = math.bound(player.map_mode ? ratio : 1 - ratio, 0, 1);
+            }
+            ui.map.hide_map = ui.map.opacity < 0.01;
+            ui.map.hide_background = ui.map.opacity > 0.99;
+        },
+        activate: () => {
+            player.activate_map();
+            ui.map.start_time = -999 * config.seconds; // change to ui.time for fade effect
+        },
+        deactivate: () => {
+            player.deactivate_map();
+            ui.map.start_time = -999 * config.seconds; // change to ui.time for fade effect
+        },
     },
     settings: {
         open: false,

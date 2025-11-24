@@ -1,15 +1,16 @@
 import { Vertices } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
-import { color, color2hex, STYLES, STYLES_ } from "../util/color.js";
+import { color, color2hex, STYLES, STYLES_, THEMES } from "../util/color.js";
 import { config } from "../util/config.js";
 import { map_shape_compute_type, map_shape_type, style_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { AABB3, vector, vector3, vector3_ } from "../util/vector.js";
-import { clone_object, make_shoot, maketype_shape, multiply_and_override_object, override_object } from "./make.js";
+import { clone_object, make_rooms, make_shoot, maketype_shape, multiply_and_override_object, override_object } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { Bullet, Thing } from "./thing.js";
+import { ui } from "./ui.js";
 
 /**
  * the Shape class holds shape data only
@@ -139,7 +140,12 @@ export class Shape {
     const screen_topleft = camera.screen2world({ x: 0, y: 0 });
     const screen_bottomright = camera.screen2world({ x: ctx.canvas.width, y: ctx.canvas.height });
     const screen_aabb: AABB3 = {
-      min_x: screen_topleft.x - config.graphics.shape_cull_padding, min_y: screen_topleft.y - config.graphics.shape_cull_padding, max_x: screen_bottomright.x + config.graphics.shape_cull_padding, max_y: screen_bottomright.y + config.graphics.shape_cull_padding, min_z: -Number.MAX_SAFE_INTEGER, max_z: Number.MAX_SAFE_INTEGER,
+      min_x: screen_topleft.x - config.graphics.shape_cull_padding,
+      min_y: screen_topleft.y - config.graphics.shape_cull_padding,
+      max_x: screen_bottomright.x + config.graphics.shape_cull_padding,
+      max_y: screen_bottomright.y + config.graphics.shape_cull_padding,
+      min_z: -Number.MAX_SAFE_INTEGER,
+      max_z: Number.MAX_SAFE_INTEGER
     };
 
     Shape.draw_shapes = Shape.filter(screen_aabb);
@@ -163,15 +169,18 @@ export class Shape {
     Shape.draw_zs.sort((s1, s2) => s1 - s2);
     const draw_shapes_sort = (s1: Shape, s2: Shape): number => {
       if (math.equal(s1.z, s2.z)) { // in the event of equal z...
-        if (s1.thing.is_player && !s2.thing.is_player) return 1;  // players always below
+        if (s1.thing.is_player && !s2.thing.is_player) return 1;  // players always above
         if (s2.thing.is_player && !s1.thing.is_player) return -1;
-        // if (s1.thing.options.force_max_z && !s2.thing.options.force_max_z) return 1;
-        // if (s2.thing.options.force_max_z && !s1.thing.options.force_max_z) return -1;
-        if (s1.thing.options.floor && !s2.thing.options.floor) return -1; // floors always below
-        if (s2.thing.options.floor && !s1.thing.options.floor) return 1;
-        if (s1.thing.options.floor && s2.thing.options.floor) {
-          if (s1.thing.options.safe_floor && !s2.thing.options.safe_floor) return -1; // safe floors even more below
-          if (s2.thing.options.safe_floor && !s1.thing.options.safe_floor) return 1;
+        const o1 = s1.thing.options, o2 = s2.thing.options;
+        if (o1.force_above && !o2.force_above) return 1; // force
+        if (o2.force_above && !o1.force_above) return -1;
+        if (o1.map_parent && !o2.map_parent) return 1; // map children always above
+        if (o2.map_parent && !o1.map_parent) return -1;
+        if (o1.floor && !o2.floor) return -1; // floors always below
+        if (o2.floor && !o1.floor) return 1;
+        if (o1.floor && o2.floor) {
+          if (o1.safe_floor && !o2.safe_floor) return -1; // safe floors even more below
+          if (o2.safe_floor && !o1.safe_floor) return 1;
         }
         return 0;
       } else return s1.z - s2.z; // lower z first
@@ -378,12 +387,17 @@ export class Shape {
   }
 
   calculate() {
-    // ok there's nothing to do here because the vertices _are_ the data
+    // nothing to do here because the vertices are already the data
     return;
   }
 
+  color2hex(c: string): string {
+    if (this.is_map) return "" + ((THEMES[make_rooms[this.thing.room_id].theme] as any)[c] ?? c);
+    else return color2hex(c);
+  }
+
   draw_all() {
-    if (!player.map_mode && this.is_map) return;
+    if (ui.map.hide_map && this.is_map) return;
     if (this.options.clip) this.draw_clip();
     else this.draw();
     this.draw_glow();
@@ -404,15 +418,16 @@ export class Shape {
     ctx.beginPath();
     this.draw_path(shadow ? this.computed.shadow_vertices : this.computed.screen_vertices);
     const override_pause_opacity: boolean = this.thing.is_player && this.index >= 1 && player.paused && !player.map_mode;
+    const opacity_mult = this.opacity * (style.opacity ?? 1) * (this.is_map ? ui.map.opacity : 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
     if (style.stroke) {
-      ctx.strokeStyle = color2hex(style.stroke);
-      ctx.globalAlpha = this.opacity * (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
+      ctx.strokeStyle = this.color2hex(style.stroke);
+      ctx.globalAlpha = opacity_mult * (style.stroke_opacity ?? 1);
       ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.avg_z, true) * config.graphics.linewidth_mult * (this.translucent <= math.epsilon ? 1 : 1.8); // * (this.thing.options.seethrough && this.thing.is_wall ? 0.5 : 1);
       ctx.stroke();
     }
     if (style.fill && this.closed_loop) {
-      ctx.fillStyle = color2hex(style.fill);
-      ctx.globalAlpha = this.opacity * (style.opacity ?? 1) * (style.fill_opacity ?? 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
+      ctx.fillStyle = this.color2hex(style.fill);
+      ctx.globalAlpha = opacity_mult * (style.fill_opacity ?? 1);
       ctx.fill();
     }
     if (!shadow && (this.computed.shadow_vertices?.length ?? 0) >= 1) {
@@ -482,7 +497,7 @@ export class Shape {
       fill_opacity: ((this.style.stroke_opacity ?? 1) / (this.style.fill_opacity || 1)) * (frac === 0 ? 0.8 : frac),
     };
     ctx.ctx.shadowBlur = config.graphics.shadowblur;
-    ctx.ctx.shadowColor = color2hex(this.style.stroke ?? color.white);
+    ctx.ctx.shadowColor = this.color2hex(this.style.stroke ?? color.white);
     for (let i = 0; i < glow; i++) this.draw(style_mult);
     ctx.ctx.shadowBlur = 0;
   }

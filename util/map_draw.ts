@@ -139,6 +139,10 @@ export const map_draw = {
         if (b.id === m_ui.properties_selected.id) return -1;
         if (b.z !== a.z || b.computed?.options == undefined || a.computed?.options == undefined) return a.z - b.z;
         const o1 = a.computed.options, o2 = b.computed.options;
+        if (o1.force_above && !o2.force_above) return 1;
+        if (o2.force_above && !o1.force_above) return -1;
+        if (o1.map_parent && !o2.map_parent) return 1;
+        if (o2.map_parent && !o1.map_parent) return -1;
         if (o1.is_map && !o2.is_map) return 1;
         if (o2.is_map && !o1.is_map) return -1;
         if (o1.sensor && !o2.sensor) return 1;
@@ -389,7 +393,7 @@ export const map_draw = {
 
   get_style: (shape: map_shape_type): style_type => {
     if (shape.options.is_spawner) return STYLES.spawner;
-    if (shape.options.is_map) return STYLES.map;
+    // if (shape.options.is_map) return STYLES.map;
     if (shape.options.is_room && shape.id !== "start") return STYLES.room;
     if (shape.options.make_id != undefined) {
       const m = make[shape.options.make_id];

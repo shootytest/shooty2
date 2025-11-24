@@ -1,4 +1,4 @@
-import { STYLES, THEMES } from "../util/color.js";
+import { color_theme, STYLES, THEMES } from "../util/color.js";
 import { style_type } from "../util/map_type.js";
 import { vector, vector3_ } from "../util/vector.js";
 import { enemy_spawn } from "./enemy.js";
@@ -401,6 +401,12 @@ make.map_shape = {
   decoration: true,
   seethrough: true,
   style: "map",
+};
+
+make.map_inverse = {
+  decoration: true,
+  seethrough: true,
+  style: "map_inverse",
 };
 
 make.icon = {
@@ -1301,6 +1307,7 @@ export interface maketype_room {
   theme: keyof typeof THEMES;
   theme_mix?: keyof typeof THEMES;
   theme_mix_strength?: number;
+  calc_theme?: color_theme; // calculated
 };
 
 export const make_rooms = {
@@ -1360,7 +1367,6 @@ export const make_rooms = {
 
 
 
-
 // @waves
 
 
@@ -1413,6 +1419,25 @@ export const make_waves = {
 
 } as { [key: string]: maketype_wave };
 
+
+
+
+// misc data
+export const make_data = {
+
+  train_centre: { x: 1900, y: 4025 },
+  train_stations: {
+    ["11"]: {
+      name: "station tutorial",
+      distance: 0,
+    },
+    ["11.5"]: {
+      name: "station streets",
+      distance: 6150,
+    },
+  },
+
+};
 
 
 

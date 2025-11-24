@@ -38,6 +38,12 @@ export class Thing {
     }
   };
 
+  static tick_map_things(dt: number) { // only map stuff
+    for (const thing of Thing.things) {
+      if (thing.options.is_map) thing.tick(dt);
+    }
+  };
+
   static body_list: Matter.Body[] = [];
   static update_body_list() {
     const result: Matter.Body[] = [];
@@ -195,6 +201,7 @@ export class Thing {
     const _s = Shape.from_map(this, o);
     if (this.shapes.length <= 1) this.position = this.options.force_max_z ? vector3.mean_but_somehow_max_z(o.computed.vertices) : vector3.mean(o.computed.vertices);
     else console.error("[thing/make_map] i feel this shouldn't happen...");
+    this.original_position = vector3.clone(this.position);
     vector3.add_to_list(_s.vertices, vector3.create(0, 0, -this.z)); // move shape vertices back
     this.create_id(o.id);
     this.create_room();

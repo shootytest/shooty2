@@ -39,6 +39,8 @@ export class Player extends Thing {
     floor_z = 0;
     is_safe = true;
     map_room = "";
+    map_offset = vector.create();
+    map_scale = 1;
     camera_target = vector.create();
     camera_target_target = vector.create();
     room_list = [];
@@ -69,6 +71,8 @@ export class Player extends Thing {
             down: keys["ArrowDown"] === true || (keys["KeyS"] === true),
             left: keys["ArrowLeft"] === true || (keys["KeyA"] === true),
             right: keys["ArrowRight"] === true || (keys["KeyD"] === true),
+            top: keys["KeyQ"] === true,
+            bottom: keys["KeyE"] === true,
             jump: (config.game.debug_mode || save.check_switch("jump")) && keys["Space"] === true,
             dash: (config.game.debug_mode || save.check_switch("dash")) && (keys["ShiftLeft"] === true || keys["ShiftRight"] === true),
             shoot: keys["Mouse"] === true || keys["KeyJ"] === true,
@@ -84,6 +88,10 @@ export class Player extends Thing {
         if (this.body) {
             if (!this.paused)
                 this.push_by(vector.mult(move_v, config.physics.player_speed));
+            else if (this.map_mode) {
+                this.map_offset = vector.add(this.map_offset, vector.mult(move_v, config.physics.player_speed * 10 / this.map_scale));
+                this.map_scale = math.bound(this.map_scale + 0.05 * ((controls.top ? 1 : 0) - (controls.bottom ? 1 : 0)), 0.5, 2);
+            }
             this.update_angle();
         }
         // update stats
@@ -133,7 +141,7 @@ export class Player extends Thing {
             }
             if (z < floor_z - 1.95)
                 z = this.fall_back();
-            else {
+            else if (!this.map_mode && Shape.floor_shapes.length) {
                 const v_mult = math.bound(dt / 167, 0, 3);
                 z = math.bound(z + this.target.vz * v_mult, z < floor_z - 0.1 ? floor_z - 2 : floor_z, floor_z + 1000);
                 if (Thing.time - this.die_time >= 0.5 * config.seconds) {
@@ -141,14 +149,16 @@ export class Player extends Thing {
                 }
             }
             // map
-            for (const s of Shape.map_shapes) {
-                if (s.computed && math.is_point_in_polygon(this.position, s.computed.vertices)) {
-                    const id = s.thing.id;
-                    if (id !== this.map_room) {
-                        save.visit_map(id);
-                        this.map_room = id;
+            if (this.is_safe) {
+                for (const s of Shape.map_shapes) {
+                    if (s.computed && math.is_point_in_polygon(this.position, s.computed.vertices)) {
+                        const id = s.thing.id;
+                        if (id !== this.map_room) {
+                            save.visit_map(id);
+                            this.map_room = id;
+                        }
+                        continue;
                     }
-                    continue;
                 }
             }
             // shoot
@@ -205,7 +215,7 @@ export class Player extends Thing {
         this.camera_target = vector.lerp(this.camera_target, this.camera_target_target, config.graphics.camera_target_smoothness);
         const position = vector.lerp(this.camera_target, this.position, 0.5);
         if (this.map_mode)
-            return position;
+            return vector.add(position, this.map_offset);
         return vector.add(position, vector.mult(vector.sub(camera.mouse_v, camera.halfscreen), config.graphics.camera_mouse_look_factor / camera.scale));
         // todo remove
         // let v = vector.sub(this.target.facing, camera.world2screen(this.position));
@@ -216,7 +226,7 @@ export class Player extends Thing {
         const v = camera.halfscreen;
         let s = Math.sqrt(v.x * v.y) / 500 / this.fov_mult;
         if (this.map_mode)
-            s /= 5 / this.fov_mult;
+            s /= 5 / this.fov_mult / this.map_scale;
         else if (this.paused)
             s *= 10 * this.fov_mult;
         return s;
@@ -373,7 +383,7 @@ export class Player extends Thing {
         // console.log("loading room " + room_id);
         for (const id of MAP.computed?.room_map[room_id] ?? []) {
             const s = MAP.computed?.shape_map[id];
-            if (s)
+            if (s && !s.options.map_parent)
                 make_from_map_shape(s);
         }
         this.room_list.push(room_id);
@@ -403,9 +413,44 @@ export class Player extends Thing {
             this.reload_room(room_id);
         }
     }
+    old_map_ids = [];
     activate_map() {
+        this.map_offset = vector.create();
+        this.map_scale = 1;
+        this.old_map_ids = [];
+        for (const thing of shallow_clone_array(Thing.things ?? [])) {
+            if (thing.options.is_map) {
+                player.old_map_ids.push(thing.id);
+                thing.remove();
+            }
+        }
+        for (const s of MAP.shapes ?? []) {
+            if (!s.options.is_map)
+                continue;
+            if (Thing.things_lookup[s.id])
+                continue;
+            if (save.check_map(s.options.map_parent ?? s.id)) {
+                if (s.options.map_hide_when && save.check_map(s.options.map_hide_when))
+                    continue;
+                const t = make_from_map_shape(s);
+                if (t)
+                    t.z = this.z;
+            }
+            else {
+                // haven't visited yet
+            }
+        }
     }
     deactivate_map() {
+        for (const thing of shallow_clone_array(Thing.things ?? [])) {
+            if (thing.options.is_map)
+                thing.remove();
+        }
+        for (const id of player.old_map_ids) {
+            const s = MAP.computed?.shape_map[id];
+            if (s)
+                make_from_map_shape(s);
+        }
     }
 }
 ;

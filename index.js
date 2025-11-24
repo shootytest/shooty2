@@ -63,6 +63,8 @@ const tick_all = (timestamp) => {
     player.tick(real_dt);
     if (!player.paused)
         Thing.tick_things(dt);
+    else if (player.map_mode)
+        Thing.tick_map_things(dt);
     Spawner.tick_spawners();
     Particle.tick_particles(dt);
     if (!player.paused && Thing.time > 500) {
@@ -83,15 +85,9 @@ const tick_all = (timestamp) => {
 map_serialiser.compute(MAP);
 export const make_from_map_shape = function (map_shape) {
     if (map_shape.options.is_spawner) {
-        if (map_shape.options.spawn_enemy) {
-            const s = new Spawner();
-            s.make_map(map_shape);
-        }
-        else {
-            // is a wave
-            const s = new Spawner();
-            s.make_map(map_shape);
-        }
+        const s = new Spawner();
+        s.make_map(map_shape);
+        return s;
     }
     else {
         if (map_shape.vertices.length < 2)
@@ -103,12 +99,7 @@ export const make_from_map_shape = function (map_shape) {
         else {
             const t = new Thing();
             t.make_map(map_shape);
-            if (t.options.is_map && t.options.parent) {
-                const parent_shape = MAP.computed?.shape_map[t.options.parent];
-                if (parent_shape?.options?.is_map) {
-                    t.options.map_parent = parent_shape.options.map_parent ?? parent_shape.id;
-                }
-            }
+            return t;
         }
     }
 };

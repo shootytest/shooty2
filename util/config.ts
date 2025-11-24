@@ -38,6 +38,7 @@ export const config = {
     collect_display_fancy_slide: true,
     health_display_smoothness: 0.07,
     health_rotate_speed: 0.8,
+    map_fade_time: 0.3 * SECONDS,
     blink_time: 0.15 * SECONDS,
     camera_smoothness: 0.18,
     camera_target_smoothness: 0.1,

@@ -1,7 +1,6 @@
-import { canvas_ } from "../util/canvas.js";
 import { config } from "../util/config.js";
 import { math } from "../util/math.js";
-import type { vector3, vector3_ } from "../util/vector.js";
+import type { vector3 } from "../util/vector.js";
 import { clone_object } from "./make.js";
 import { player } from "./player.js";
 import { Thing } from "./thing.js";

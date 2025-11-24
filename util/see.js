@@ -137,6 +137,8 @@ export const tick_colours = (dt) => {
     if (room.theme_mix) {
         theme = mix_themes(room.theme, room.theme_mix, room.theme_mix_strength);
     }
+    if (!room.calc_theme)
+        room.calc_theme = clone_object(theme);
     const is_instant = dt >= 10 * config.seconds;
     const mix_factor = is_instant ? 1 : (0.1 + 0.9 * math.bound(1 - Math.abs(theme.uid - current_theme.uid), 0, 1) ** 3);
     if (math.equal(current_theme.uid, theme.uid)) {
@@ -182,6 +184,12 @@ const mix_themes = (one, two, strength) => {
         return result;
     }
 };
+for (const room of Object.values(make_rooms)) {
+    let theme = THEMES[room.theme];
+    if (room.theme_mix)
+        theme = mix_themes(room.theme, room.theme_mix, room.theme_mix_strength);
+    room.calc_theme = clone_object(theme);
+}
 const calc_visibility_path = (v) => {
     // const radius = Math.sqrt(w * w + h * h) * 1.5; // multiplied by 1.5, just in case
     reset_lists();
