@@ -91,7 +91,7 @@ export const ui = {
     ui.tick_time++;
     ui.time += dt;
     ui.map.tick();
-    if (dt <= config.seconds && ui.tick_time >= 5) {
+    if (dt <= config.seconds && dt > math.epsilon && ui.tick_time >= 5) {
       ui.debug.dt_queue.push(dt);
       ui.debug.dt_total += dt;
       while (ui.debug.dt_queue.length > 100) {

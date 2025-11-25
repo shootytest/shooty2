@@ -20,6 +20,7 @@ export interface maketype {
   sensor?: boolean; // invisible physics sensor (covers all z values)
   invisible?: boolean; // invisible shape
   movable?: boolean; // dynamic physics object
+  mouse_movable?: boolean; // draggable using the mouse
   seethrough?: boolean; // visibility
   keep_bullets?: boolean; // don't delete bullets if they collide
   switch?: boolean;

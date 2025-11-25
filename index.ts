@@ -46,12 +46,18 @@ const init_all = () => {
   detector.init();
   key.init();
   ui.init();
+  ticks++;
   requestAnimationFrame(tick_all);
 };
 
 const tick_all = (timestamp: number) => {
 
-  const now = Math.round(timestamp * 10);
+  if (is_blur || ticks >= 2) {
+    ticks--;
+    return;
+  }
+
+  const now = Math.round(performance.now() * 10 - blurtime);
   if (time < 0) time = now;
   let real_dt = math.bound(now - time, 0, config.seconds * 1);
   const dt = real_dt * engine.timing.timeScale;
@@ -86,7 +92,9 @@ const tick_all = (timestamp: number) => {
   ui.tick(real_dt);
   ui.draw();
   mouse.tick();
-  requestAnimationFrame(tick_all);
+
+  if (!is_blur) requestAnimationFrame(tick_all);
+  else ticks--;
 
 };
 
@@ -123,6 +131,22 @@ tick_colours(99 * config.seconds);
 
 // init!
 window.addEventListener("load", init_all);
+let ticks = 0;
+let is_blur = false; // document.hasFocus();
+let blurtime = 0;
+let blurstart = -1;
+window.addEventListener("blur", function(event) {
+  is_blur = true;
+  blurstart = Math.round(performance.now() * 10);
+});
+window.addEventListener("focus", function(event) {
+  if (blurstart >= 0) {
+    blurtime += Math.round(performance.now() * 10 - blurstart);
+  }
+  is_blur = false;
+  ticks++;
+  requestAnimationFrame(tick_all);
+});
 
 // autoreload map
 window.localStorage.removeItem("reload");

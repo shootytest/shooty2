@@ -465,7 +465,7 @@ export class Shape {
         const c = this.is_circle ? this.computed.screen_vertices[0] : vector.aabb_centre(vector.make_aabb(this.computed.screen_vertices));
         ctx.beginPath();
         ctx.moveTo(c.x, c.y);
-        const angle = -Thing.time / config.seconds * config.graphics.health_rotate_speed;
+        const angle = (this.thing.is_player ? 0 : this.thing.angle) - (Thing.time / config.seconds * config.graphics.health_rotate_speed);
         ctx.arc_v(c, 123456, angle % (Math.PI * 2), (angle + Math.PI * 2 * ratio) % (Math.PI * 2));
         ctx.lineTo(c.x, c.y);
         ctx.clip();
