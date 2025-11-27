@@ -84,6 +84,9 @@ const tick_all = (timestamp: number) => {
   if (!player.paused && Thing.time > 500) {
     if (config.graphics.fps < 60) Engine.update(engine, 1000 / config.graphics.fps);
     else Engine.update(engine); // , real_dt / 10);
+  } else if (player.inventory_mode) {
+    if (config.graphics.fps < 60) Engine.update(player.temp_inventory_engine, 1000 / config.graphics.fps);
+    else Engine.update(player.temp_inventory_engine);
   }
   // ctx.clear();
   ctx.fill_screen(color.black);
@@ -101,6 +104,7 @@ const tick_all = (timestamp: number) => {
 map_serialiser.compute(MAP);
 
 export const make_from_map_shape = function(map_shape: map_shape_type) {
+  detector.map_shape_make_fns[map_shape.id]?.(map_shape);
   if (map_shape.options.is_spawner) {
     const s = new Spawner();
     s.make_map(map_shape);

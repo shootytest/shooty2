@@ -1,4 +1,4 @@
-import { vector } from "../util/vector.js";
+import { vector, vector3 } from "../util/vector.js";
 ;
 ;
 ;
@@ -179,6 +179,18 @@ make_shapes.checkpoint = [{
         z: 0.2,
         floor: true,
         style_: { stroke_opacity: 0 },
+    }, {
+        type: "line",
+        v1: vector3.createpolar_deg(0, 120, 0.2),
+        v2: vector3.createpolar_deg(0, 120, 1),
+    }, {
+        type: "line",
+        v1: vector3.createpolar_deg(120, 120, 0.2),
+        v2: vector3.createpolar_deg(120, 120, 1),
+    }, {
+        type: "line",
+        v1: vector3.createpolar_deg(240, 120, 0.2),
+        v2: vector3.createpolar_deg(240, 120, 1), // todo remove
     }];
 // @decorations
 make.map_shape = {
@@ -801,6 +813,59 @@ make_shapes.bullet_tutorial_boss_split = [{
             end: 1,
         },
     }];
+// @inventory
+make.inventory = {
+    seethrough: true,
+    movable: true,
+    draggable: true,
+    keep_bullets: true,
+    friction: 0.1,
+    team: -1,
+};
+make.inventory_coin_1 = {
+    make_parent: ["inventory"],
+    style: "collect_coin",
+};
+make_shapes.inventory_coin_1 = [{
+        type: "circle",
+        radius: 5,
+    }];
+make.inventory_coin_10 = {
+    make_parent: ["inventory"],
+    style: "collect_coin",
+};
+make_shapes.inventory_coin_10 = [{
+        type: "circle",
+        radius: 8,
+        style_: {
+            width: 0.6,
+            fill_opacity: 0.2,
+        },
+    }];
+make.inventory_coin_100 = {
+    make_parent: ["inventory"],
+    style: "collect_coin",
+};
+make_shapes.inventory_coin_100 = [{
+        type: "circle",
+        radius: 14,
+        style_: {
+            width: 0.8,
+            fill_opacity: 0.3,
+        },
+    }];
+make.inventory_coin_1000 = {
+    make_parent: ["inventory"],
+    style: "collect_coin",
+};
+make_shapes.inventory_coin_1000 = [{
+        type: "circle",
+        radius: 21,
+        style_: {
+            width: 1,
+            fill_opacity: 0.4,
+        },
+    }];
 // @collectibles
 make.collect = {
     seethrough: true,
@@ -1012,6 +1077,12 @@ export const make_rooms = {
     ["home"]: {
         theme: "home",
     },
+    ["home main"]: {
+        theme: "home",
+    },
+    ["home inventory"]: {
+        theme: "home",
+    },
     ["station"]: {
         theme: "train",
     },
@@ -1022,6 +1093,11 @@ export const make_rooms = {
     },
     ["station streets"]: {
         theme: "streets",
+        theme_mix: "train",
+        theme_mix_strength: 0.2,
+    },
+    ["station home"]: {
+        theme: "home",
         theme_mix: "train",
         theme_mix_strength: 0.2,
     },

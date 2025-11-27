@@ -412,6 +412,7 @@ export const detector = {
                 return;
             const train_time = (player.object.train_time ?? 0) + dt;
             player.object.train_time = train_time;
+            save.visit_map("station map train");
             const train = thing.lookup("train");
             if (train_time > 2.1 * config.seconds || train.object.crashed) {
                 if (train.object.crashed) {
@@ -552,6 +553,7 @@ export const detector = {
             }
         },
     },
+    map_shape_make_fns: {},
     tick_fns: {
         ["tutorial room 1 door 1"]: (door) => {
             do_door(door, "tutorial room 1 door sensor");

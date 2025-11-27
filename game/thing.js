@@ -174,8 +174,7 @@ export class Thing {
         this.create_id(o.id);
         this.create_room();
         if (!this.body && !this.options.decoration) {
-            const body_options = this.create_body_options();
-            this.create_body(body_options);
+            this.create_body();
         }
         if (this.body)
             this.body.label = o.id;
@@ -280,7 +279,7 @@ export class Thing {
             result.collisionFilter = filters[this.options.wall_filter];
         return result;
     }
-    create_body(options = {}, shape_index = 0) {
+    create_body(options = this.create_body_options(), shape_index = 0) {
         if (this.shapes.length <= shape_index) {
             throw `thing '${this.id}': shape index ${shape_index} >= length ${this.shapes.length}`;
         }

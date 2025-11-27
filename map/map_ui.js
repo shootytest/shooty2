@@ -964,10 +964,6 @@ export const m_ui = {
                 name: "see-through",
                 type: "checkbox",
             },
-            movable: {
-                name: "movable object",
-                type: "checkbox",
-            },
             sensor: {
                 name: "sensor",
                 type: "checkbox",
@@ -1038,6 +1034,14 @@ export const m_ui = {
                 show: "map_parent",
                 name: "hide when",
                 type: "text",
+            },
+            movable: {
+                name: "movable object",
+                type: "checkbox",
+            },
+            draggable: {
+                name: "draggable object",
+                type: "checkbox",
             },
         },
     },

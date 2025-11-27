@@ -42,18 +42,20 @@ const add_wall = (p1, p2, force = false) => {
 // tick
 let see_time = 0;
 let wall_opacity = 0;
+let see_origin = player.position;
 export const do_visibility = (_dt) => {
     see_time += _dt;
     // precompute stuff
     Shape.compute();
-    const path = calc_visibility_path_2(player, Shape.see_vertices);
+    see_origin = player.inventory_mode ? camera.location : player.position;
+    const path = calc_visibility_path_2(see_origin, Shape.see_vertices);
     const other_vertices = Shape.see_other_vertices;
     const other_list = {};
     const inverted = invert_path(path);
     let has_other_vertices = false;
     for (const other_key in other_vertices) {
         const [alpha, z] = other_key.split("|").map((n) => Number(n));
-        const inverted = invert_path(calc_visibility_path_2(player, other_vertices[other_key]));
+        const inverted = invert_path(calc_visibility_path_2(see_origin, other_vertices[other_key]));
         for (let z2 = Math.floor(z * 10) / 10; z2 < math.round_to(player.z + 1, 0.1); z2 += 0.1) {
             const zs = z2.toFixed(3);
             if (!other_list[zs])
@@ -76,7 +78,7 @@ export const do_visibility = (_dt) => {
     // actually draw stuff
     for (const z of draw_zs) {
         ctx.ctx.save();
-        clip_visibility_path(player, path, z);
+        clip_visibility_path(see_origin, path, z);
         Shape.draw(z);
         Particle.draw_particles(z);
         const zs = z.toFixed(3);
@@ -84,41 +86,41 @@ export const do_visibility = (_dt) => {
             for (const other of other_list[zs]) {
                 ctx.ctx.save();
                 ctx.fillStyle = math.equal(z, other.z) ? color_mix(current_theme.dark, color.blackground, 0.5) + math.component_to_hex(other.alpha * 255) : (color.blackground + math.component_to_hex(other.alpha * wall_opacity * 2));
-                clip_path(player, other.inverted, z, true);
+                clip_path(see_origin, other.inverted, z, true);
                 ctx.ctx.restore();
             }
         }
         ctx.ctx.restore();
         if (math.equal(Math.floor(z * 10), z * 10)) {
             ctx.ctx.save();
-            clip_inverted_path(player, inverted, z);
+            clip_inverted_path(see_origin, inverted, z);
             ctx.ctx.restore();
         }
         // if ((Math.floor(see_time / config.seconds * 5) % 16) / 10 - 0.5 < z) break;
     }
     // what is this
     // ctx.ctx.save();
-    // clip_inverted_path(player, inverted, 0);
+    // clip_inverted_path(see_origin, inverted, 0);
     // ctx.ctx.restore();
     // const [min_z, max_z] = Shape.see_z_range;
     // for (let z = 0 /* Math.floor(min_z * 10) / 10 + ((performance.now() / 300) % 1) / 10 */; z < math.round_to(player.z + 1, 0.1); z += 0.1) {
     //   ctx.ctx.save();
-    //   clip_inverted_path(player, inverted, z);
+    //   clip_inverted_path(see_origin, inverted, z);
     //   ctx.ctx.restore();
     // }
     // do translucent walls
     // ctx.save("see");
-    // clip_visibility_path(player, path, 0);
+    // clip_visibility_path(see_origin, path, 0);
     // for (const other_key in other_vertices) {
     //   const other_list = other_vertices[other_key];
     //   const alpha = Number(other_key);
-    //   const path = calc_visibility_path_2(player, other_list);
+    //   const path = calc_visibility_path_2(see_origin, other_list);
     //   const inverted = invert_path(path);
     //   ctx.fillStyle = color.blackground + math.component_to_hex(alpha * 255);
-    //   clip_path(player, inverted, see_lowest_z, true);
+    //   clip_path(see_origin, inverted, see_lowest_z, true);
     //   for (let z = Math.floor(see_lowest_z * 10) / 10; z < math.round_to(player.z + 1, 0.1); z += 0.1) {
     //     ctx.fillStyle = math.equal(z, see_lowest_z) ? (current_theme.dark + math.component_to_hex(alpha * 128)) : (color.blackground + math.component_to_hex(alpha * wall_opacity));
-    //     clip_path(player, inverted, z, true);
+    //     clip_path(see_origin, inverted, z, true);
     //   }
     // }
     // ctx.restore("see");
@@ -126,7 +128,7 @@ export const do_visibility = (_dt) => {
     ctx.globalAlpha = 0.1;
     for (let i = 0; i < 3; i++) {
       ctx.restore("see");
-      clip_visibility_polygon(vector.add(player, vector.createpolar(Math.PI / 3 * i + camera.time / 10, 10)));
+      clip_visibility_polygon(vector.add(see_origin, vector.createpolar(Math.PI / 3 * i + camera.time / 10, 10)));
     }
     ctx.globalAlpha = 1;
     */

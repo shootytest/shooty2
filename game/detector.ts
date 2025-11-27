@@ -3,6 +3,7 @@ import { Events } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { STYLES } from "../util/color.js";
 import { config } from "../util/config.js";
+import { map_shape_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { Enemy, Spawner } from "./enemy.js";
@@ -384,6 +385,7 @@ export const detector = {
       if (player.z >= 0.5 || player.z < 0) return;
       const train_time = (player.object.train_time ?? 0) + dt;
       player.object.train_time = train_time;
+      save.visit_map("station map train");
       const train = thing.lookup("train");
       if (train_time > 2.1 * config.seconds || train.object.crashed) {
         if (train.object.crashed) {
@@ -529,6 +531,11 @@ export const detector = {
       }
     },
   } as { [spawner_id: string]: (spawner: Spawner) => void },
+
+
+  map_shape_make_fns: {
+
+  } as { [shape_id: string]: (map_shape: map_shape_type) => void },
 
 
   tick_fns: {

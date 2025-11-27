@@ -17,6 +17,7 @@ export const math = {
     round: Math.round,
     ceil: Math.ceil,
     pi: Math.PI,
+    two_pi: Math.PI * 2,
     epsilon_bigger: 0.001,
     epsilon: 0.000001,
     epsilon_smaller: 0.000000001,
@@ -85,6 +86,12 @@ export const math = {
         else {
             return Math.random() * a;
         }
+    },
+    randangle: () => {
+        return math.rand(0, math.two_pi);
+    },
+    randvector: (max_length = 1) => {
+        return vector.createpolar(math.randangle(), max_length * math.sqrt(math.rand()));
     },
     randint: (a, b) => {
         return Math.floor(math.rand(a, b + 1));

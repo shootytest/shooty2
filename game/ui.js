@@ -48,32 +48,50 @@ export const ui = {
             ui.click.new_fns_exist = [false, false, false];
         },
     },
-    pause_fn: () => {
+    // toggle functions
+    pause_f: () => {
         player.paused = !player.paused;
-        player.map_mode = false;
         ui.settings.open = false;
         ui.settings.start_time = -1;
         ui.pause.start_time = player.paused ? ui.time : -1;
         if (!player.paused)
             return true;
     },
-    map_fn: () => {
+    toggle_pause: () => {
+        if (player.map_mode)
+            ui.toggle_map();
+        else if (player.inventory_mode)
+            ui.toggle_inventory();
+        else
+            ui.pause_f();
+    },
+    toggle_map: () => {
         player.paused = player.map_mode;
-        ui.pause_fn();
+        ui.pause_f();
         player.map_mode = player.paused;
         if (player.map_mode)
             ui.map.activate();
         else
             ui.map.deactivate();
     },
+    toggle_inventory: () => {
+        player.paused = player.inventory_mode;
+        ui.pause_f();
+        player.inventory_mode = player.paused;
+        if (player.inventory_mode)
+            ui.inventory.activate();
+        else
+            ui.inventory.deactivate();
+    },
     init: function () {
-        key.add_key_listener("KeyP", ui.pause_fn);
-        key.add_key_listener("Escape", ui.pause_fn);
+        key.add_key_listener("KeyP", ui.toggle_pause);
+        key.add_key_listener("Escape", ui.toggle_pause);
         key.add_key_listener("KeyF", () => {
             player.autoshoot = !player.autoshoot;
         });
-        key.add_key_listener("Tab", ui.map_fn);
-        key.add_key_listener("KeyM", ui.map_fn);
+        key.add_key_listener("Tab", ui.toggle_map);
+        key.add_key_listener("KeyM", ui.toggle_map);
+        key.add_key_listener("KeyI", ui.toggle_inventory);
         key.add_keydown_listener(function (event) {
             if (event.code === "Enter" && key.alt()) {
                 ui.toggle_fullscreen();
@@ -84,6 +102,7 @@ export const ui = {
         ui.tick_time++;
         ui.time += dt;
         ui.map.tick();
+        ui.inventory.tick();
         if (dt <= config.seconds && dt > math.epsilon && ui.tick_time >= 5) {
             ui.debug.dt_queue.push(dt);
             ui.debug.dt_total += dt;
@@ -348,7 +367,7 @@ export const ui = {
                 icon: "map",
                 color: color.gold,
                 fn: function () {
-                    ui.map_fn();
+                    ui.toggle_map();
                 },
             },
             {
@@ -385,11 +404,28 @@ export const ui = {
         },
         activate: () => {
             player.activate_map();
+            if (player.inventory_mode)
+                ui.toggle_inventory();
             ui.map.start_time = -999 * config.seconds; // change to ui.time for fade effect
         },
         deactivate: () => {
             player.deactivate_map();
             ui.map.start_time = -999 * config.seconds; // change to ui.time for fade effect
+        },
+    },
+    inventory: {
+        start_time: -999 * config.seconds,
+        tick: () => {
+        },
+        activate: () => {
+            player.activate_inventory();
+            if (player.map_mode)
+                ui.toggle_map();
+            ui.inventory.start_time = ui.time;
+        },
+        deactivate: () => {
+            player.deactivate_inventory();
+            ui.inventory.start_time = -999 * config.seconds;
         },
     },
     settings: {
@@ -474,7 +510,7 @@ export const ui = {
         ],
     },
     draw_pause_menu: function () {
-        if (player.map_mode)
+        if (player.map_mode || player.inventory_mode)
             return;
         const centre = camera.world2screen(player.position);
         const menu = ui.settings.really_open ? ui.settings.menu : ui.pause.menu;

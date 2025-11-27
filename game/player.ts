@@ -1,4 +1,5 @@
 import { make_from_map_shape, MAP } from "../index.js";
+import Matter, { Common, Composite, Engine } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { config } from "../util/config.js";
 import { keys } from "../util/key.js";
@@ -52,6 +53,7 @@ export class Player extends Thing {
 
   paused: boolean = false;
   map_mode: boolean = false;
+  inventory_mode: boolean = false;
 
   constructor() {
     super();
@@ -143,7 +145,7 @@ export class Player extends Thing {
         this.jump(); // handle coyote time too
       }
       if (z < floor_z - 1.95) z = this.fall_back();
-      else if (!this.map_mode && Shape.floor_shapes.length) {
+      else if (!this.map_mode && !this.inventory_mode && Shape.floor_shapes.length) {
         const v_mult = math.bound(dt / 167, 0, 3);
         z = math.bound(z + this.target.vz * v_mult, z < floor_z - 0.1 ? floor_z - 2 : floor_z, floor_z + 1000);
         if (Thing.time - this.die_time >= 0.5 * config.seconds) {
@@ -218,7 +220,7 @@ export class Player extends Thing {
   camera_position() {
     this.camera_target = vector.lerp(this.camera_target, this.camera_target_target, config.graphics.camera_target_smoothness);
     const position = vector.lerp(this.camera_target, this.position, 0.5);
-    if (this.map_mode) return vector.add(position, this.map_offset);
+    if (this.map_mode || this.inventory_mode) return vector.add(position, this.map_offset);
     return vector.add(position, vector.mult(vector.sub(camera.mouse_v, camera.halfscreen), config.graphics.camera_mouse_look_factor / camera.scale));
     // todo remove
     // let v = vector.sub(this.target.facing, camera.world2screen(this.position));
@@ -229,12 +231,13 @@ export class Player extends Thing {
   camera_scale() {
     const v = camera.halfscreen;
     let s = Math.sqrt(v.x * v.y) / 500 / this.fov_mult;
-    if (this.map_mode) s /= 5 / this.fov_mult / this.map_scale;
+    if (this.map_mode || this.inventory_mode) s /= 5 / this.fov_mult / this.map_scale;
     else if (this.paused) s *= 10 * this.fov_mult;
     return s;
   }
 
   camera_zs() {
+    if (this.inventory_mode) return [1, 0];
     const look_z = math.lerp(camera.look_z, this.z, config.graphics.camera_smoothness);
     return [ look_z + 1, look_z ];
   }
@@ -449,6 +452,69 @@ export class Player extends Thing {
       const s = MAP.computed?.shape_map[id];
       if (s) make_from_map_shape(s);
     }
+    player.old_map_ids = [];
+  }
+
+  temp_inventory_old_room_id: string = "";
+  temp_inventory_things: Thing[] = [];
+  temp_inventory_engine: Engine = Engine.create();
+
+  activate_inventory() {
+    const room_string = "home inventory";
+    const shape = MAP.computed?.shape_map[room_string];
+    this.temp_inventory_old_room_id = this.room_id;
+    this.room_id = room_string;
+    if (!shape) return;
+    this.load_room(room_string);
+    const centre = shape.vertices[0];
+    this.map_scale = 4;
+    this.map_offset = vector.sub(centre, vector.lerp(this.camera_target_target, this.position, 0.5));
+    camera.lerp_factor = 1;
+
+    // init new engine
+    const engine = this.temp_inventory_engine;
+    const world = engine.world;
+    engine.gravity.x = 0;
+    engine.gravity.y = 0;
+    engine.timing.timeScale = config.timescale;
+
+    console.log(this.lookup("home inventory wall").body);
+    for (const b of (this.lookup("home inventory wall")?.body as any)?.walls ?? []) Composite.add(world, b);
+
+    const thing_ids: string[] = [];
+    for (const [c_id, v] of Object.entries(save.save.currencies)) {
+      let i = 0, value = Math.floor(v), mult = 10 ** (Math.floor(Math.log10(v)));
+      while (value > 0 && i < 100) {
+        value -= mult;
+        const s = "inventory_" + c_id + "_" + mult;
+        thing_ids.push(s);
+        i++;
+        while (value - mult < 0 && mult > 1) mult = Math.floor(mult / 10);
+      }
+    }
+
+    Common.shuffle(thing_ids);
+    for (const s of thing_ids) {
+      const t = new Thing();
+      const v = math.randvector(10);
+      t.make(s);
+      t.position = vector.add(centre, v);
+      this.temp_inventory_things.push(t);
+      t.create_body();
+      t.set_velocity(v);
+      if (t.body) Composite.add(world, t.body);
+    }
+
+  }
+
+  deactivate_inventory() {
+    this.room_id = this.temp_inventory_old_room_id;
+    for (const t of shallow_clone_array(this.temp_inventory_things)) {
+      t.remove();
+      if (t.body) Composite.remove(this.temp_inventory_engine.world, t.body);
+    }
+    camera.lerp_factor = 1;
+    this.temp_inventory_things = [];
   }
 
 };
