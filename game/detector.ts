@@ -188,7 +188,7 @@ export const detector = {
           const diff = Math.abs(b.z - a.z);
           if ((pair as any).z_diff) {
             // suddenly same z
-            if (diff <= 0.1) {
+            if (diff < 0.1) {
               // pair.isSensor = false;
               (pair as any).z_diff = false;
               detector.collision_start(pair, a, b, true);
@@ -232,7 +232,8 @@ export const detector = {
         b.health?.hit_all();
       }
     }
-    if (a.is_bullet && hittingz) {
+    if (!hittingz) return;
+    if (a.is_bullet) {
       if (!b.options.sensor && !b.options.keep_bullets && !a.options.collectible && !b.options.breakable && different_team && !b.health?.invincible) {
         if (b.is_player) a.options.death = []; // please don't explode if it hits the player // todo how about exploding coins?
         a.die();
@@ -242,7 +243,7 @@ export const detector = {
         if (b.options.xp) b.options.xp *= a.object.breakables_hit;
       }
     }
-    if (a.damage > 0 && b.health && b.health.capacity > 0 && different_team && hittingz) {
+    if (a.damage > 0 && b.health && b.health.capacity > 0 && different_team) {
       // console.log(`[detector/collision_start] ${a.id} hits ${b.id} for ${a.damage} damage!`);
       b.health?.hit(a.damage);
     }
@@ -255,7 +256,7 @@ export const detector = {
       }
     }
     // player/bullets and switches
-    if (Math.floor(a.team) === 1 && b.options.switch && hittingz) {
+    if (Math.floor(a.team) === 1 && b.options.switch) {
       const switch_id = (b as Enemy).spawner.id;
       if (!save.check_switch(switch_id)) {
         save.set_switch(switch_id);
@@ -263,8 +264,6 @@ export const detector = {
       }
       b.shapes[0].options.glowing = 1;
     }
-    // handle breakable effect
-    // if (b.options.breakable) b.velocity = vector.mult(a.velocity, 0.5);
   },
   collision_end: (pair: Matter.Pair, a: Thing, b: Thing, z_diff: boolean = false) => {
     // console.log(`[detector/collision_end] Collision ended betwixt ${ba.label} & ${bb.label}!`);

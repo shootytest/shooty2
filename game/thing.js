@@ -697,7 +697,7 @@ export class Thing {
             this.update_angle(b.face_smoothness ?? 0.3);
         }
         else if (face_mode === "spin") {
-            this.target.angle = this.target.angle + (b.spin_speed ?? 0.01) * (this.random_number >= 0.5 ? 1 : -1);
+            this.target.angle = this.target.angle + 0.01 * (b.spin_speed ?? 1) * (this.random_number >= 0.5 ? 1 : -1);
             this.target.facing = vector.add(this.position, vector.createpolar(this.target.angle));
             if (this.body)
                 Body.setAngle(this.body, this.target.angle);

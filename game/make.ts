@@ -35,6 +35,7 @@ export interface maketype {
   ability?: maketype_health;
   hide_health?: boolean;
   hide_health_until?: number;
+  translucent?: number;
 
   // physics stuff
   angle?: number;
@@ -228,6 +229,15 @@ make.spike = {
   keep_bullets: false,
   seethrough: true,
   damage: 100,
+};
+
+make.wall_door = {
+  wall_filter: "wall",
+  style: "door",
+  translucent: 0.5,
+  style_: {
+    stroke_opacity: 0.5,
+  },
 };
 
 make.wall_floor = {
@@ -1089,6 +1099,14 @@ make.inventory = {
   keep_bullets: true,
   friction: 0.1,
   team: -1,
+  behaviour: {
+    idle: {
+      face_mode: "spin",
+      move_mode: "direct",
+      move_speed: 0.1,
+      spin_speed: 1,
+    }
+  },
 };
 
 make.inventory_coin_1 = {
@@ -1212,7 +1230,7 @@ make.collect_gun_basic = {
   behaviour: {
     idle: {
       face_mode: "spin",
-      spin_speed: 0.02,
+      spin_speed: 2,
     }
   },
   enemy_detect_range: 0,
@@ -1384,6 +1402,7 @@ export interface maketype_room {
   theme_mix?: keyof typeof THEMES;
   theme_mix_strength?: number;
   calc_theme?: color_theme; // calculated
+  always_load?: boolean;
 };
 
 export const make_rooms = {
@@ -1397,9 +1416,11 @@ export const make_rooms = {
   },
   ["home main"]: {
     theme: "home",
+    always_load: true,
   },
   ["home inventory"]: {
     theme: "home",
+    always_load: true,
   },
 
   ["station"]: {
@@ -1451,7 +1472,10 @@ export const make_rooms = {
 
 } as { [key: string]: maketype_room };
 
-
+export const always_loaded_rooms: string[] = [];
+for (const [r_id, room] of Object.entries(make_rooms)) {
+  if (room.always_load) always_loaded_rooms.push(r_id);
+}
 
 
 // @waves

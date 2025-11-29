@@ -1,5 +1,6 @@
 import { detector } from "./game/detector.js";
 import { Spawner } from "./game/enemy.js";
+import { always_loaded_rooms } from "./game/make.js";
 import { Particle } from "./game/particle.js";
 import { player } from "./game/player.js";
 import { save } from "./game/save.js";
@@ -47,6 +48,9 @@ const init_all = () => {
   key.init();
   ui.init();
   ticks++;
+  for (const r_id of always_loaded_rooms) {
+    player.load_room(r_id);
+  }
   requestAnimationFrame(tick_all);
 };
 
@@ -85,8 +89,8 @@ const tick_all = (timestamp: number) => {
     if (config.graphics.fps < 60) Engine.update(engine, 1000 / config.graphics.fps);
     else Engine.update(engine); // , real_dt / 10);
   } else if (player.inventory_mode) {
-    if (config.graphics.fps < 60) Engine.update(player.temp_inventory_engine, 1000 / config.graphics.fps);
-    else Engine.update(player.temp_inventory_engine);
+    if (config.graphics.fps < 60) Engine.update(player.temp_engine, 1000 / config.graphics.fps);
+    else Engine.update(player.temp_engine);
   }
   // ctx.clear();
   ctx.fill_screen(color.black);

@@ -21,6 +21,7 @@ export const config = {
     force_factor: 0.0005,
     recoil_factor: 10,
     velocity_shoot_boost: 0.3,
+    drag_max_velocity: 15,
   },
   graphics: {
     fps: 60,

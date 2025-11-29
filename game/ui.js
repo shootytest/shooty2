@@ -1,3 +1,4 @@
+import { Events, Mouse, MouseConstraint } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { canvas, canvas_, ctx, resize_canvas } from "../util/canvas.js";
 import { color, current_theme } from "../util/color.js";
@@ -46,6 +47,28 @@ export const ui = {
                 }
             }
             ui.click.new_fns_exist = [false, false, false];
+        },
+    },
+    mouse: {
+        mouse: Mouse.create(canvas_),
+        constraint: {},
+        init: () => {
+            ui.mouse.constraint = MouseConstraint.create(player.temp_engine, {
+                mouse: ui.mouse.mouse,
+                constraint: {
+                    stiffness: 0.2,
+                    render: {
+                        visible: false,
+                    },
+                },
+            });
+            Events.on(ui.mouse.constraint, "startdrag", (e) => {
+                const event = e;
+            });
+        },
+        tick: () => {
+            Mouse.setScale(ui.mouse.mouse, vector.create(1 / camera.scale, 1 / camera.scale));
+            Mouse.setOffset(ui.mouse.mouse, vector.clone(camera.position));
         },
     },
     // toggle functions
@@ -97,12 +120,14 @@ export const ui = {
                 ui.toggle_fullscreen();
             }
         });
+        ui.mouse.init();
     },
     tick: function (dt) {
         ui.tick_time++;
         ui.time += dt;
         ui.map.tick();
         ui.inventory.tick();
+        ui.mouse.tick();
         if (dt <= config.seconds && dt > math.epsilon && ui.tick_time >= 5) {
             ui.debug.dt_queue.push(dt);
             ui.debug.dt_total += dt;
@@ -120,8 +145,10 @@ export const ui = {
     draw: function () {
         ui.draw_debug();
         ui.draw_health();
-        if (player.paused)
+        if (player.paused) {
             ui.draw_pause_menu();
+            ui.draw_inventory();
+        }
         ui.click.tick();
     },
     xp: {
@@ -555,7 +582,9 @@ export const ui = {
                 r *= 1.25 * switch_ratio;
         }
     },
-    draw_items: function () {
+    draw_inventory: function () {
+        if (!player.inventory_mode)
+            return;
     },
     items: {
         coin: {

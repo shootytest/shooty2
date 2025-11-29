@@ -1,3 +1,5 @@
+import { engine, world } from "../index.js";
+import { Composite, Events, Mouse, MouseConstraint } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { canvas, canvas_, ctx, resize_canvas } from "../util/canvas.js";
 import { color, current_theme } from "../util/color.js";
@@ -52,6 +54,29 @@ export const ui = {
     },
   },
 
+  mouse: {
+    mouse: Mouse.create(canvas_),
+    constraint: {} as MouseConstraint,
+    init: () => {
+      ui.mouse.constraint = MouseConstraint.create(player.temp_engine, {
+        mouse: ui.mouse.mouse,
+        constraint: {
+          stiffness: 0.2,
+          render: {
+            visible: false,
+          },
+        },
+      });
+      Events.on(ui.mouse.constraint, "startdrag", (e) => {
+        const event = e as { mouse: Mouse, body: Body, source: object, name: string };
+      });
+    },
+    tick: () => {
+      Mouse.setScale(ui.mouse.mouse, vector.create(1 / camera.scale, 1 / camera.scale));
+      Mouse.setOffset(ui.mouse.mouse, vector.clone(camera.position));
+    },
+  },
+
   // toggle functions
   pause_f: () => {
     player.paused = !player.paused;
@@ -81,6 +106,7 @@ export const ui = {
   },
 
   init: function() {
+
     key.add_key_listener("KeyP", ui.toggle_pause);
     key.add_key_listener("Escape", ui.toggle_pause);
 
@@ -98,6 +124,8 @@ export const ui = {
       }
     });
 
+    ui.mouse.init();
+
   },
 
   tick: function(dt: number) {
@@ -105,6 +133,7 @@ export const ui = {
     ui.time += dt;
     ui.map.tick();
     ui.inventory.tick();
+    ui.mouse.tick();
     if (dt <= config.seconds && dt > math.epsilon && ui.tick_time >= 5) {
       ui.debug.dt_queue.push(dt);
       ui.debug.dt_total += dt;
@@ -123,7 +152,10 @@ export const ui = {
   draw: function() {
     ui.draw_debug();
     ui.draw_health();
-    if (player.paused) ui.draw_pause_menu();
+    if (player.paused) {
+      ui.draw_pause_menu();
+      ui.draw_inventory();
+    }
     ui.click.tick();
   },
 
@@ -550,8 +582,9 @@ export const ui = {
     }
   },
 
-  draw_items: function() {
-
+  draw_inventory: function() {
+    if (!player.inventory_mode) return;
+    
   },
 
   items: {

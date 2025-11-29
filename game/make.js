@@ -33,6 +33,14 @@ make.spike = {
     seethrough: true,
     damage: 100,
 };
+make.wall_door = {
+    wall_filter: "wall",
+    style: "door",
+    translucent: 0.5,
+    style_: {
+        stroke_opacity: 0.5,
+    },
+};
 make.wall_floor = {
     wall_filter: "wall",
     style: "wall_floor",
@@ -821,6 +829,14 @@ make.inventory = {
     keep_bullets: true,
     friction: 0.1,
     team: -1,
+    behaviour: {
+        idle: {
+            face_mode: "spin",
+            move_mode: "direct",
+            move_speed: 0.1,
+            spin_speed: 1,
+        }
+    },
 };
 make.inventory_coin_1 = {
     make_parent: ["inventory"],
@@ -928,7 +944,7 @@ make.collect_gun_basic = {
     behaviour: {
         idle: {
             face_mode: "spin",
-            spin_speed: 0.02,
+            spin_speed: 2,
         }
     },
     enemy_detect_range: 0,
@@ -1079,9 +1095,11 @@ export const make_rooms = {
     },
     ["home main"]: {
         theme: "home",
+        always_load: true,
     },
     ["home inventory"]: {
         theme: "home",
+        always_load: true,
     },
     ["station"]: {
         theme: "train",
@@ -1128,6 +1146,11 @@ export const make_rooms = {
         theme_mix_strength: 0.2,
     },
 };
+export const always_loaded_rooms = [];
+for (const [r_id, room] of Object.entries(make_rooms)) {
+    if (room.always_load)
+        always_loaded_rooms.push(r_id);
+}
 ;
 ;
 ;

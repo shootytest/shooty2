@@ -1,13 +1,13 @@
 import { make_from_map_shape, MAP } from "../index.js";
-import Matter, { Common, Composite, Engine } from "../matter.js";
+import Matter, { Body, Common, Composite, Engine, Vertices } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { config } from "../util/config.js";
 import { keys } from "../util/key.js";
 import { math } from "../util/math.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { filters } from "./detector.js";
-import { Spawner } from "./enemy.js";
-import { maketype_collect, override_object, shallow_clone_array } from "./make.js";
+import { Enemy, Spawner } from "./enemy.js";
+import { always_loaded_rooms, make, maketype_collect, override_object, shallow_clone_array } from "./make.js";
 import { player_save, player_stats, save } from "./save.js";
 import { Shape } from "./shape.js";
 import { Thing } from "./thing.js";
@@ -145,7 +145,7 @@ export class Player extends Thing {
         this.jump(); // handle coyote time too
       }
       if (z < floor_z - 1.95) z = this.fall_back();
-      else if (!this.map_mode && !this.inventory_mode && Shape.floor_shapes.length) {
+      else if (!this.map_mode && !this.inventory_mode && Shape.floor_shapes.length) { // todo bug: when far away floor shapes is also 0...
         const v_mult = math.bound(dt / 167, 0, 3);
         z = math.bound(z + this.target.vz * v_mult, z < floor_z - 0.1 ? floor_z - 2 : floor_z, floor_z + 1000);
         if (Thing.time - this.die_time >= 0.5 * config.seconds) {
@@ -153,7 +153,7 @@ export class Player extends Thing {
         }
       }
       // map
-      if (this.is_safe) {
+      if (this.is_safe && on_floor && grounded) {
         for (const s of Shape.map_shapes) {
           if (s.computed && math.is_point_in_polygon(this.position, s.computed.vertices)) {
             const id = s.thing.id;
@@ -178,6 +178,18 @@ export class Player extends Thing {
       this.floor_z = floor_z;
       // only do thing tick after all that
       super.tick(dt);
+    } else if (this.inventory_mode) {
+      for (const t of this.temp_things) {
+        t.tick(dt);
+        if (!t.body) continue;
+        // max velocity
+        const v2 = vector.length2(t.velocity);
+        if (v2 > config.physics.drag_max_velocity * config.physics.drag_max_velocity) Body.setVelocity(t.body, vector.normalise(t.velocity, config.physics.drag_max_velocity));
+        if (!math.is_point_in_polygon(t.position, this.temp_border)) {
+          if (ui.mouse.constraint.body === t.body) ui.mouse.mouse.element.dispatchEvent(new Event("mouseup"));
+          Body.setPosition(t.body, Vertices.centre(this.temp_border));
+        }
+      }
     }
   }
 
@@ -350,7 +362,7 @@ export class Player extends Thing {
     if (!room_id || (!force && this.room_id === room_id)) return;
     const old_room_id = this.room_id;
     this.room_id = room_id;
-    this.set_rooms(this.connected_rooms(1), this.connected_rooms(2));
+    this.set_rooms(this.connected_rooms(1), this.connected_rooms(2).concat(always_loaded_rooms));
     if (old_room_id !== (MAP.computed?.shape_map.start.options.room_connections?.[0] ?? "") && !this.room_list.includes(old_room_id)) {
       console.log(this.room_list);
       console.warn("[player/change_room] warning! player room list doesn't include the previous room id: " + old_room_id);
@@ -385,7 +397,7 @@ export class Player extends Thing {
     // console.log("loading room " + room_id);
     for (const id of MAP.computed?.room_map[room_id] ?? []) {
       const s = MAP.computed?.shape_map[id];
-      if (s && !s.options.map_parent) make_from_map_shape(s);
+      if (s && !s.options.map_parent && !this.lookup(s.id)) make_from_map_shape(s);
     }
     this.room_list.push(room_id);
   }
@@ -455,39 +467,42 @@ export class Player extends Thing {
     player.old_map_ids = [];
   }
 
-  temp_inventory_old_room_id: string = "";
-  temp_inventory_things: Thing[] = [];
-  temp_inventory_engine: Engine = Engine.create();
+  temp_old_room_id: string = "";
+  temp_things: Thing[] = [];
+  temp_engine: Engine = Engine.create();
+  temp_border: vector[] = [];
 
   activate_inventory() {
-    const room_string = "home inventory";
-    const shape = MAP.computed?.shape_map[room_string];
-    this.temp_inventory_old_room_id = this.room_id;
-    this.room_id = room_string;
+    const shape = MAP.computed?.shape_map["home inventory"];
+    this.temp_old_room_id = this.room_id;
+    this.room_id = "home inventory";
     if (!shape) return;
-    this.load_room(room_string);
     const centre = shape.vertices[0];
     this.map_scale = 4;
     this.map_offset = vector.sub(centre, vector.lerp(this.camera_target_target, this.position, 0.5));
     camera.lerp_factor = 1;
 
     // init new engine
-    const engine = this.temp_inventory_engine;
+    const engine = this.temp_engine;
     const world = engine.world;
     engine.gravity.x = 0;
     engine.gravity.y = 0;
     engine.timing.timeScale = config.timescale;
 
-    console.log(this.lookup("home inventory wall").body);
-    for (const b of (this.lookup("home inventory wall")?.body as any)?.walls ?? []) Composite.add(world, b);
+    const wall = this.lookup("home inventory wall");
+    this.temp_border = vector.add_list(wall.shapes[0].vertices, wall.position);
+    for (const b of (wall?.body as any)?.walls ?? []) Composite.add(world, b);
+    Composite.add(world, ui.mouse.constraint);
 
     const thing_ids: string[] = [];
     for (const [c_id, v] of Object.entries(save.save.currencies)) {
       let i = 0, value = Math.floor(v), mult = 10 ** (Math.floor(Math.log10(v)));
       while (value > 0 && i < 100) {
-        value -= mult;
         const s = "inventory_" + c_id + "_" + mult;
-        thing_ids.push(s);
+        if (make[s]) {
+          value -= mult;
+          thing_ids.push(s);
+        } else mult = Math.floor(mult / 10);
         i++;
         while (value - mult < 0 && mult > 1) mult = Math.floor(mult / 10);
       }
@@ -499,22 +514,28 @@ export class Player extends Thing {
       const v = math.randvector(10);
       t.make(s);
       t.position = vector.add(centre, v);
-      this.temp_inventory_things.push(t);
+      t.angle = math.randangle();
+      this.temp_things.push(t);
       t.create_body();
       t.set_velocity(v);
+      if (Enemy.cumulative_ids[s] == undefined) Enemy.cumulative_ids[s] = 1;
+      t.create_id(s + " #" + Enemy.cumulative_ids[s]++);
       if (t.body) Composite.add(world, t.body);
     }
 
   }
 
   deactivate_inventory() {
-    this.room_id = this.temp_inventory_old_room_id;
-    for (const t of shallow_clone_array(this.temp_inventory_things)) {
+    this.room_id = this.temp_old_room_id;
+    const world = this.temp_engine.world;
+    for (const t of shallow_clone_array(this.temp_things)) {
+      if (t.body) Composite.remove(world, t.body);
       t.remove();
-      if (t.body) Composite.remove(this.temp_inventory_engine.world, t.body);
     }
+    for (const b of (this.lookup("home inventory wall")?.body as any)?.walls ?? []) Composite.remove(world, b);
+    Composite.remove(world, ui.mouse.constraint);
     camera.lerp_factor = 1;
-    this.temp_inventory_things = [];
+    this.temp_things = [];
   }
 
 };

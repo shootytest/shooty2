@@ -289,7 +289,7 @@ export const STYLES /*: { [key: string]: style_type }*/ = {
         fill: "dark2",
         fill_opacity: 0.3,
     },
-    tutorial_door: {
+    door: {
         stroke: "dark2",
     },
     tutorial_door_floor: {

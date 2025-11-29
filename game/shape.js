@@ -24,11 +24,11 @@ export class Shape {
     static type = "shape";
     static from_map(thing, o) {
         const s = new Shape(thing);
-        // s.map_shape_type_object = o;
         s.offset.z = 0; // o.z;
-        // booleans
         s.closed_loop = !(thing.options.open_loop);
         s.seethrough = Boolean(thing.options.seethrough);
+        if (thing.options.translucent)
+            s.translucent = thing.options.translucent;
         // handle vertices
         s.vertices = vector3.create_many(o.vertices, o.z);
         if (o.computed == undefined)
@@ -70,6 +70,8 @@ export class Shape {
         }
         s.options = o;
         s.seethrough = Boolean(thing.options.seethrough);
+        if (thing.options.translucent)
+            s.translucent = thing.options.translucent;
         if (o.style || thing.options.style) {
             s.style = clone_object(STYLES_[o.style ?? thing.options.style ?? "error"] ?? STYLES.error);
             s.has_style = true;
@@ -257,7 +259,7 @@ export class Shape {
                 continue;
             if (s.closed_loop)
                 vs.push(vs[0]);
-            const translucent = math.round_to(s.translucent, 0.001).toFixed(3) + "|" + s.z.toFixed(3);
+            const translucent = s.translucent.toFixed(3) + "|" + s.z.toFixed(3);
             if (!result[translucent])
                 result[translucent] = [];
             result[translucent]?.push(vs);
