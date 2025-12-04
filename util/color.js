@@ -141,7 +141,7 @@ export const color2hex_map = (c, theme_string) => {
     else
         return c;
 };
-export const mix_lookup = {};
+const mix_lookup = {};
 export const color_mix = (c1, c2, amount) => {
     if (amount < 0.001)
         return c1;
@@ -205,6 +205,18 @@ export const STYLES /*: { [key: string]: style_type }*/ = {
         stroke: "main",
         fill_opacity: 1,
         stroke_opacity: 0,
+    },
+    map_line: {
+        fill: color.black,
+        stroke: "main",
+        fill_opacity: 0,
+        stroke_opacity: 0.5,
+    },
+    map_line_dark: {
+        fill: color.black,
+        stroke: "dark",
+        fill_opacity: 0,
+        stroke_opacity: 0.5,
     },
     // collectible colours
     coin_rock_1: {

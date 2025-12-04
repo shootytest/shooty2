@@ -2,10 +2,11 @@ import { engine, world } from "../index.js";
 import { Composite, Events, Mouse, MouseConstraint } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { canvas, canvas_, ctx, resize_canvas } from "../util/canvas.js";
-import { color, current_theme } from "../util/color.js";
+import { color, color_mix, current_theme } from "../util/color.js";
 import { config } from "../util/config.js";
 import { key, keys, mouse } from "../util/key.js";
 import { math } from "../util/math.js";
+import { SVG } from "../util/svg.js";
 import { vector } from "../util/vector.js";
 import { shallow_clone_array } from "./make.js";
 import { Particle } from "./particle.js";
@@ -85,24 +86,84 @@ export const ui = {
     ui.pause.start_time = player.paused ? ui.time : -1;
     if (!player.paused) return true;
   },
+  clear_modes: () => {
+    if (player.map_mode) {
+      player.map_mode = false;
+      ui.map.deactivate();
+      player.paused = false;
+    } else if (player.inventory_mode) {
+      player.inventory_mode = false;
+      ui.inventory.deactivate();
+      player.paused = false;
+    } else if (player.shapes_mode) {
+      player.shapes_mode = false;
+      ui.shapes.deactivate();
+      player.paused = false;
+    }
+  },
   toggle_pause: () => {
     if (player.map_mode) ui.toggle_map();
     else if (player.inventory_mode) ui.toggle_inventory();
+    else if (player.shapes_mode) ui.toggle_shapes();
     else ui.pause_f();
   },
   toggle_map: () => {
-    player.paused = player.map_mode;
-    ui.pause_f();
-    player.map_mode = player.paused;
-    if (player.map_mode) ui.map.activate();
-    else ui.map.deactivate();
+    if (player.map_mode) {
+      ui.clear_modes();
+    } else {
+      ui.clear_modes();
+      ui.pause_f();
+      player.map_mode = true;
+      ui.map.activate();
+    }
   },
   toggle_inventory: () => {
-    player.paused = player.inventory_mode;
-    ui.pause_f();
-    player.inventory_mode = player.paused;
-    if (player.inventory_mode) ui.inventory.activate();
-    else ui.inventory.deactivate();
+    if (player.inventory_mode) {
+      ui.clear_modes();
+    } else {
+      ui.clear_modes();
+      ui.pause_f();
+      player.inventory_mode = true;
+      ui.inventory.activate();
+    }
+  },
+  toggle_shapes: () => {
+    if (player.shapes_mode) {
+      ui.clear_modes();
+    } else {
+      ui.clear_modes();
+      ui.pause_f();
+      player.shapes_mode = true;
+      ui.shapes.activate();
+    }
+  },
+  toggle_left: () => {
+    if (!player.some_mode) return;
+    if (player.map_mode) {
+      // locked
+      // open pause menu
+      // ui.toggle_pause();
+      // ui.toggle_pause();
+    } else if (player.inventory_mode) {
+      ui.toggle_map();
+    } else if (player.shapes_mode) {
+      ui.toggle_inventory();
+    }
+  },
+  toggle_right: () => {
+    if (!player.some_mode) return;
+    if (player.map_mode) {
+      ui.toggle_inventory();
+    } else if (player.inventory_mode) {
+      // todo lock this
+      ui.toggle_shapes();
+    } else if (player.shapes_mode) {
+      // locked
+      // open settings
+      // ui.toggle_pause();
+      // ui.toggle_pause();
+      // ui.pause.menu[1].fn();
+    }
   },
 
   init: function() {
@@ -116,7 +177,11 @@ export const ui = {
 
     key.add_key_listener("Tab", ui.toggle_map);
     key.add_key_listener("KeyM", ui.toggle_map);
+    key.add_key_listener("KeyU", ui.toggle_map);
     key.add_key_listener("KeyI", ui.toggle_inventory);
+    key.add_key_listener("KeyO", ui.toggle_shapes);
+    key.add_key_listener("BracketLeft", ui.toggle_left);
+    key.add_key_listener("BracketRight", ui.toggle_right);
 
     key.add_keydown_listener(function(event) {
       if (event.code === "Enter" && key.alt()) {
@@ -437,6 +502,8 @@ export const ui = {
     activate: () => {
       player.activate_map();
       if (player.inventory_mode) ui.toggle_inventory();
+      if (player.shapes_mode) ui.toggle_shapes();
+      player.paused = true;
       ui.map.start_time = -999 * config.seconds; // change to ui.time for fade effect
     },
     deactivate: () => {
@@ -453,11 +520,31 @@ export const ui = {
     activate: () => {
       player.activate_inventory();
       if (player.map_mode) ui.toggle_map();
+      if (player.shapes_mode) ui.toggle_shapes();
+      player.paused = true;
       ui.inventory.start_time = ui.time;
     },
     deactivate: () => {
       player.deactivate_inventory();
       ui.inventory.start_time = -999 * config.seconds;
+    },
+  },
+
+  shapes: {
+    start_time: -999 * config.seconds,
+    tick: () => {
+
+    },
+    activate: () => {
+      player.activate_shapes();
+      if (player.map_mode) ui.toggle_map();
+      if (player.inventory_mode) ui.toggle_inventory();
+      player.paused = true;
+      ui.shapes.start_time = ui.time;
+    },
+    deactivate: () => {
+      player.deactivate_shapes();
+      ui.shapes.start_time = -999 * config.seconds;
     },
   },
 
@@ -540,51 +627,95 @@ export const ui = {
   },
 
   draw_pause_menu: function() {
-    if (player.map_mode || player.inventory_mode) return;
-    const centre = camera.world2screen(player.position);
-    const menu = ui.settings.really_open ? ui.settings.menu : ui.pause.menu;
-    const switch_animation = ui.settings.time < 2 * ui.settings.animation_time;
-    const switch_ratio = switch_animation ? math.bound(Math.abs(ui.settings.time / ui.settings.animation_time - 1) ** 1.5, math.epsilon, 1) : 1;
-    let r = 8 * camera.scale;
-    // const pause_ratio = math.bound(ui.pause.time / 50, 0, 168);
-    ctx.fillStyle = current_theme.floor + math.component_to_hex(160);
-    ctx.beginPath();
-    ctx.circle_v(centre, player.radius * camera.scale);
-    ctx.fill();
-    ctx.ctx.save();
-    player.shapes[0].draw_all();
-    ctx.ctx.restore();
-    const length = menu.length;
-    ctx.strokeStyle = color.white;
-    ctx.lineWidth = r * 0.15;
-    const angle_offset = (ui.settings.open ? ui.settings.time : ui.pause.time) / 1000;
-    for (let i = 0; i < length; i++) {
-      const a = ((i - 1) * 360 / (length - 1) + angle_offset) % 360;
-      const v = i === 0 ? centre : vector.add(centre, vector.createpolar_deg(a, r * 1.5));
-      const o = menu[i];
-      ctx.fillStyle = color.white;
-      ctx.svg_v(o.icon, v, r);
+    if (player.some_mode) { // draw mode-switcher on top
+
+      const centre = vector.create(ui.width / 2, ui.height * 0.08);
+      const size = ui.size;
+      const whitermain = color_mix(current_theme.main, color.white, 0.2);
+      let x = centre.x - size * 15, y = centre.y;
+
+      ctx.fillStyle = whitermain + "dd";
       ctx.beginPath();
-      ctx.circle_v(v, r * 0.7);
-      const hovering = ctx.point_in_path_v(mouse.position);
-      if (hovering) ui.click.new(o.fn);
-      ctx.beginPath();
-      ctx.circle_v(v, r * 0.64);
-      ctx.fillStyle = (hovering ? o.color : color.white) + "22";
+      ctx.rectangle(centre.x, centre.y, size * 30, size * 4);
+      ctx.moveTo(x, y);
+      ctx.circle(x, y, size * 2, true);
+      x += size * 30;
+      ctx.moveTo(x, y);
+      ctx.circle(x, y, size * 2, true);
+      x -= size * 30;
       ctx.fill();
-      if (hovering) ctx.stroke();
-      if (o.icon === "resize") {
+      ctx.fillStyle = current_theme.floor;
+      ui.text.circulatin.draw(player.map_mode ? "map" : player.inventory_mode ? "items" : "shapes", centre.x, centre.y, size * 3);
+      ctx.beginPath();
+      ctx.circle(x, y, size * 2.5);
+      let hovering = ctx.point_in_path_v(mouse.position);
+      if (hovering) ui.click.new(ui.toggle_left);
+      ctx.fillStyle = color_mix(current_theme.dark, color.black, hovering ? 0.3 : 0.5);
+      ctx.beginPath();
+      ctx.circle(x, y, size * 1.7);
+      ctx.fill();
+      ctx.fillStyle = whitermain;
+      ctx.svg(player.map_mode ? "lock_circle" : "start_left", x, y, size * 2.5);
+      x += size * 30;
+      ctx.beginPath();
+      ctx.circle(x, y, size * 2.5);
+      hovering = ctx.point_in_path_v(mouse.position);
+      if (hovering) ui.click.new(ui.toggle_right);
+      ctx.fillStyle = color_mix(current_theme.dark, color.black, hovering ? 0.3 : 0.5);
+      ctx.beginPath();
+      ctx.circle(x, y, size * 1.7);
+      ctx.fill();
+      ctx.fillStyle = whitermain;
+      ctx.svg(player.shapes_mode ? "lock_circle" : "start_right", x, y, size * 2.5);
+
+    } else { // draw normal zoomed-in pause menu
+
+      const centre = camera.world2screen(player.position);
+      const menu = ui.settings.really_open ? ui.settings.menu : ui.pause.menu;
+      const switch_animation = ui.settings.time < 2 * ui.settings.animation_time;
+      const switch_ratio = switch_animation ? math.bound(Math.abs(ui.settings.time / ui.settings.animation_time - 1) ** 1.5, math.epsilon, 1) : 1;
+      let r = 8 * camera.scale;
+      // const pause_ratio = math.bound(ui.pause.time / 50, 0, 168);
+      ctx.fillStyle = current_theme.floor + math.component_to_hex(160);
+      ctx.beginPath();
+      ctx.circle_v(centre, player.radius * camera.scale);
+      ctx.fill();
+      ctx.ctx.save();
+      player.shapes[0].draw_all();
+      ctx.ctx.restore();
+      const length = menu.length;
+      ctx.strokeStyle = color.white;
+      ctx.lineWidth = r * 0.15;
+      const angle_offset = (ui.settings.open ? ui.settings.time : ui.pause.time) / 1000;
+      for (let i = 0; i < length; i++) {
+        const a = ((i - 1) * 360 / (length - 1) + angle_offset) % 360;
+        const v = i === 0 ? centre : vector.add(centre, vector.createpolar_deg(a, r * 1.5));
+        const o = menu[i];
         ctx.fillStyle = color.white;
-        ctx.set_font_mono(r * 0.35);
-        ctx.text_v(`${(o as any).text()}`, v);
+        ctx.svg_v(o.icon as keyof typeof SVG, v, r);
+        ctx.beginPath();
+        ctx.circle_v(v, r * 0.7);
+        const hovering = ctx.point_in_path_v(mouse.position);
+        if (hovering) ui.click.new(o.fn);
+        ctx.beginPath();
+        ctx.circle_v(v, r * 0.64);
+        ctx.fillStyle = (hovering ? o.color : color.white) + "22";
+        ctx.fill();
+        if (hovering) ctx.stroke();
+        if (o.icon === "resize") {
+          ctx.fillStyle = color.white;
+          ctx.set_font_mono(r * 0.35);
+          ctx.text_v(`${(o as any).text()}`, v);
+        }
+        if (i === 0) r *= 1.25 * switch_ratio;
       }
-      if (i === 0) r *= 1.25 * switch_ratio;
+
     }
   },
 
   draw_inventory: function() {
     if (!player.inventory_mode) return;
-    
+
   },
 
   items: {
@@ -599,8 +730,106 @@ export const ui = {
         ctx.donut(x, y, r * 0.6, r);
         ctx.fill();
       },
-    }
+    },
   } as { [key: string]: { key: string, name: string, fill: string, multiple?: number, draw: (x: number, y: number, r: number) => void } },
+
+  text: {
+    circle: {
+      draw: function(s: string, x: number, y: number, size: number, align: CanvasTextAlign = "center", kern: number = 0.15) {
+        if (align === "center") x -= size * (1 + kern) * (s.length - 1) / 2;
+        else if (align === "left") x += size / 2;
+        else if (align === "right") x -= size * (1 + kern) * (s.length - 1) + size / 2;
+        for (const w of s.split(" ")) {
+          ctx.ctx.save();
+          ctx.beginPath();
+          ctx.circle(x, y, size / 2);
+          ctx.strokeStyle = ctx.fillStyle;
+          ctx.lineWidth = size * 0.1;
+          ctx.stroke();
+          ctx.clip();
+          if (Object.hasOwn(this, w)) (this as any)[w]?.(x, y, size / 2);
+          else console.error(`[ui/text/circly/draw] invalid word in string ${s}: ${w}`);
+          ctx.ctx.restore();
+          x += size * (1 + kern);
+        }
+      },
+
+    },
+    circulatin: {
+      draw: function(s: string, x: number, y: number, size: number, align: CanvasTextAlign = "center", kern: number = 0.15) {
+        if (align === "center") x -= size * (1 + kern) * (s.length - 1) / 2;
+        else if (align === "left") x += size / 2;
+        else if (align === "right") x -= size * (1 + kern) * (s.length - 1) + size / 2;
+        const angles = math.prng_array(s, s.length, (a) => a * 0.8 - 0.4);
+        for (let i = 0; i < s.length; i++) {
+          const c = s[i], a = angles[i];
+          ctx.ctx.save();
+          ctx.beginPath();
+          ctx.circle(x, y, size / 2);
+          ctx.strokeStyle = ctx.fillStyle;
+          ctx.lineWidth = size * 0.1;
+          ctx.stroke();
+          ctx.clip();
+          ctx.translate(x, y);
+          ctx.rotate(a);
+          if (Object.hasOwn(this, c)) (this as any)[c]?.(0, 0, size / 2);
+          else console.error(`[ui/text/circly/draw] invalid character in string ${s}: ${c}`);
+          ctx.ctx.restore();
+          x += size * (1 + kern);
+        }
+      },
+      ["a"]: (x: number, y: number, r: number) => {
+        ctx.beginPath();
+        ctx.circle(x, y - r * 0.2, r * 0.25);
+        ctx.roundrectangle(x, y + r * 0.85, r * 0.5, r * 1, r * 0.25);
+        ctx.fill();
+      },
+      ["e"]: (x: number, y: number, r: number) => {
+        ctx.beginPath();
+        ctx.roundrectangle(x + r, y - r * 0.35, r * 2.4, r * 0.25, r * 0.12);
+        ctx.rectangle(x + r, y, r * 0.8, r * 0.8);
+        ctx.roundrectangle(x + r, y + r * 0.35, r * 2.4, r * 0.25, r * 0.12);
+        ctx.fill();
+      },
+      ["h"]: (x: number, y: number, r: number) => {
+        ctx.beginPath();
+        ctx.roundrectangle(x, y - r, r * 0.45, r * 1.5, r * 0.23);
+        ctx.roundrectangle(x, y + r, r * 0.45, r * 1.5, r * 0.23);
+        ctx.fill();
+      },
+      ["i"]: (x: number, y: number, r: number) => {
+        ctx.beginPath();
+        ctx.roundrectangle(x - r, y, r * 1.4, r * 0.8, r * 0.5);
+        ctx.roundrectangle(x + r, y, r * 1.4, r * 0.8, r * 0.5);
+        ctx.fill();
+      },
+      ["m"]: (x: number, y: number, r: number) => {
+        ctx.beginPath();
+        ctx.roundrectangle(x - r * 0.35, y + r, r * 0.25, r * 2.4, r * 0.12);
+        ctx.rectangle(x, y + r, r * 0.8, r * 0.8);
+        ctx.roundrectangle(x + r * 0.35, y + r, r * 0.25, r * 2.4, r * 0.12);
+        ctx.fill();
+      },
+      ["p"]: (x: number, y: number, r: number) => {
+        ctx.beginPath();
+        ctx.circle(x, y - r * 0.2, r * 0.25);
+        ctx.roundrect(x - r * 0.25, y + r * 0.4, r * 2, r, r * 0.25);
+        ctx.fill();
+      },
+      ["s"]: (x: number, y: number, r: number) => {
+        ctx.beginPath();
+        ctx.roundrectangle(x + r, y - r * 0.33, r * 2.4, r * 0.25, r * 0.12);
+        ctx.roundrectangle(x - r, y + r * 0.33, r * 2.4, r * 0.25, r * 0.12);
+        ctx.fill();
+      },
+      ["t"]: (x: number, y: number, r: number) => {
+        ctx.beginPath();
+        ctx.roundrect(x - r * 1.8, y - r * 0.25, r * 1.5, r * 2, r * 0.25);
+        ctx.roundrect(x + r * 0.3, y - r * 0.25, r * 1.5, r * 2, r * 0.25);
+        ctx.fill();
+      },
+    }
+  },
 
   toggle_fullscreen: () => {
     if (!document.fullscreenElement) {

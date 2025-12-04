@@ -5,6 +5,14 @@ declare namespace zipson {
 
 }
 
+declare class alea extends Function {
+
+  constructor(s?: string);
+  double(): number;
+  int32(): number;
+
+}
+
 /**
  * @license
  *

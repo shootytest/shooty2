@@ -88,7 +88,7 @@ const tick_all = (timestamp: number) => {
   if (!player.paused && Thing.time > 500) {
     if (config.graphics.fps < 60) Engine.update(engine, 1000 / config.graphics.fps);
     else Engine.update(engine); // , real_dt / 10);
-  } else if (player.inventory_mode) {
+  } else if (player.inventory_mode || player.shapes_mode) {
     if (config.graphics.fps < 60) Engine.update(player.temp_engine, 1000 / config.graphics.fps);
     else Engine.update(player.temp_engine);
   }

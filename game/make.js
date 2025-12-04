@@ -207,9 +207,20 @@ make.map_shape = {
     style: "map",
 };
 make.map_inverse = {
-    decoration: true,
-    seethrough: true,
+    make_parent: ["map_shape"],
     style: "map_inverse",
+};
+make.map_newline = {
+    make_parent: ["map_shape"],
+    style: "map_line",
+};
+make.map_line = {
+    make_parent: ["map_shape"],
+    style: "map_line",
+};
+make.map_line_dark = {
+    make_parent: ["map_shape"],
+    style: "map_line_dark",
 };
 make.icon = {
     decoration: true,
@@ -1098,6 +1109,10 @@ export const make_rooms = {
         always_load: true,
     },
     ["home inventory"]: {
+        theme: "home",
+        always_load: true,
+    },
+    ["home shapestore"]: {
         theme: "home",
         always_load: true,
     },

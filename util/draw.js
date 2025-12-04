@@ -1,5 +1,4 @@
 import { svg_paths } from "./svg.js";
-import { math } from "./math.js";
 const images = {};
 export class Context {
     ctx;
@@ -214,6 +213,12 @@ export class Context {
     rectangle(x, y, w, h, a) {
         this.rect(x - w / 2, y - h / 2, w, h, a);
     }
+    roundrect(x, y, w, h, r) {
+        this.ctx.roundRect(x, y, w, h, r);
+    }
+    roundrectangle(x, y, w, h, r) {
+        this.ctx.roundRect(x - w / 2, y - h / 2, w, h, r);
+    }
     arc(x, y, r, start, end, clockwise = false) {
         if (r < 0)
             return;
@@ -321,14 +326,14 @@ export class Context {
     }
     fillText(s, x, y, maxWidth) {
         let { actualBoundingBoxAscent, actualBoundingBoxDescent } = this.measureText(s);
-        this.ctx.fillText(s, math.fastround(x), math.fastround(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
+        this.ctx.fillText(s, Math.round(x), Math.round(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
     }
     fillText_v(s, v, maxWidth) {
         this.fillText(s, v.x, v.y, maxWidth);
     }
     strokeText(s, x, y, maxWidth) {
         let { actualBoundingBoxAscent, actualBoundingBoxDescent } = this.measureText(s);
-        this.ctx.strokeText(s, math.fastround(x), math.fastround(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
+        this.ctx.strokeText(s, Math.round(x), Math.round(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
     }
     strokeText_v(s, v, maxWidth) {
         this.strokeText(s, v.x, v.y, maxWidth);

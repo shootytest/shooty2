@@ -48,6 +48,10 @@ export class Player extends Thing {
     paused = false;
     map_mode = false;
     inventory_mode = false;
+    shapes_mode = false;
+    get some_mode() {
+        return this.map_mode || this.inventory_mode || this.shapes_mode;
+    }
     constructor() {
         super();
         this.is_player = true;
@@ -91,7 +95,7 @@ export class Player extends Thing {
             if (!this.paused)
                 this.push_by(vector.mult(move_v, config.physics.player_speed));
             else if (this.map_mode) {
-                this.map_offset = vector.add(this.map_offset, vector.mult(move_v, config.physics.player_speed * 10 / this.map_scale));
+                this.map_offset = vector.add(this.map_offset, vector.mult(move_v, config.graphics.map_move_speed / this.map_scale));
                 this.map_scale = math.bound(this.map_scale + 0.05 * ((controls.top ? 1 : 0) - (controls.bottom ? 1 : 0)), 0.5, 2);
             }
             this.update_angle();
@@ -232,7 +236,7 @@ export class Player extends Thing {
     camera_position() {
         this.camera_target = vector.lerp(this.camera_target, this.camera_target_target, config.graphics.camera_target_smoothness);
         const position = vector.lerp(this.camera_target, this.position, 0.5);
-        if (this.map_mode || this.inventory_mode)
+        if (this.some_mode)
             return vector.add(position, this.map_offset);
         return vector.add(position, vector.mult(vector.sub(camera.mouse_v, camera.halfscreen), config.graphics.camera_mouse_look_factor / camera.scale));
         // todo remove
@@ -243,14 +247,14 @@ export class Player extends Thing {
     camera_scale() {
         const v = camera.halfscreen;
         let s = Math.sqrt(v.x * v.y) / 500 / this.fov_mult;
-        if (this.map_mode || this.inventory_mode)
+        if (this.some_mode)
             s /= 5 / this.fov_mult / this.map_scale;
         else if (this.paused)
             s *= 10 * this.fov_mult;
         return s;
     }
     camera_zs() {
-        if (this.inventory_mode)
+        if (this.inventory_mode || this.shapes_mode)
             return [1, 0];
         const look_z = math.lerp(camera.look_z, this.z, config.graphics.camera_smoothness);
         return [look_z + 1, look_z];
@@ -266,6 +270,8 @@ export class Player extends Thing {
         save.save.player.ability = this.ability?.value ?? 0;
     }
     save() {
+        if (this.some_mode)
+            return;
         if (this.enemy_can_see) {
             this.enemy_can_see = false; // hmmm
             player.save_but_health_only();
@@ -540,6 +546,43 @@ export class Player extends Thing {
             t.remove();
         }
         for (const b of this.lookup("home inventory wall")?.body?.walls ?? [])
+            Composite.remove(world, b);
+        Composite.remove(world, ui.mouse.constraint);
+        camera.lerp_factor = 1;
+        this.temp_things = [];
+    }
+    activate_shapes() {
+        const shape = MAP.computed?.shape_map["home shapestore"];
+        this.temp_old_room_id = this.room_id;
+        this.room_id = "home shapestore";
+        if (!shape)
+            return;
+        const centre = shape.vertices[0];
+        this.map_scale = 3;
+        this.map_offset = vector.sub(centre, vector.lerp(this.camera_target_target, this.position, 0.5));
+        camera.lerp_factor = 1;
+        // init new engine
+        const engine = this.temp_engine;
+        const world = engine.world;
+        engine.gravity.x = 0;
+        engine.gravity.y = 0;
+        engine.timing.timeScale = config.timescale;
+        const wall = this.lookup("home shapestore wall");
+        this.temp_border = vector.add_list(wall.shapes[0].vertices, wall.position);
+        for (const b of wall?.body?.walls ?? [])
+            Composite.add(world, b);
+        Composite.add(world, ui.mouse.constraint);
+        // todo add things
+    }
+    deactivate_shapes() {
+        this.room_id = this.temp_old_room_id;
+        const world = this.temp_engine.world;
+        for (const t of shallow_clone_array(this.temp_things)) {
+            if (t.body)
+                Composite.remove(world, t.body);
+            t.remove();
+        }
+        for (const b of this.lookup("home shapestore wall")?.body?.walls ?? [])
             Composite.remove(world, b);
         Composite.remove(world, ui.mouse.constraint);
         camera.lerp_factor = 1;

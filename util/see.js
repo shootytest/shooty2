@@ -47,7 +47,7 @@ export const do_visibility = (_dt) => {
     see_time += _dt;
     // precompute stuff
     Shape.compute();
-    see_origin = player.inventory_mode ? camera.location : player.position;
+    see_origin = player.some_mode ? camera.location : player.position;
     const path = calc_visibility_path_2(see_origin, Shape.see_vertices);
     const other_vertices = Shape.see_other_vertices;
     const other_list = {};

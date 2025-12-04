@@ -194,7 +194,7 @@ export const color2hex_map = (c: string, theme_string: string) => {
 };
 
 
-export const mix_lookup: { [key: string]: string } = {};
+const mix_lookup: { [key: string]: string } = {};
 
 export const color_mix = (c1: string, c2: string, amount: number) => {
   if (amount < 0.001) return c1;
@@ -260,6 +260,18 @@ export const STYLES/*: { [key: string]: style_type }*/ = {
     stroke: "main",
     fill_opacity: 1,
     stroke_opacity: 0,
+  },
+  map_line: {
+    fill: color.black,
+    stroke: "main",
+    fill_opacity: 0,
+    stroke_opacity: 0.5,
+  },
+  map_line_dark: {
+    fill: color.black,
+    stroke: "dark",
+    fill_opacity: 0,
+    stroke_opacity: 0.5,
   },
 
   // collectible colours

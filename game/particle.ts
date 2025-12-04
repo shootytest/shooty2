@@ -5,6 +5,7 @@ import { color, color2hex } from "../util/color.js";
 import { config } from "../util/config.js";
 import { style_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
+import { SVG } from "../util/svg.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { player } from "./player.js";
 import { Thing } from "./thing.js";
@@ -127,7 +128,7 @@ export class Particle {
       const [c, r] = this.screen_vertices;
       ctx.fillStyle = color2hex(style.fill ?? color.error);
       ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1) * this.opacity;
-      ctx.svg(this.icon, Math.round(c.x + this.offset.x), Math.round(c.y + this.offset.y), r.x);
+      ctx.svg(this.icon as keyof typeof SVG, Math.round(c.x + this.offset.x), Math.round(c.y + this.offset.y), r.x);
     } else {
       ctx.beginPath();
       this.draw_path();

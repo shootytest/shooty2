@@ -86,11 +86,16 @@ export const math = {
     return hex.length === 1 ? "0" + hex : hex;
   },
 
+  _randgen: new alea(),
+  _randgens: {} as { [key: string]: alea },
+  randseed: (seed: string) => {
+    math._randgen = new alea(seed);
+  },
   rand: (a = 1, b?: number): number => {
     if (b != undefined) {
-      return a + Math.random() * (b - a);
+      return a + math._randgen() * (b - a);
     } else {
-      return Math.random() * a;
+      return math._randgen() * a;
     }
   },
   randangle: (): number => {
@@ -103,14 +108,14 @@ export const math = {
     return Math.floor(math.rand(a, b + 1));
   },
   randbool: (): boolean => {
-    return Math.random() > 0.5;
+    return math._randgen() > 0.5;
   },
   randgauss: (mean: number, deviation: number): number => {
     if (deviation === 0) return mean;
     let x1, x2, w;
     do {
-      x1 = 2 * Math.random() - 1;
-      x2 = 2 * Math.random() - 1;
+      x1 = 2 * math._randgen() - 1;
+      x2 = 2 * math._randgen() - 1;
       w = x1 * x1 + x2 * x2;
     } while (0 === w || w >= 1);
     w = Math.sqrt(-2 * Math.log(w) / w);
@@ -121,7 +126,7 @@ export const math = {
     let result = "";
     for (let i = 0; i < length; i++) {
       result += letters.charAt(
-        Math.floor(Math.random() * letters.length),
+        Math.floor(math._randgen() * letters.length),
       );
     }
     return result;
@@ -130,7 +135,7 @@ export const math = {
     return array[math.randint(0, array.length - 1)];
   },
   randpick_weighted: function<T>(array: T[], weights: number[]): T {
-    let r = math.rand();
+    let r = math._randgen();
     let total = 0, running = 0;
     for (const w of weights) total += w;
     r *= total;
@@ -139,6 +144,14 @@ export const math = {
       if (r < running) return array[i];
     }
     return array[array.length - 1];
+  },
+  prng_array: (seed: string, length: number, fn: (n: number) => number = (n) => n) => { // lol
+    const gen = new alea(seed);
+    const result: number[] = [];
+    for (let i = 0; i < length; i++) {
+      result.push(fn(gen()));
+    }
+    return result;
   },
 
   log_base: (a: number, b: number): number => {

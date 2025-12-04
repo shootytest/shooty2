@@ -79,12 +79,17 @@ export const math = {
         const hex = Math.round(component).toString(16);
         return hex.length === 1 ? "0" + hex : hex;
     },
+    _randgen: new alea(),
+    _randgens: {},
+    randseed: (seed) => {
+        math._randgen = new alea(seed);
+    },
     rand: (a = 1, b) => {
         if (b != undefined) {
-            return a + Math.random() * (b - a);
+            return a + math._randgen() * (b - a);
         }
         else {
-            return Math.random() * a;
+            return math._randgen() * a;
         }
     },
     randangle: () => {
@@ -97,15 +102,15 @@ export const math = {
         return Math.floor(math.rand(a, b + 1));
     },
     randbool: () => {
-        return Math.random() > 0.5;
+        return math._randgen() > 0.5;
     },
     randgauss: (mean, deviation) => {
         if (deviation === 0)
             return mean;
         let x1, x2, w;
         do {
-            x1 = 2 * Math.random() - 1;
-            x2 = 2 * Math.random() - 1;
+            x1 = 2 * math._randgen() - 1;
+            x2 = 2 * math._randgen() - 1;
             w = x1 * x1 + x2 * x2;
         } while (0 === w || w >= 1);
         w = Math.sqrt(-2 * Math.log(w) / w);
@@ -115,7 +120,7 @@ export const math = {
         const letters = "abcdefghijklmnopqrstuvwxyz0123456789";
         let result = "";
         for (let i = 0; i < length; i++) {
-            result += letters.charAt(Math.floor(Math.random() * letters.length));
+            result += letters.charAt(Math.floor(math._randgen() * letters.length));
         }
         return result;
     },
@@ -123,7 +128,7 @@ export const math = {
         return array[math.randint(0, array.length - 1)];
     },
     randpick_weighted: function (array, weights) {
-        let r = math.rand();
+        let r = math._randgen();
         let total = 0, running = 0;
         for (const w of weights)
             total += w;
@@ -134,6 +139,14 @@ export const math = {
                 return array[i];
         }
         return array[array.length - 1];
+    },
+    prng_array: (seed, length, fn = (n) => n) => {
+        const gen = new alea(seed);
+        const result = [];
+        for (let i = 0; i < length; i++) {
+            result.push(fn(gen()));
+        }
+        return result;
     },
     log_base: (a, b) => {
         return Math.log(a) / Math.log(b);

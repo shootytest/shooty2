@@ -542,7 +542,7 @@ export const m_ui = {
       hovering = ctx.point_in_path_v(mouse.position);
       const button_color = button.color();
       ctx.fillStyle = hovering ? color.red_dark : button_color;
-      ctx.svg(button.icon, x, y, size * 0.8);
+      ctx.svg(button.icon as keyof typeof SVG, x, y, size * 0.8);
       if (button.name === m_ui.editor.mode) {
         ctx.strokeStyle = color.blue;
         ctx.line(x - w / 2, size, x + w / 2, size);
@@ -664,7 +664,7 @@ export const m_ui = {
         ctx.donut_arc(v.x, v.y, 90 * ratio, 80 * ratio, a_ + a * (i + 0.05), a_ + a * (i + 0.95), a_ + a * (i + 0.05625), a_ + a * (i + 0.94375));
         ctx.globalAlpha = 0.7 * ratio + ((hovering && !disabled) ? 0.2 : 0);
         ctx.fill();
-        ctx.svg(option.svg, v.x + size * Math.cos(a_ + a * (i + 0.5)), v.y + size * Math.sin(a_ + a * (i + 0.5)), size * 0.9);
+        ctx.svg(option.svg as keyof typeof SVG, v.x + size * Math.cos(a_ + a * (i + 0.5)), v.y + size * Math.sin(a_ + a * (i + 0.5)), size * 0.9);
         if (hovering) m_ui.click.new(disabled ? () => {} : option.fn);
 
       }
@@ -752,7 +752,7 @@ export const m_ui = {
     if (mode === "edit") offset = vector.create(size * 0.7, -size * 0.7);
     v = vector.add(v, offset);
     ctx.fillStyle = color.white;
-    ctx.svg(m_ui.editor.mode, v.x, v.y, size * 2);
+    ctx.svg(m_ui.editor.mode as keyof typeof SVG, v.x, v.y, size * 2);
   },
 
   update_camera: function() {

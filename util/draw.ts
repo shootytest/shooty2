@@ -1,4 +1,4 @@
-import { svg_paths } from "./svg.js";
+import { SVG, svg_paths } from "./svg.js";
 import { math } from "./math.js";
 import { circle, vector } from "./vector.js";
 
@@ -289,6 +289,14 @@ export class Context {
     this.rect(x - w / 2, y - h / 2, w, h, a);
   }
 
+  roundrect(x: number, y: number, w: number, h: number, r: number) {
+    this.ctx.roundRect(x, y, w, h, r);
+  }
+
+  roundrectangle(x: number, y: number, w: number, h: number, r: number) {
+    this.ctx.roundRect(x - w / 2, y - h / 2, w, h, r);
+  }
+
   arc(x: number, y: number, r: number, start: number, end: number, clockwise = false) {
     if (r < 0) return;
     this.ctx.arc(x, y, r, start, end, !clockwise);
@@ -373,7 +381,7 @@ export class Context {
     }
   }
 
-  svg(type: string, x: number, y: number, r: number) {
+  svg(type: keyof typeof SVG, x: number, y: number, r: number) {
     const path2d = svg_paths[type];
     if (path2d == undefined) {
       console.warn("[draw/svg] unknown SVG type: " + type);
@@ -387,7 +395,7 @@ export class Context {
     this.ctx.restore();
   }
 
-  svg_v(type: string, v: vector, r: number) {
+  svg_v(type: keyof typeof SVG, v: vector, r: number) {
     return this.svg(type, v.x, v.y, r);
   }
 
@@ -406,7 +414,7 @@ export class Context {
 
   fillText(s: string, x: number, y: number, maxWidth?: number) {
     let { actualBoundingBoxAscent, actualBoundingBoxDescent } = this.measureText(s);
-    this.ctx.fillText(s, math.fastround(x), math.fastround(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
+    this.ctx.fillText(s, Math.round(x), Math.round(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
   }
 
   fillText_v(s: string, v: vector, maxWidth?: number) {
@@ -415,7 +423,7 @@ export class Context {
 
   strokeText(s: string, x: number, y: number, maxWidth?: number) {
     let { actualBoundingBoxAscent, actualBoundingBoxDescent } = this.measureText(s);
-    this.ctx.strokeText(s, math.fastround(x), math.fastround(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
+    this.ctx.strokeText(s, Math.round(x), Math.round(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
   }
 
   strokeText_v(s: string, v: vector, maxWidth?: number) {
