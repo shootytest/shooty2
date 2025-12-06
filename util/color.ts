@@ -402,6 +402,13 @@ export const STYLES/*: { [key: string]: style_type }*/ = {
     fill_opacity: 0.5,
   },
 
+  shapey_base: {
+    stroke: "dark",
+    stroke_opacity: 0,
+    fill: "dark",
+    fill_opacity: 0.5,
+  },
+
 };
 
 export const STYLES_ = STYLES as { [key: string]: style_type };

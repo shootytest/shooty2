@@ -1,6 +1,6 @@
 import { config } from "../util/config.js";
 import { math } from "../util/math.js";
-import type { vector3 } from "../util/vector.js";
+import type { vector, vector3 } from "../util/vector.js";
 import { clone_object } from "./make.js";
 import { player } from "./player.js";
 import { Thing } from "./thing.js";
@@ -11,8 +11,16 @@ export interface save_type {
   version: string;
   player: player_save;
   map: { [key: string]: number };
+  shapey: { [key: string]: shapey_save };
   switches: { [key: string]: number };
   currencies: { [key: string]: number };
+};
+
+export interface shapey_save {
+  amount: number;
+  on?: boolean;
+  position?: vector;
+  angle?: number;
 };
 
 export interface player_save {
@@ -52,6 +60,7 @@ export const save = {
     version: config.game.version,
     player: {},
     map: {},
+    shapey: {},
     switches: {},
     currencies: {},
   } as save_type,
@@ -96,6 +105,20 @@ export const save = {
     save.changed(true);
   },
 
+  get_shape: (id: string): number => {
+    return save.save.shapey[id]?.amount ?? -1;
+  },
+
+  check_shape: (id: string): boolean => {
+    return save.get_shape(id) > 0;
+  },
+
+  add_shape: (id: string) => {
+    if (!save.save.shapey[id]) save.save.shapey[id] = { amount: 0 };
+    save.save.shapey[id].amount++;
+    save.changed(true);
+  },
+
   get_currency: (name: string): number => {
     return save.save.currencies[name] ?? 0;
   },
@@ -106,13 +129,15 @@ export const save = {
     save.changed(true);
   },
 
+  // todo autosave to slot
   changed: (not_autosave = false, force = false) => {
-    // todo autosave to slot
     if (player.enemy_can_see && !force) {
       // player.enemy_can_see = false; // hmmm
       return false;
     }
     // if (not_autosave) console.log("saving... ", save.save);
+    if (!save.save.map) save.save.map = {};
+    if (!save.save.shapey) save.save.shapey = {}; // todo remove
     save.save_to_slot(save.current_slot);
     save.save_to_storage();
     return true;
@@ -123,6 +148,7 @@ export const save = {
       version: config.game.version,
       player: {},
       map: {},
+      shapey: {},
       switches: {},
       currencies: {},
     };
@@ -132,7 +158,7 @@ export const save = {
     while (save.saves.length <= slot) {
       save.saves.push(save.new_save());
     }
-    save.saves[slot] = clone_object(save.save) as save_type;
+    save.saves[slot] = clone_object(save.save) as save_type; // todo is clone really needed here?
   },
 
   save_to_storage: () => {

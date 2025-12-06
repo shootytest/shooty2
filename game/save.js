@@ -7,11 +7,13 @@ import { Thing } from "./thing.js";
 ;
 ;
 ;
+;
 export const save = {
     save: {
         version: config.game.version,
         player: {},
         map: {},
+        shapey: {},
         switches: {},
         currencies: {},
     },
@@ -47,6 +49,18 @@ export const save = {
         save.save.map[id]++;
         save.changed(true);
     },
+    get_shape: (id) => {
+        return save.save.shapey[id]?.amount ?? -1;
+    },
+    check_shape: (id) => {
+        return save.get_shape(id) > 0;
+    },
+    add_shape: (id) => {
+        if (!save.save.shapey[id])
+            save.save.shapey[id] = { amount: 0 };
+        save.save.shapey[id].amount++;
+        save.changed(true);
+    },
     get_currency: (name) => {
         return save.save.currencies[name] ?? 0;
     },
@@ -55,13 +69,17 @@ export const save = {
         player.stats.currencies_total[name] = (player.stats.currencies_total[name] ?? 0) + number;
         save.changed(true);
     },
+    // todo autosave to slot
     changed: (not_autosave = false, force = false) => {
-        // todo autosave to slot
         if (player.enemy_can_see && !force) {
             // player.enemy_can_see = false; // hmmm
             return false;
         }
         // if (not_autosave) console.log("saving... ", save.save);
+        if (!save.save.map)
+            save.save.map = {};
+        if (!save.save.shapey)
+            save.save.shapey = {}; // todo remove
         save.save_to_slot(save.current_slot);
         save.save_to_storage();
         return true;
@@ -71,6 +89,7 @@ export const save = {
             version: config.game.version,
             player: {},
             map: {},
+            shapey: {},
             switches: {},
             currencies: {},
         };
@@ -79,7 +98,7 @@ export const save = {
         while (save.saves.length <= slot) {
             save.saves.push(save.new_save());
         }
-        save.saves[slot] = clone_object(save.save);
+        save.saves[slot] = clone_object(save.save); // todo is clone really needed here?
     },
     save_to_storage: () => {
         const raw = zipson.stringify({

@@ -1025,10 +1025,13 @@ export const m_ui = {
                 name: "part of map",
                 type: "checkbox",
             },
-            force_above: {
+            force_layer: {
                 show: "is_map",
-                name: "force top layer",
-                type: "checkbox",
+                name: "force layer",
+                type: "number",
+                min: -10,
+                max: 10,
+                step: 1,
             },
             map_hide_when: {
                 show: "map_parent",

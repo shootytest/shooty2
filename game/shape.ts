@@ -60,7 +60,7 @@ export class Shape {
     return s;
   };
 
-  static from_make(thing: Thing, o: maketype_shape): Shape {
+  static from_make(thing: Thing, o: maketype_shape, ignore_shoot: boolean = false): Shape {
     let s: Shape;
     const offset = vector3.create(o.offset?.x ?? 0, o.offset?.y ?? 0, o.z);
     if (o.type === "polygon") {
@@ -73,7 +73,7 @@ export class Shape {
       console.error(`[shape/from_make] shape type '${o.type}' doesn't exist!`);
       s = new Shape(thing);
     }
-    s.options = o;
+    s.options = clone_object(o) as maketype_shape;
     s.seethrough = Boolean(thing.options.seethrough);
     if (thing.options.translucent) s.translucent = thing.options.translucent;
     if (o.style || thing.options.style) {
@@ -82,7 +82,7 @@ export class Shape {
     }
     if (thing.options.style_) override_object(s.style, thing.options.style_);
     if (o.style_ != undefined) override_object(s.style, o.style_);
-    if (o.shoot) {
+    if (o.shoot && !ignore_shoot) {
       let S = make_shoot[o.shoot];
       if (o.shoot_ != undefined) {
         S = clone_object(S);
@@ -172,8 +172,10 @@ export class Shape {
         if (s1.thing.is_player && !s2.thing.is_player) return 1;  // players always above
         if (s2.thing.is_player && !s1.thing.is_player) return -1;
         const o1 = s1.thing.options, o2 = s2.thing.options;
-        if (o1.force_above && !o2.force_above) return 1; // force
-        if (o2.force_above && !o1.force_above) return -1;
+        const shape_layer = (s1.options.force_layer ?? 0) - (s2.options.force_layer ?? 0);
+        if (!math.equal(shape_layer, 0)) return shape_layer;
+        const layer = (o1.force_layer ?? 0) - (o2.force_layer ?? 0);
+        if (!math.equal(layer, 0)) return layer;
         if (o1.map_parent && !o2.map_parent) return 1; // map children always above
         if (o2.map_parent && !o1.map_parent) return -1;
         if (o1.floor && !o2.floor) return -1; // floors always below
@@ -261,6 +263,8 @@ export class Shape {
     type: "none",
   };
   translucent = 0;
+
+  object: { [key: string]: any } = {}; // for any random things
 
   get z(): number {
     return this.offset.z + this.thing.z;
@@ -379,6 +383,20 @@ export class Shape {
     // todo compute shadow_vertices
   }
 
+  real_vertices() {
+    const vs = vector3.add_list(this.vertices, this.offset);
+    if (this.activate_scale) vector3.scale_to_list(vs, this.scale);
+    if (this.thing.angle) {
+      for (const v of vs) {
+        const rotated = vector.rotate(vector.create(), v, this.thing.angle);
+        v.x = rotated.x;
+        v.y = rotated.y;
+      }
+    }
+    vector3.add_to_list(vs, this.thing.position);
+    return vs;
+  }
+
   add(thing: Thing) {
     this.thing = thing;
     this.thing.shapes.push(this);
@@ -419,16 +437,16 @@ export class Shape {
     this.draw_path(shadow ? this.computed.shadow_vertices : this.computed.screen_vertices);
     const override_pause_opacity: boolean = this.thing.is_player && this.index >= 1 && player.paused && !player.map_mode;
     const opacity_mult = this.opacity * (style.opacity ?? 1) * (this.is_map ? ui.map.opacity : 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
+    if (style.fill && this.closed_loop) {
+      ctx.fillStyle = this.color2hex(style.fill);
+      ctx.globalAlpha = opacity_mult * (style.fill_opacity ?? 1);
+      ctx.fill();
+    }
     if (style.stroke) {
       ctx.strokeStyle = this.color2hex(style.stroke);
       ctx.globalAlpha = opacity_mult * (style.stroke_opacity ?? 1);
       ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.avg_z, true) * config.graphics.linewidth_mult * (this.translucent <= math.epsilon ? 1 : 1.8); // * (this.thing.options.seethrough && this.thing.is_wall ? 0.5 : 1);
       ctx.stroke();
-    }
-    if (style.fill && this.closed_loop) {
-      ctx.fillStyle = this.color2hex(style.fill);
-      ctx.globalAlpha = opacity_mult * (style.fill_opacity ?? 1);
-      ctx.fill();
     }
     if (!shadow && (this.computed.shadow_vertices?.length ?? 0) >= 1) {
       this.draw({ opacity: 0.5, }, true);
@@ -480,8 +498,8 @@ export class Shape {
     if (!this.options.blinking && (!this.thing.health?.invincible)) return;
     if (this.thing.is_player && player.paused) return;
     const style_mult: style_type = {
-      stroke_opacity: math.bounce(Thing.time, config.graphics.blink_time) * 0.5,
-      fill_opacity: math.bounce(Thing.time, config.graphics.blink_time) * 0.5,
+      stroke_opacity: math.bounce(ui.time, config.graphics.blink_time) * 0.5,
+      fill_opacity: math.bounce(ui.time, config.graphics.blink_time) * 0.5,
     };
     if (this.style.fill) style_mult.fill = color.blackground;
     if (this.style.stroke) style_mult.stroke = color.blackground;
@@ -640,8 +658,8 @@ export class Polygon extends Shape {
     this.vertices = [];
     const sides = (this.sides === 0) ? 16 : this.sides;
     const r = this.radius;
-    const x = this.offset.x;
-    const y = this.offset.y;
+    const x = 0;//this.offset.x;
+    const y = 0;//this.offset.y;
     let a = this.angle;
     for (let i = 0; i < sides + 1; ++i) {
       this.vertices.push(vector3.create(x + r * Math.cos(a), y + r * Math.sin(a), 0));

@@ -312,6 +312,14 @@ export const math = {
         // }
         return result;
     },
+    union_polygons: (polygons) => {
+        if (Common.union) {
+            return Common.union(polygons);
+        }
+        else {
+            return polygons;
+        }
+    },
     triangle_area: (triangle) => {
         const [a, b, c] = triangle;
         return 0.5 * ((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y));
@@ -346,6 +354,9 @@ export const math = {
         return vector.add_all(a, vector.mult(vector.sub(b, a), r1), vector.mult(vector.sub(c, a), r2));
     },
     is_point_in_polygon: (point, polygon) => {
+        // if (Common.point_in_polygon) {
+        //   return Common.point_in_polygon(point, polygon);
+        // }
         const { x, y } = point;
         let c = false;
         for (let l = polygon.length, i = 0, j = l - 1; i < l; j = i++) {
@@ -388,6 +399,20 @@ export const math = {
             }
         }
         return c;
+    },
+    is_polygon_in_polygons: (polygon, polygons) => {
+        for (const v of polygon) {
+            let inside = false;
+            for (const u of polygons) {
+                if (math.is_point_in_polygon(v, u)) {
+                    inside = true;
+                    continue;
+                }
+            }
+            if (!inside)
+                return false;
+        }
+        return true;
     },
     distance2_from_line_segment: function (centre, p1, p2) {
         const v1 = vector.create(p2.x - p1.x, p2.y - p1.y);

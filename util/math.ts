@@ -311,6 +311,14 @@ export const math = {
     return result;
   },
 
+  union_polygons: (polygons: vector[][]): vector[][] => {
+    if (Common.union) {
+      return Common.union(polygons);
+    } else {
+      return polygons;
+    }
+  },
+
   triangle_area: (triangle: vector[]): number => {
     const [a, b, c] = triangle;
     return 0.5 * ( (b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y));
@@ -345,6 +353,9 @@ export const math = {
   },
 
   is_point_in_polygon: (point: vector, polygon: vector[]): boolean => { // from metafloor/pointinpoly (MIT license)
+    // if (Common.point_in_polygon) {
+    //   return Common.point_in_polygon(point, polygon);
+    // }
     const { x, y } = point;
     let c = false;
     for (let l = polygon.length, i = 0, j = l-1; i < l; j = i++) {
@@ -381,6 +392,20 @@ export const math = {
       }
     }
     return c;
+  },
+
+  is_polygon_in_polygons: (polygon: vector[], polygons: vector[][]): boolean => { // not fully robust
+    for (const v of polygon) {
+      let inside = false;
+      for (const u of polygons) {
+        if (math.is_point_in_polygon(v, u)) {
+          inside = true;
+          continue;
+        }
+      }
+      if (!inside) return false;
+    }
+    return true;
   },
 
   distance2_from_line_segment: function(centre: vector, p1: vector, p2: vector) {

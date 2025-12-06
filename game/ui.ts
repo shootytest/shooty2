@@ -1,5 +1,4 @@
-import { engine, world } from "../index.js";
-import { Composite, Events, Mouse, MouseConstraint } from "../matter.js";
+import { Events, Mouse, MouseConstraint } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { canvas, canvas_, ctx, resize_canvas } from "../util/canvas.js";
 import { color, color_mix, current_theme } from "../util/color.js";
@@ -58,6 +57,7 @@ export const ui = {
   mouse: {
     mouse: Mouse.create(canvas_),
     constraint: {} as MouseConstraint,
+    thing: undefined as (Thing | undefined),
     init: () => {
       ui.mouse.constraint = MouseConstraint.create(player.temp_engine, {
         mouse: ui.mouse.mouse,
@@ -70,11 +70,32 @@ export const ui = {
       });
       Events.on(ui.mouse.constraint, "startdrag", (e) => {
         const event = e as { mouse: Mouse, body: Body, source: object, name: string };
+        const t = (event.body as any).thing as Thing;
+        ui.mouse.thing = t;
+        if (player.shapes_mode) {
+          t.shapes[0].options.blinking = true;
+          for (const s of t.shapes) {
+            if (s.options.shapey_area) {
+              // player.recalculate_shapeareas();
+            }
+          }
+        }
+      });
+      Events.on(ui.mouse.constraint, "enddrag", (e) => {
+        const event = e as { mouse: Mouse, body: Body, source: object, name: string };
+        const t = (event.body as any).thing as Thing;
+        ui.mouse.thing = undefined;
+        if (player.shapes_mode) {
+          t.shapes[0].options.blinking = false;
+        }
       });
     },
-    tick: () => {
+    tick: function() {
       Mouse.setScale(ui.mouse.mouse, vector.create(1 / camera.scale, 1 / camera.scale));
       Mouse.setOffset(ui.mouse.mouse, vector.clone(camera.position));
+      if (key.check_keys(["Space"])) {
+        this.thing?.rotate_by(0.1);
+      }
     },
   },
 

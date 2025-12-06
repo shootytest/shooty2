@@ -1,6 +1,7 @@
 import { make_from_map_shape, MAP } from "../index.js";
 import Matter, { Body, Common, Composite, Engine, Vertices } from "../matter.js";
 import { camera } from "../util/camera.js";
+import { ctx } from "../util/canvas.js";
 import { config } from "../util/config.js";
 import { keys } from "../util/key.js";
 import { math } from "../util/math.js";
@@ -194,6 +195,41 @@ export class Player extends Thing {
           if (ui.mouse.constraint.body === t.body) ui.mouse.mouse.element.dispatchEvent(new Event("mouseup"));
           Body.setPosition(t.body, Vertices.centre(this.temp_border));
         }
+      }
+    } else if (this.shapes_mode) {
+      const onion: vector3[][] = [];
+      for (const t of this.temp_things) {
+        t.tick(dt);
+        if (t.body) {
+          // max velocity
+          const v2 = vector.length2(t.velocity);
+          if (v2 > config.physics.drag_max_velocity * config.physics.drag_max_velocity) Body.setVelocity(t.body, vector.normalise(t.velocity, config.physics.drag_max_velocity));
+          if (!math.is_point_in_polygon(t.position, this.temp_border)) {
+            if (ui.mouse.constraint.body === t.body) ui.mouse.mouse.element.dispatchEvent(new Event("mouseup"));
+            Body.setPosition(t.body, Vertices.centre(this.temp_border));
+          }
+        }
+        for (const s of t.shapes) {
+          if (s.options.shapey_area) {
+            onion.push(s.real_vertices());
+          }
+        }
+      }
+      if (Common.union && ui.tick_time % 5 === 0) {
+        const union = Common.union(onion);
+        for (const t of this.temp_things) {
+          const inside = math.is_polygon_in_polygons(t.shapes[0].real_vertices(), union);
+          t.object.inside = inside;
+          t.shapes[0].options.glowing = inside ? 0.5 : 0;
+        }
+        // todo remove debug draw lol
+        // ctx.fillStyle = "white";
+        // ctx.beginPath();
+        // for (const u of union) {
+        //   const us = u.map((v) => { return camera.world2screen(v) });
+        //   ctx.lines_v(us);
+        // }
+        // ctx.fill();
       }
     }
   }
@@ -567,6 +603,30 @@ export class Player extends Thing {
     Composite.add(world, ui.mouse.constraint);
 
     // todo add things
+    const base = new Thing();
+    base.position = centre;
+    base.make("shapey_area_base");
+    base.create_id("shapey_area_base");
+    base.create_body();
+    this.temp_things.push(base);
+    if (base.body) Composite.add(world, base.body);
+
+    const base2 = new Thing();
+    base2.position = centre;
+    base2.make("shapey_area_base");
+    base2.create_id("shapey_area_base_2");
+    base2.create_body();
+    this.temp_things.push(base2);
+    if (base2.body) Composite.add(world, base2.body);
+
+    const shape1 = new Thing();
+    shape1.position = centre;
+    shape1.make("shapey_test");
+    shape1.create_id("shapey_test");
+    shape1.create_body();
+    this.temp_things.push(shape1);
+    if (shape1.body) Composite.add(world, shape1.body);
+
   }
 
   deactivate_shapes() {

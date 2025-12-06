@@ -893,6 +893,47 @@ make_shapes.inventory_coin_1000 = [{
             fill_opacity: 0.4,
         },
     }];
+// @shaper
+make.shapey = {
+    seethrough: true,
+    shapey: true,
+    movable: true,
+    draggable: true,
+    keep_bullets: true,
+    friction: 0.1,
+    force_layer: 1,
+};
+make.shapey_area = {
+    seethrough: true,
+    movable: true,
+    draggable: true,
+    density: 999999999,
+    keep_bullets: true,
+    friction: 0.1,
+};
+make.shapey_area_base = {
+    make_parent: ["shapey_area"],
+    style: "wall_filled",
+};
+make_shapes.shapey_area_base = [{
+        type: "circle",
+        radius: 25,
+        force_layer: 1,
+    }, {
+        type: "circle",
+        radius: 100,
+        offset: vector.create(0, 74),
+        shapey_area: true,
+        style: "shapey_base",
+    }];
+make.shapey_test = {
+    make_parent: ["shapey"],
+    style: "wall_filled",
+};
+make_shapes.shapey_test = [{
+        type: "circle",
+        radius: 20,
+    }];
 // @collectibles
 make.collect = {
     seethrough: true,

@@ -794,6 +794,16 @@ export class Thing {
             Body.applyForce(this.body, this.position, vector.mult(amount, this.body.mass * config.physics.force_factor));
         }
     }
+    rotate_to(amount = 0) {
+        if (this.body != undefined) {
+            Body.setAngle(this.body, amount);
+        }
+    }
+    rotate_by(amount, point = this.position) {
+        if (this.body != undefined) {
+            Body.rotate(this.body, amount, point);
+        }
+    }
     add_shoot(stats, shape) {
         const shoot = new Shoot(this, stats, shape);
         this.shoots.push(shoot);

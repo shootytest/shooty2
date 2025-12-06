@@ -23,9 +23,9 @@ window.chroma = chroma;
 
 import clipper2Wasm from 'https://cdn.jsdelivr.net/npm/clipper2-wasm@0.2.1/dist/es/clipper2z.js';
 clipper2Wasm().then((clipper2z) => {
-  const { MakePath64, Paths64, InflatePaths64, JoinType, EndType } = clipper2z;
+  const { MakePath64, Path64, Paths64, Point64, PointInPolygon64, InflatePaths64, Union64, JoinType, EndType, FillRule } = clipper2z;
+  const precision_mult = 10;
   Matter.Common.expand = function(vertices, width) { // might want to add some more options here
-    const precision_mult = 10;
     const flattened = [];
     for (const v of vertices) flattened.push(Math.floor(v.x * precision_mult), Math.floor(v.y * precision_mult));
     const paths = new Paths64();
@@ -38,6 +38,36 @@ clipper2Wasm().then((clipper2z) => {
       expanded.push({ x: Number(point.x) / precision_mult, y: Number(point.y) / precision_mult });
     }
     return expanded;
+  };
+  Matter.Common.union = function(polygon_list) {
+    if (polygon_list.length === 0) return [];
+    let unioned;
+    for (const polygon of polygon_list) {
+      const paths = new Paths64();
+      const flattened = [];
+      for (const v of polygon) flattened.push(Math.floor(v.x * precision_mult), Math.floor(v.y * precision_mult));
+      paths.push_back(MakePath64(flattened));
+      if (unioned == undefined) unioned = paths;
+      else unioned = Union64(unioned, paths, FillRule.NonZero);
+    }
+    const result = [];
+    for (let i = 0; i < unioned.size(); i++) {
+      const onion = unioned.get(i);
+      const path = [];
+      for (let j = 0; j < onion.size(); j++) {
+        const point = onion.get(j);
+        path.push({ x: Number(point.x) / precision_mult, y: Number(point.y) / precision_mult });
+      }
+      result.push(path);
+    }
+    return result;
+  };
+  Matter.Common.point_in_polygon = function(point, polygon) {
+    const flattened = [];
+    for (const v of polygon) flattened.push(Math.floor(v.x * precision_mult), Math.floor(v.y * precision_mult));
+    const path = MakePath64(flattened); // slow!!!
+    const pt = new Point64(Math.floor(point.x * precision_mult), Math.floor(point.y * precision_mult), 0);
+    return PointInPolygon64(pt, path);
   };
 });
 

@@ -780,6 +780,18 @@ export class Thing {
     }
   }
 
+  rotate_to(amount: number = 0) {
+    if (this.body != undefined) {
+      Body.setAngle(this.body, amount);
+    }
+  }
+
+  rotate_by(amount: number, point: vector = this.position) {
+    if (this.body != undefined) {
+      Body.rotate(this.body, amount, point);
+    }
+  }
+
   add_shoot(stats: shoot_stats, shape?: Shape) {
     const shoot = new Shoot(this, stats, shape);
     this.shoots.push(shoot);

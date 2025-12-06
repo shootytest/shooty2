@@ -3559,6 +3559,8 @@ declare namespace Matter {
         static earcut(polygon: number[], holes?: number[], dimensions?: number): number[];
 
         static expand(polygon: Vector[], width: number): Vector[];
+        static union(polygon: Vector[][]): Vector[][];
+        static point_in_polygon(point: Vector, polygon: Vector[]): boolean;
 
         static heap = Heap;
     }

@@ -128,16 +128,17 @@ export class Particle {
             this.draw_path();
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
-            if (style.stroke) {
-                ctx.strokeStyle = color2hex(style.stroke ?? color.error);
-                ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * this.opacity;
-                ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.total_z, true) * config.graphics.linewidth_mult;
-                ctx.stroke();
-            }
+            const opacity_mult = (style.opacity ?? 1) * this.opacity;
             if (style.fill) {
                 ctx.fillStyle = color2hex(style.fill ?? color.error);
-                ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1) * this.opacity;
+                ctx.globalAlpha = opacity_mult * (style.fill_opacity ?? 1);
                 ctx.fill();
+            }
+            if (style.stroke) {
+                ctx.strokeStyle = color2hex(style.stroke ?? color.error);
+                ctx.globalAlpha = opacity_mult * (style.stroke_opacity ?? 1);
+                ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.total_z, true) * config.graphics.linewidth_mult;
+                ctx.stroke();
             }
         }
     }

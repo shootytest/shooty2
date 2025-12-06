@@ -1,4 +1,6 @@
-import { clone_object, make, override_object } from "../game/make.js";
+import { clone_object, make, make_shapes, maketype_shape, override_object } from "../game/make.js";
+import { Shape } from "../game/shape.js";
+import { Thing } from "../game/thing.js";
 import { m_ui } from "../map/map_ui.js";
 import { camera } from "./camera.js";
 import { color, color2hex_map, STYLES, STYLES_ } from "./color.js";
@@ -139,8 +141,8 @@ export const map_draw = {
         if (b.id === m_ui.properties_selected.id) return -1;
         if (b.z !== a.z || b.computed?.options == undefined || a.computed?.options == undefined) return a.z - b.z;
         const o1 = a.computed.options, o2 = b.computed.options;
-        if (o1.force_above && !o2.force_above) return 1;
-        if (o2.force_above && !o1.force_above) return -1;
+        const layer = (o1.force_layer ?? 0) - (o2.force_layer ?? 0);
+        if (!math.equal(layer, 0)) return layer;
         if (o1.map_parent && !o2.map_parent) return 1;
         if (o2.map_parent && !o1.map_parent) return -1;
         if (o1.is_map && !o2.is_map) return 1;
@@ -180,27 +182,34 @@ export const map_draw = {
 
   },
 
-
-
   draw_shape: (ctx: Context, shape: map_shape_type, style: style_type, shadow: boolean = false) => {
 
     if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0 || shape.computed.shadow_vertices == undefined) return;
+    if (shape.computed.screen_vertices.length <= 1 && shape.computed.options?.is_spawner && shape.computed.options.spawn_enemy) {
+      ctx.ctx.save();
+      const shapes: maketype_shape[] = make_shapes[shape.computed.options.spawn_enemy] ?? [];
+      for (const o of shapes) {
+        map_draw.draw_shapey(ctx, shape, style, o, shadow);
+      }
+      ctx.ctx.restore();
+      return;
+    }
     const open_loop = Boolean(shape.options.open_loop);
     ctx.ctx.save();
     ctx.beginPath();
     ctx.lines_v((shadow ? shape.computed.shadow_vertices : shape.computed.screen_vertices), !open_loop);
     ctx.lineCap = "square";
     if (open_loop && !style.stroke) style.stroke = style.fill; // hmmm
+    if (style.fill && !open_loop) {
+      ctx.fillStyle = color2hex_map(style.fill, shape.options.room_id ?? "default");
+      ctx.globalAlpha = math.bound((style.opacity ?? 1) * (style.fill_opacity ?? 1) * (shadow ? 0.5 : 1), 0, 0.75);
+      ctx.fill();
+    }
     if (style.stroke) {
       ctx.strokeStyle = color2hex_map(style.stroke, shape.options.room_id ?? "default");
       ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
       ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (shadow ? 0.5 : 1);
       ctx.stroke();
-    }
-    if (style.fill && !open_loop) {
-      ctx.fillStyle = color2hex_map(style.fill, shape.options.room_id ?? "default");
-      ctx.globalAlpha = math.bound((style.opacity ?? 1) * (style.fill_opacity ?? 1) * (shadow ? 0.5 : 1), 0, 0.75);
-      ctx.fill();
     }
     if (m_ui.editor.layers.debug && shape.computed.aabb) {
       const aabb = shape.computed?.aabb;
@@ -216,6 +225,44 @@ export const map_draw = {
     }
     ctx.ctx.restore();
 
+  },
+
+
+
+  draw_shapey: (ctx: Context, shape: map_shape_type, style: style_type, o: maketype_shape, shadow: boolean = false) => {
+    if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0 || shape.computed.shadow_vertices == undefined) return;
+    const centre = shadow ? shape.computed.shadow_vertices[0] : shape.computed.screen_vertices[0];
+    const z = shape.z + (o.z ?? 0);
+    const mult = camera.zscale(z) * camera.scale;
+    const r = (o.radius ?? 0) * mult;
+    if (o.style) style = clone_object(STYLES_[o.style ?? "error"] ?? style);
+    if (o.style_) override_object(style, o.style_);
+    ctx.beginPath();
+    if (o.type === "circle") {
+      ctx.circle_v(centre, r);
+    } else if (o.type === "polygon") {
+      const sides = o.sides ?? 16;
+      let a = o.angle ?? 0;
+      ctx.moveTo(centre.x + r * Math.cos(a), centre.y + r * Math.sin(a));
+      for (let i = 0; i < sides; i++) {
+        a += Math.PI * 2 / sides;
+        ctx.lineTo(centre.x + r * Math.cos(a), centre.y + r * Math.sin(a)); // funny function call
+      }
+    } else if (o.type === "line") {
+      ctx.moveTo_v(vector.add(centre, vector.mult(o.v1 ?? vector.create(), mult)));
+      ctx.lineTo_v(vector.add(centre, vector.mult(o.v2 ?? vector.create(), mult)));
+    }
+    if (style.fill) {
+      ctx.fillStyle = color2hex_map(style.fill, shape.options.room_id ?? "default");
+      ctx.globalAlpha = math.bound((style.opacity ?? 1) * (style.fill_opacity ?? 1) * (shadow ? 0.5 : 1), 0, 0.75);
+      ctx.fill();
+    }
+    if (style.stroke) {
+      ctx.strokeStyle = color2hex_map(style.stroke, shape.options.room_id ?? "default");
+      ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
+      ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (shadow ? 0.5 : 1);
+      ctx.stroke();
+    }
   },
 
 
@@ -392,11 +439,16 @@ export const map_draw = {
   },
 
   get_style: (shape: map_shape_type): style_type => {
-    if (shape.options.is_spawner) return STYLES.spawner;
-    // if (shape.options.is_map) return STYLES.map;
     if (shape.options.is_room && shape.id !== "start") return STYLES.room;
-    if (shape.options.make_id != undefined) {
-      const m = make[shape.options.make_id];
+    let key = shape.options.make_id;
+    if (shape.options.is_spawner) {
+      if (shape.vertices.length <= 1 && shape.options.spawn_enemy) {
+        key = shape.options.spawn_enemy;
+      } else return STYLES.spawner;
+    }
+    // if (shape.options.is_map) return STYLES.map;
+    if (key != undefined) {
+      const m = make[key];
       if (!m) return STYLES.error;
       if (!m.style && m.style_) return clone_object(m.style_);
       const result = clone_object(STYLES_[shape.options.style ?? m.style ?? "error"] ?? STYLES.error);
