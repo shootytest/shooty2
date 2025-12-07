@@ -61,8 +61,14 @@ export class Shape {
         else if (o.type === "circle") {
             s = Shape.circle(thing, o.radius ?? 0, offset);
         }
+        else if (o.type === "arc") {
+            s = Shape.arc(thing, o.radius ?? 0, o.arc_start ?? 0, o.arc_end ?? 0, offset);
+        }
         else if (o.type === "line") {
             s = Shape.line(thing, o.v1 ?? vector.create(), o.v2 ?? vector.create(), o.z);
+        }
+        else if (o.type === "polyline") {
+            s = Shape.polyline(thing, o.vs ?? [], o.z);
         }
         else {
             console.error(`[shape/from_make] shape type '${o.type}' doesn't exist!`);
@@ -102,10 +108,26 @@ export class Shape {
         return Polygon.make(thing, radius, 0, 0, offset);
     }
     ;
+    static arc(thing, radius, arc_start, arc_end, offset) {
+        const p = Polygon.make(thing, radius, 0, 0, offset);
+        p.arc_start = arc_start;
+        p.arc_end = arc_end;
+        return p;
+    }
+    ;
     static line(thing, v1, v2 = vector.create(), z = 0) {
         const s = new Shape(thing);
         s.closed_loop = false;
         s.vertices = vector3.create_many([v1, v2], z);
+        s.calculate();
+        s.init_computed();
+        return s;
+    }
+    ;
+    static polyline(thing, vs, z = 0) {
+        const s = new Shape(thing);
+        s.closed_loop = false;
+        s.vertices = vector3.create_many(vs, z);
         s.calculate();
         s.init_computed();
         return s;
@@ -649,6 +671,8 @@ export class Polygon extends Shape {
     radius = 0;
     sides = 0;
     angle = 0;
+    arc_start = 0;
+    arc_end = 0;
     get r() {
         return this.radius;
     }
@@ -670,7 +694,13 @@ export class Polygon extends Shape {
     draw_path(vertices) {
         if (this.sides === 0) {
             const [c, r] = vertices;
-            ctx.circle(c.x, c.y, r.x);
+            if (math.equal(this.arc_start, this.arc_end)) {
+                ctx.circle_v(c, r.x);
+            }
+            else {
+                const a = this.thing.angle + this.angle;
+                ctx.arc_v(c, r.x, a + this.arc_start, a + this.arc_end);
+            }
         }
         else {
             super.draw_path(vertices);

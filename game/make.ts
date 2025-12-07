@@ -115,7 +115,7 @@ export interface maketype_collect {
 export interface maketype_shape {
 
   // the shape itself
-  type: "circle" | "polygon" | "line" | "none";
+  type: "circle" | "arc" | "polygon" | "line" | "polyline" | "none";
   style?: keyof typeof STYLES;
   style_?: style_type;
   z?: number;
@@ -126,6 +126,9 @@ export interface maketype_shape {
   scale?: vector;
   v1?: vector; // for lines
   v2?: vector;
+  vs?: vector[]; // for polylines
+  arc_start?: number; // for arcs
+  arc_end?: number;
 
   // affects display
   force_layer?: number;
@@ -1195,7 +1198,7 @@ make.shapey_area = {
   draggable: true,
   density: 999999999,
   keep_bullets: true,
-  friction: 0.1,
+  friction: 1,
 };
 
 make.shapey_area_base = {
@@ -1221,7 +1224,33 @@ make.shapey_test = {
 };
 make_shapes.shapey_test = [{
   type: "circle",
-  radius: 20,
+  radius: 15,
+  style_: {
+    width: 0.6,
+  },
+}, {
+  type: "arc",
+  radius: 7,
+  arc_start: 1,
+  arc_end: -1,
+  style_: {
+    fill_opacity: 0,
+    width: 0.6,
+  },
+}, {
+  type: "circle",
+  radius: 1,
+  offset: vector.createpolar_deg(135, 6),
+  style_: {
+    width: 0.5,
+  },
+}, {
+  type: "circle",
+  radius: 1,
+  offset: vector.createpolar_deg(225, 6),
+  style_: {
+    width: 0.5,
+  },
 }];
 
 

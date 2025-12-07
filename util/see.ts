@@ -1,4 +1,4 @@
-import { clone_object, make_rooms, shallow_clone_array } from "../game/make.js";
+import { clone_object, make_rooms } from "../game/make.js";
 import { Particle } from "../game/particle.js";
 import { player } from "../game/player.js";
 import { Shape } from "../game/shape.js";

@@ -1,4 +1,4 @@
-import { Events, Mouse, MouseConstraint } from "../matter.js";
+import { Body, Events, Mouse, MouseConstraint } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { canvas, canvas_, ctx, resize_canvas } from "../util/canvas.js";
 import { color, color_mix, current_theme } from "../util/color.js";
@@ -58,6 +58,9 @@ export const ui = {
     mouse: Mouse.create(canvas_),
     constraint: {} as MouseConstraint,
     thing: undefined as (Thing | undefined),
+    others: [] as Thing[],
+    original_positions: [] as vector[],
+    original_angle: 0,
     init: () => {
       ui.mouse.constraint = MouseConstraint.create(player.temp_engine, {
         mouse: ui.mouse.mouse,
@@ -72,11 +75,22 @@ export const ui = {
         const event = e as { mouse: Mouse, body: Body, source: object, name: string };
         const t = (event.body as any).thing as Thing;
         ui.mouse.thing = t;
+        ui.mouse.others = [t];
+        ui.mouse.original_positions = [t.position];
+        ui.mouse.original_angle = t.angle;
         if (player.shapes_mode) {
-          t.shapes[0].options.blinking = true;
+          if (t.options.movable) t.shapes[0].options.blinking = true;
           for (const s of t.shapes) {
             if (s.options.shapey_area) {
-              // player.recalculate_shapeareas();
+              // drag other things on it too
+              const area = s.real_vertices();
+              for (const t of player.temp_things) {
+                if (t.options.shapey && math.is_polygon_in_polygons(t.shapes[0].real_vertices(), [area])) {
+                  ui.mouse.others.push(t);
+                  ui.mouse.original_positions.push(t.position);
+                }
+              }
+              continue;
             }
           }
         }
@@ -85,6 +99,7 @@ export const ui = {
         const event = e as { mouse: Mouse, body: Body, source: object, name: string };
         const t = (event.body as any).thing as Thing;
         ui.mouse.thing = undefined;
+        ui.mouse.others = [];
         if (player.shapes_mode) {
           t.shapes[0].options.blinking = false;
         }

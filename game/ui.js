@@ -53,6 +53,9 @@ export const ui = {
         mouse: Mouse.create(canvas_),
         constraint: {},
         thing: undefined,
+        others: [],
+        original_positions: [],
+        original_angle: 0,
         init: () => {
             ui.mouse.constraint = MouseConstraint.create(player.temp_engine, {
                 mouse: ui.mouse.mouse,
@@ -67,11 +70,23 @@ export const ui = {
                 const event = e;
                 const t = event.body.thing;
                 ui.mouse.thing = t;
+                ui.mouse.others = [t];
+                ui.mouse.original_positions = [t.position];
+                ui.mouse.original_angle = t.angle;
                 if (player.shapes_mode) {
-                    t.shapes[0].options.blinking = true;
+                    if (t.options.movable)
+                        t.shapes[0].options.blinking = true;
                     for (const s of t.shapes) {
                         if (s.options.shapey_area) {
-                            // player.recalculate_shapeareas();
+                            // drag other things on it too
+                            const area = s.real_vertices();
+                            for (const t of player.temp_things) {
+                                if (t.options.shapey && math.is_polygon_in_polygons(t.shapes[0].real_vertices(), [area])) {
+                                    ui.mouse.others.push(t);
+                                    ui.mouse.original_positions.push(t.position);
+                                }
+                            }
+                            continue;
                         }
                     }
                 }
@@ -80,6 +95,7 @@ export const ui = {
                 const event = e;
                 const t = event.body.thing;
                 ui.mouse.thing = undefined;
+                ui.mouse.others = [];
                 if (player.shapes_mode) {
                     t.shapes[0].options.blinking = false;
                 }

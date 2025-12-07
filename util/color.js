@@ -92,6 +92,7 @@ export const THEMES /*: { [key: string]: color_theme }*/ = {
     home: {
         uid: 2,
         main: "#cadbca",
+        alt: "#adfbcd",
         dark: "#829882",
         floor: "#445544",
     },

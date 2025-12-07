@@ -1,5 +1,6 @@
 import { config } from "../util/config.js";
 import { math } from "../util/math.js";
+import { vector } from "../util/vector.js";
 import { clone_object } from "./make.js";
 import { player } from "./player.js";
 import { Thing } from "./thing.js";
@@ -49,16 +50,62 @@ export const save = {
         save.save.map[id]++;
         save.changed(true);
     },
-    get_shape: (id) => {
-        return save.save.shapey[id]?.amount ?? -1;
+    get_shapey: (id) => {
+        return save.save.shapey[id]?.n ?? -1;
     },
-    check_shape: (id) => {
-        return save.get_shape(id) > 0;
+    is_shapey_on: (id) => {
+        return Boolean(save.save.shapey[id]?.on);
     },
-    add_shape: (id) => {
+    check_shapey: (id) => {
+        return save.get_shapey(id) > 0;
+    },
+    check_all_shapey: () => {
+        const result = {};
+        for (const id in save.save.shapey) {
+            const n = save.get_shapey(id);
+            if (n > 0)
+                result[id] = n;
+        }
+        for (const id of save.special_shapey_ids) {
+            if (result[id])
+                continue;
+            result[id] = 1;
+        }
+        return result;
+    },
+    add_shapey: (id) => {
         if (!save.save.shapey[id])
-            save.save.shapey[id] = { amount: 0 };
-        save.save.shapey[id].amount++;
+            save.save.shapey[id] = { n: 0 };
+        save.save.shapey[id].n++;
+        save.changed(true);
+    },
+    remove_shapey: (id) => {
+        delete save.save.shapey[id];
+        save.changed(true);
+    },
+    save_one_shapey: (thing) => {
+        const id = thing.id.substring(7);
+        if (!save.save.shapey[id])
+            save.save.shapey[id] = { n: 0 };
+        const o = save.save.shapey[id];
+        o.v = vector.create(Math.floor(thing.position.x), Math.floor(thing.position.y));
+        o.a = math.round_to(thing.angle, 0.001);
+        save.changed(true);
+    },
+    special_shapey_ids: ["area_base", "test"],
+    save_all_shapey: () => {
+        for (const t of player.temp_things) {
+            const id = t.id.substring(7);
+            if (!save.save.shapey[id] && save.special_shapey_ids.includes(id)) {
+                save.save.shapey[id] = { n: 1 };
+            }
+            if (save.save.shapey[id]) {
+                const o = save.save.shapey[id];
+                o.v = vector.create(Math.floor(t.x), Math.floor(t.y));
+                o.a = math.round_to(t.angle, 0.001);
+                o.on = Boolean(t.object.inside);
+            }
+        }
         save.changed(true);
     },
     get_currency: (name) => {
