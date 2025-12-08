@@ -324,6 +324,12 @@ export const math = {
         const [a, b, c] = triangle;
         return 0.5 * ((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y));
     },
+    circle_area: (radius) => {
+        return radius * radius * Math.PI;
+    },
+    polygon_area: (sides, radius) => {
+        return radius * radius * sides / 2 * Math.sin(math.two_pi / sides);
+    },
     rand_point_in_circle: (centre, radius) => {
         if (radius <= 0)
             return vector.clone(centre);

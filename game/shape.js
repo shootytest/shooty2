@@ -3,6 +3,7 @@ import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
 import { color, color2hex, STYLES, STYLES_, THEMES } from "../util/color.js";
 import { config } from "../util/config.js";
+import { mouse } from "../util/key.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { clone_object, make_rooms, make_shoot, multiply_and_override_object, override_object } from "./make.js";
@@ -68,7 +69,7 @@ export class Shape {
             s = Shape.line(thing, o.v1 ?? vector.create(), o.v2 ?? vector.create(), o.z);
         }
         else if (o.type === "polyline") {
-            s = Shape.polyline(thing, o.vs ?? [], o.z);
+            s = Shape.polyline(thing, o.vs ?? [], !o.open_loop, o.z);
         }
         else {
             console.error(`[shape/from_make] shape type '${o.type}' doesn't exist!`);
@@ -124,9 +125,9 @@ export class Shape {
         return s;
     }
     ;
-    static polyline(thing, vs, z = 0) {
+    static polyline(thing, vs, closed_loop, z = 0) {
         const s = new Shape(thing);
-        s.closed_loop = false;
+        s.closed_loop = closed_loop;
         s.vertices = vector3.create_many(vs, z);
         s.calculate();
         s.init_computed();
@@ -305,6 +306,11 @@ export class Shape {
     };
     translucent = 0;
     object = {}; // for any random things
+    hovering = false;
+    hover_start_fn;
+    hover_fn;
+    hover_end_fn;
+    // click_fn?: () => void; // todo maybe
     get z() {
         return this.offset.z + this.thing.z;
     }
@@ -361,6 +367,7 @@ export class Shape {
         const calc_vertices = vector3.add_list(this.vertices, this.offset), vertices = vector3.clone_list(this.vertices);
         if (this.activate_scale)
             vector3.scale_to_list(calc_vertices, this.scale);
+        // if (this.closed_loop && calc_vertices.length >= 3) calc_vertices.push(calc_vertices[0]);
         const aabb = vector.make_aabb(calc_vertices), aabb3 = vector3.make_aabb(calc_vertices), mean = this.closed_loop ? vector3.create2(Vertices.centre(calc_vertices), vector3.meanz(calc_vertices)) : vector3.mean(calc_vertices); // don't be mean...
         if (this.computed == undefined) {
             this.computed = { aabb, aabb3, mean, vertices };
@@ -393,6 +400,7 @@ export class Shape {
         }
         this.computed.aabb = vector.make_aabb(this.computed.vertices);
         this.computed.aabb3 = vector3.make_aabb(this.computed.vertices);
+        // if (this.closed_loop && this.computed.vertices.length >= 3) this.computed.vertices.push(this.computed.vertices[0]);
         // translate by thing position
         vector3.add_to_list(this.computed.vertices, this.thing.position);
         // no need to compute distance to camera centre... maybe next time? (for 3d optimisation? what)
@@ -417,13 +425,13 @@ export class Shape {
             vector3.scale_to_list(vs, this.scale);
         if (this.thing.angle) {
             for (const v of vs) {
-                const rotated = vector.rotate(vector.create(), v, this.thing.angle);
+                const rotated = vector.rotate(vector.create(), v, math.round_to(this.thing.angle, 0.001));
                 v.x = rotated.x;
                 v.y = rotated.y;
             }
         }
         vector3.add_to_list(vs, this.thing.position);
-        return vs;
+        return vector3.round_list(vs, 1, 0.001);
     }
     add(thing) {
         this.thing = thing;
@@ -448,8 +456,9 @@ export class Shape {
             this.draw_clip();
         else
             this.draw();
-        this.draw_glow();
         this.draw_blink();
+        this.draw_glow();
+        this.draw_highlight();
         if (this.index <= 0) {
             this.draw_health();
             this.draw_repel();
@@ -463,10 +472,13 @@ export class Shape {
             style = clone_object(this.style);
             multiply_and_override_object(style, style_mult);
         }
+        const check_hover = style_mult == undefined && !shadow && (this.hover_start_fn || this.hover_fn || this.hover_end_fn);
         ctx.beginPath();
         this.draw_path(shadow ? this.computed.shadow_vertices : this.computed.screen_vertices);
         const override_pause_opacity = this.thing.is_player && this.index >= 1 && player.paused && !player.map_mode;
         const opacity_mult = this.opacity * (style.opacity ?? 1) * (this.is_map ? ui.map.opacity : 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
+        if (this.options.filter)
+            ctx.filter = this.options.filter;
         if (style.fill && this.closed_loop) {
             ctx.fillStyle = this.color2hex(style.fill);
             ctx.globalAlpha = opacity_mult * (style.fill_opacity ?? 1);
@@ -478,6 +490,18 @@ export class Shape {
             ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.avg_z, true) * config.graphics.linewidth_mult * (this.translucent <= math.epsilon ? 1 : 1.8); // * (this.thing.options.seethrough && this.thing.is_wall ? 0.5 : 1);
             ctx.stroke();
         }
+        if (check_hover) {
+            const hovering = ctx.point_in_path_v(mouse.position);
+            if (hovering && !this.hovering)
+                this.hover_start_fn?.();
+            if (!hovering && this.hovering)
+                this.hover_end_fn?.();
+            if (hovering)
+                this.hover_fn?.();
+            this.hovering = hovering;
+        }
+        if (this.options.filter)
+            ctx.filter = "none";
         if (!shadow && (this.computed.shadow_vertices?.length ?? 0) >= 1) {
             this.draw({ opacity: 0.5, }, true);
         }
@@ -556,6 +580,18 @@ export class Shape {
             this.draw(style_mult);
         ctx.ctx.shadowBlur = 0;
     }
+    draw_highlight() {
+        if (!this.options.highlight || this.options.highlight < 0)
+            return;
+        const alpha = this.options.highlight;
+        const col = this.options.highlight_color ?? this.style.fill ?? this.style.stroke ?? color.error;
+        const style_mult = {
+            stroke_opacity: 0,
+            fill: col,
+            fill_opacity: alpha / (this.style.fill_opacity || 1),
+        };
+        this.draw(style_mult);
+    }
     draw_clip() {
         if (this.computed?.screen_vertices == undefined || !this.computed.on_screen || !this.options.clip)
             return;
@@ -605,9 +641,9 @@ export class Shape {
             array?.remove(this);
         }
     }
-    scale_size(size) {
-        this.offset = vector3.mult(this.offset, size);
-        vector3.scale_to_list(this.vertices, vector.create(size, size));
+    scale_size(scale) {
+        this.offset = vector3.mult(this.offset, scale);
+        vector3.scale_to_list(this.vertices, vector.create(scale, scale));
     }
     break(o = {}) {
         if (this.computed?.vertices == undefined || !this.computed.on_screen)
@@ -656,7 +692,7 @@ export class Polygon extends Shape {
     static type = "polygon";
     static make(thing, radius, sides, angle, offset = vector3.create()) {
         const s = new Polygon(thing);
-        s.closed_loop = true;
+        s.closed_loop = true; // can be false, just in case
         s.radius = radius;
         s.sides = sides;
         s.angle = angle;
@@ -699,7 +735,7 @@ export class Polygon extends Shape {
             }
             else {
                 const a = this.thing.angle + this.angle;
-                ctx.arc_v(c, r.x, a + this.arc_start, a + this.arc_end);
+                ctx.arc_v(c, r.x, a + this.arc_start, a + this.arc_end, true);
             }
         }
         else {

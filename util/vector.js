@@ -59,6 +59,20 @@ export const vector = {
         }
         return;
     },
+    mult_list: (vs, scale) => {
+        const result = [];
+        for (const v of vs) {
+            result.push(vector.mult(v, scale));
+        }
+        return result;
+    },
+    mult_to_list: (vs, scale) => {
+        for (const v of vs) {
+            v.x *= scale;
+            v.y *= scale;
+        }
+        return;
+    },
     sub: (v1, v2) => {
         return {
             x: v1.x - v2.x,

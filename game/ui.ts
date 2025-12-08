@@ -1,13 +1,13 @@
 import { Body, Events, Mouse, MouseConstraint } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { canvas, canvas_, ctx, resize_canvas } from "../util/canvas.js";
-import { color, color_mix, current_theme } from "../util/color.js";
+import { color, color_mix, current_theme, THEMES } from "../util/color.js";
 import { config } from "../util/config.js";
 import { key, keys, mouse } from "../util/key.js";
 import { math } from "../util/math.js";
 import { SVG } from "../util/svg.js";
 import { vector } from "../util/vector.js";
-import { shallow_clone_array } from "./make.js";
+import { make_shapes, shallow_clone_array } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
@@ -58,9 +58,14 @@ export const ui = {
     mouse: Mouse.create(canvas_),
     constraint: {} as MouseConstraint,
     thing: undefined as (Thing | undefined),
+    selected: undefined as (Thing | undefined),
+    hovered: undefined as (Thing | undefined),
     others: [] as Thing[],
     original_positions: [] as vector[],
     original_angle: 0,
+    get selected_id() {
+      return (ui.mouse.selected?.object.shapey_id ?? ui.mouse.hovered?.object.shapey_id) as (string | undefined);
+    },
     init: () => {
       ui.mouse.constraint = MouseConstraint.create(player.temp_engine, {
         mouse: ui.mouse.mouse,
@@ -71,6 +76,12 @@ export const ui = {
           },
         },
       });
+      Events.on(ui.mouse.constraint, "mousedown", (e) => {
+        if (ui.mouse.constraint.body) return;
+        const old = ui.mouse.selected;
+        if (old?.shapes[0]) old.shapes[0].options.highlight = 0;
+        ui.mouse.selected = undefined;
+      });
       Events.on(ui.mouse.constraint, "startdrag", (e) => {
         const event = e as { mouse: Mouse, body: Body, source: object, name: string };
         const t = (event.body as any).thing as Thing;
@@ -79,7 +90,14 @@ export const ui = {
         ui.mouse.original_positions = [t.position];
         ui.mouse.original_angle = t.angle;
         if (player.shapes_mode) {
-          if (t.options.movable) t.shapes[0].options.blinking = true;
+          if (!t.options.wall_filter) {
+            const old = ui.mouse.selected;
+            if (old?.shapes[0]) old.shapes[0].options.highlight = 0;
+            t.shapes[0].options.blinking = true;
+            t.shapes[0].options.highlight = 0.3;
+            t.shapes[0].options.highlight_color = color.yellow;
+            ui.mouse.selected = t;
+          }
           for (const s of t.shapes) {
             if (s.options.shapey_area) {
               // drag other things on it too
@@ -226,6 +244,7 @@ export const ui = {
     });
 
     ui.mouse.init();
+    ui.init_shapey();
 
   },
 
@@ -256,6 +275,7 @@ export const ui = {
     if (player.paused) {
       ui.draw_pause_menu();
       ui.draw_inventory();
+      ui.draw_shapey();
     }
     ui.click.tick();
   },
@@ -484,7 +504,7 @@ export const ui = {
       },
       {
         icon: "settings",
-        color: color.blue,
+        color: color.purple,
         fn: function() {
           ui.settings.open = true;
           ui.settings.start_time = ui.time;
@@ -498,90 +518,30 @@ export const ui = {
       },
       {
         icon: "map",
-        color: color.gold,
+        get color(): string {
+          return current_theme.main;
+        },
         fn: function() {
           ui.toggle_map();
         },
       },
       {
-        icon: "info",
-        color: color.dimgrey,
+        icon: "pouch",
+        color: color.gold,
         fn: function() {
+          ui.toggle_inventory();
         },
       },
       {
-        icon: "load",
-        color: color.purple,
+        icon: "shape",
+        get color(): string {
+          return player.is_on_checkpoint ? color.green_health : color.dimgrey;
+        },
         fn: function() {
+          ui.toggle_shapes();
         },
       },
-    ] as { icon: string, color: string, fn: () => void }[],
-  },
-
-  map: {
-    start_time: -999 * config.seconds,
-    opacity: 0,
-    hide_map: false,
-    hide_background: false,
-    get time(): number {
-      return ui.time - this.start_time;
-    },
-    tick: () => {
-      if (ui.map.time > config.graphics.map_fade_time) ui.map.opacity = player.map_mode ? 1 : 0;
-      else {
-        const ratio = ui.map.time / config.graphics.map_fade_time;
-        ui.map.opacity = math.bound(player.map_mode ? ratio : 1 - ratio, 0, 1);
-      }
-      ui.map.hide_map = ui.map.opacity < 0.01;
-      ui.map.hide_background = ui.map.opacity > 0.99;
-    },
-    activate: () => {
-      player.activate_map();
-      if (player.inventory_mode) ui.toggle_inventory();
-      if (player.shapes_mode) ui.toggle_shapes();
-      player.paused = true;
-      ui.map.start_time = -999 * config.seconds; // change to ui.time for fade effect
-    },
-    deactivate: () => {
-      player.deactivate_map();
-      ui.map.start_time = -999 * config.seconds; // change to ui.time for fade effect
-    },
-  },
-
-  inventory: {
-    start_time: -999 * config.seconds,
-    tick: () => {
-
-    },
-    activate: () => {
-      player.activate_inventory();
-      if (player.map_mode) ui.toggle_map();
-      if (player.shapes_mode) ui.toggle_shapes();
-      player.paused = true;
-      ui.inventory.start_time = ui.time;
-    },
-    deactivate: () => {
-      player.deactivate_inventory();
-      ui.inventory.start_time = -999 * config.seconds;
-    },
-  },
-
-  shapes: {
-    start_time: -999 * config.seconds,
-    tick: () => {
-
-    },
-    activate: () => {
-      player.activate_shapes();
-      if (player.map_mode) ui.toggle_map();
-      if (player.inventory_mode) ui.toggle_inventory();
-      player.paused = true;
-      ui.shapes.start_time = ui.time;
-    },
-    deactivate: () => {
-      player.deactivate_shapes();
-      ui.shapes.start_time = -999 * config.seconds;
-    },
+    ] as { icon: keyof typeof SVG, color: string, fn: () => void }[],
   },
 
   settings: {
@@ -662,6 +622,74 @@ export const ui = {
     ] as { icon: string, color: string, fn: () => void }[],
   },
 
+  map: {
+    start_time: -999 * config.seconds,
+    opacity: 0,
+    hide_map: false,
+    hide_background: false,
+    get time(): number {
+      return ui.time - this.start_time;
+    },
+    tick: () => {
+      if (ui.map.time > config.graphics.map_fade_time) ui.map.opacity = player.map_mode ? 1 : 0;
+      else {
+        const ratio = ui.map.time / config.graphics.map_fade_time;
+        ui.map.opacity = math.bound(player.map_mode ? ratio : 1 - ratio, 0, 1);
+      }
+      ui.map.hide_map = ui.map.opacity < 0.01;
+      ui.map.hide_background = ui.map.opacity > 0.99;
+    },
+    activate: () => {
+      player.activate_map();
+      if (player.inventory_mode) ui.toggle_inventory();
+      if (player.shapes_mode) ui.toggle_shapes();
+      player.paused = true;
+      ui.map.start_time = -999 * config.seconds; // change to ui.time for fade effect
+    },
+    deactivate: () => {
+      player.deactivate_map();
+      ui.map.start_time = -999 * config.seconds; // change to ui.time for fade effect
+    },
+  },
+
+  inventory: {
+    start_time: -999 * config.seconds,
+    tick: () => {
+
+    },
+    activate: () => {
+      player.activate_inventory();
+      if (player.map_mode) ui.toggle_map();
+      if (player.shapes_mode) ui.toggle_shapes();
+      player.paused = true;
+      ui.inventory.start_time = ui.time;
+    },
+    deactivate: () => {
+      player.deactivate_inventory();
+      ui.inventory.start_time = -999 * config.seconds;
+    },
+  },
+
+  shapes: {
+    start_time: -999 * config.seconds,
+    centre: vector.create(0, 0),
+    on_ratio: 0,
+    tick: () => {
+
+    },
+    activate: () => {
+      player.activate_shapes();
+      if (player.map_mode) ui.toggle_map();
+      if (player.inventory_mode) ui.toggle_inventory();
+      player.paused = true;
+      ui.shapes.start_time = ui.time;
+    },
+    deactivate: () => {
+      player.deactivate_shapes();
+      ui.shapes.start_time = -999 * config.seconds;
+    },
+  },
+
   draw_pause_menu: function() {
     if (player.some_mode) { // draw mode-switcher on top
 
@@ -735,12 +763,13 @@ export const ui = {
         if (hovering) ui.click.new(o.fn);
         ctx.beginPath();
         ctx.circle_v(v, r * 0.64);
-        ctx.fillStyle = (hovering ? o.color : color.white) + "22";
+        ctx.fillStyle = (hovering ? o.color + "33" : color.white + "22");
         ctx.fill();
         if (hovering) ctx.stroke();
         if (o.icon === "resize") {
           ctx.fillStyle = color.white;
           ctx.set_font_mono(r * 0.35);
+          ctx.textAlign = "center";
           ctx.text_v(`${(o as any).text()}`, v);
         }
         if (i === 0) r *= 1.25 * switch_ratio;
@@ -752,6 +781,74 @@ export const ui = {
   draw_inventory: function() {
     if (!player.inventory_mode) return;
 
+  },
+
+  draw_shapey: function() {
+    if (!player.shapes_mode) return;
+    const target = vector.create(ui.width / 2, (mouse.position.y < ui.height * 0.725) ? ui.height * 0.85 : ui.height * 0.25);
+    ui.shapes.centre = vector.lerp(ui.shapes.centre, target, 0.25);
+    if (ui.mouse.selected_id) {
+      const thing = (ui.mouse.selected ?? ui.mouse.hovered)!; // exclamation needed!
+      const id = ui.mouse.selected_id;
+      const saved = save.save.shapey[id] ?? { n: 0 };
+      const is_area = !thing.options.shapey;
+      const o = ui.shapey[id as keyof typeof ui.shapey];
+      const centre = ui.shapes.centre;
+      const size = ui.size;
+      const whitermain = color_mix(current_theme.main, color.white, 0.2);
+      ui.shapes.on_ratio = math.lerp(ui.shapes.on_ratio, saved.on ? 1 : 0, 0.1);
+      const on_ratio = ui.shapes.on_ratio;
+      ctx.fillStyle = whitermain + "dd";
+      ctx.strokeStyle = color.yellow + "dd";
+      ctx.lineWidth = size * 0.4;
+      const w = ui.width * 0.375, h = ui.height * 0.1; // halfwidth, halfheight
+      const left_w = size * 20;
+      ctx.beginPath();
+      ctx.roundrectangle(centre.x, centre.y, w * 2, h * 2, size * 2);
+      ctx.fill();
+      if (on_ratio > 0.01 || is_area) {
+        ctx.strokeStyle = is_area ? current_theme.dark : color.yellow + math.component_to_hex(on_ratio * 220);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = current_theme.floor + "88";
+      ctx.line(centre.x - w + left_w, centre.y - h + size, centre.x - w + left_w, centre.y + h - size);
+      ctx.fillStyle = current_theme.floor;
+      ctx.textAlign = "left";
+      let x = centre.x - w + left_w + size * 2, y = centre.y - h + size * 2;
+      ctx.set_font_mono(size * 1.7, "bold");
+      ctx.text(o.title, x, y + size * 0.3);
+      ctx.set_font_mono(size * 1.2, "bold");
+      ctx.text(o.description[saved.n - 1], x, y + size * 3, w * 2 - left_w - size * 4);
+      // left part
+      x -= left_w;
+      // mode toggle
+      ctx.text("mode", x, y);
+      y += size * 0.1;
+      ctx.ctx.save();
+        ctx.fillStyle = color_mix(current_theme.dark, color.yellow, on_ratio);
+        ctx.beginPath();
+        ctx.roundrectangle(x + size * 9, y, size * 8.4, size * 2.4, size * 3);
+        ctx.fill();
+        ctx.clip();
+        ctx.fillStyle = current_theme.floor;
+        ctx.beginPath();
+        if (is_area) {
+          ctx.text("area", x + size * 7.65, y);
+        } else {
+          x += size * 6 * (1 + on_ratio); // nice coincidence
+          ctx.circle(x, y, size);
+          ctx.fill();
+          ctx.text("on", x - size * 4.5, y);
+          ctx.text("off", x + size * 2.7, y);
+          x -= size * 6 * (1 + on_ratio);
+        }
+      ctx.ctx.restore();
+      // size
+      y += size * 3;
+      ctx.text("size", x, y);
+      ctx.set_font_mono(size * 1.5, "bold");
+      ctx.text(`${Math.round(o.area?.[saved.n - 1] ?? -1)}`, x + size * 5, y);
+    }
   },
 
   items: {
@@ -768,6 +865,59 @@ export const ui = {
       },
     },
   } as { [key: string]: { key: string, name: string, fill: string, multiple?: number, draw: (x: number, y: number, r: number) => void } },
+
+  shapey: {
+    friendly: {
+      title: "friendly mode :)",
+      description: [
+        "disable shooting",
+      ],
+      on_fn: () => {
+        player.object.old_shape_opacity = player.shapes.map((s, i) => {
+          const o = s.opacity;
+          if (i > 0) s.opacity = 0;
+          return o;
+        });
+        player.object.friendly_shapes = player.make_shape_key("player_friendly");
+      },
+      off_fn: () => {
+        for (const s of (player.object.friendly_shapes ?? []) as Shape[]) {
+          s.remove();
+        }
+        (player.object.old_shape_opacity as number[])?.forEach((o, i) => {
+          if (i > 0) player.shapes[i].opacity = o;
+        });
+      },
+    },
+    area_base: {
+      title: "base",
+      base: true,
+      description: [
+        "move shapes into this area to enable them!\nshapes are only movable at checkpoints",
+      ],
+    },
+  } as { [key: string]: { title: string, description: string[], base?: boolean, area?: number[], on_fn?: () => void, off_fn?: () => void } },
+
+  init_shapey() {
+    for (const [k, o] of Object.entries(ui.shapey)) {
+      let n = 1;
+      const areas: number[] = [];
+      while (make_shapes["shapey_" + k + "_" + n] != undefined && n < 100) {
+        const ss = make_shapes["shapey_" + k + "_" + n];
+        let area = 0;
+        for (const s of ss) {
+          const mult = (o.base && !s.shapey_area) ? -1 : 1;
+          if (s.type === "circle") area += mult * math.circle_area(s.radius ?? 0);
+          else if (s.type === "polygon") area += mult * math.polygon_area(s.sides ?? 16, s.radius ?? 0);
+          // else area += mult * 0;
+          if (!o.base) break;
+        }
+        areas.push(area);
+        n++;
+      }
+      o.area = areas;
+    }
+  },
 
   text: {
     circle: {

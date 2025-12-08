@@ -193,6 +193,10 @@ export class Thing {
     }
     make(key, reset = false) {
         const o = make[key];
+        if (!o) {
+            console.error(`make not found: ${key}`);
+            return;
+        }
         if (reset)
             this.options = {};
         override_object(this.options, o);
@@ -206,9 +210,11 @@ export class Thing {
             for (const shape of shallow_clone_array(this.shapes))
                 shape.remove();
         const shapes = make_shapes[key] ?? [];
+        const result = [];
         for (const o of shapes) {
-            Shape.from_make(this, o);
+            result.push(Shape.from_make(this, o));
         }
+        return result;
     }
     make_shape(m, reset = false) {
         if (reset)

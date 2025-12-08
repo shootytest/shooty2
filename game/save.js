@@ -84,25 +84,25 @@ export const save = {
         save.changed(true);
     },
     save_one_shapey: (thing) => {
-        const id = thing.id.substring(7);
+        const id = thing.object.shapey_id;
         if (!save.save.shapey[id])
             save.save.shapey[id] = { n: 0 };
         const o = save.save.shapey[id];
         o.v = vector.create(Math.floor(thing.position.x), Math.floor(thing.position.y));
-        o.a = math.round_to(thing.angle, 0.001);
+        o.a = +((thing.angle % (Math.PI * 2)).toFixed(3));
         save.changed(true);
     },
-    special_shapey_ids: ["area_base", "test"],
+    special_shapey_ids: ["area_base", "friendly"],
     save_all_shapey: () => {
         for (const t of player.temp_things) {
-            const id = t.id.substring(7);
+            const id = t.object.shapey_id;
             if (!save.save.shapey[id] && save.special_shapey_ids.includes(id)) {
                 save.save.shapey[id] = { n: 1 };
             }
             if (save.save.shapey[id]) {
                 const o = save.save.shapey[id];
                 o.v = vector.create(Math.floor(t.x), Math.floor(t.y));
-                o.a = math.round_to(t.angle, 0.001);
+                o.a = +((t.angle % (Math.PI * 2)).toFixed(3));
                 o.on = Boolean(t.object.inside);
             }
         }

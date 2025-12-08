@@ -3,6 +3,7 @@ import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
 import { color, color2hex, STYLES, STYLES_, THEMES } from "../util/color.js";
 import { config } from "../util/config.js";
+import { mouse } from "../util/key.js";
 import { map_shape_compute_type, map_shape_type, style_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { AABB3, vector, vector3, vector3_ } from "../util/vector.js";
@@ -72,7 +73,7 @@ export class Shape {
     } else if (o.type === "line") {
       s = Shape.line(thing, o.v1 ?? vector.create(), o.v2 ?? vector.create(), o.z);
     } else if (o.type === "polyline") {
-      s = Shape.polyline(thing, o.vs ?? [], o.z);
+      s = Shape.polyline(thing, o.vs ?? [], !o.open_loop, o.z);
     } else {
       console.error(`[shape/from_make] shape type '${o.type}' doesn't exist!`);
       s = new Shape(thing);
@@ -123,9 +124,9 @@ export class Shape {
     return s;
   };
 
-  static polyline(thing: Thing, vs: vector[], z: number = 0): Shape {
+  static polyline(thing: Thing, vs: vector[], closed_loop: boolean, z: number = 0): Shape {
     const s = new Shape(thing);
-    s.closed_loop = false;
+    s.closed_loop = closed_loop;
     s.vertices = vector3.create_many(vs, z);
     s.calculate();
     s.init_computed();
@@ -286,6 +287,12 @@ export class Shape {
 
   object: { [key: string]: any } = {}; // for any random things
 
+  hovering = false;
+  hover_start_fn?: () => void;
+  hover_fn?: () => void;
+  hover_end_fn?: () => void;
+  // click_fn?: () => void; // todo maybe
+
   get z(): number {
     return this.offset.z + this.thing.z;
   }
@@ -352,6 +359,7 @@ export class Shape {
     const calc_vertices = vector3.add_list(this.vertices, this.offset),
       vertices = vector3.clone_list(this.vertices);
     if (this.activate_scale) vector3.scale_to_list(calc_vertices, this.scale);
+    // if (this.closed_loop && calc_vertices.length >= 3) calc_vertices.push(calc_vertices[0]);
     const aabb = vector.make_aabb(calc_vertices),
       aabb3 = vector3.make_aabb(calc_vertices),
       mean = this.closed_loop ? vector3.create2(Vertices.centre(calc_vertices), vector3.meanz(calc_vertices)) : vector3.mean(calc_vertices); // don't be mean...
@@ -384,6 +392,7 @@ export class Shape {
     }
     this.computed.aabb = vector.make_aabb(this.computed.vertices);
     this.computed.aabb3 = vector3.make_aabb(this.computed.vertices);
+    // if (this.closed_loop && this.computed.vertices.length >= 3) this.computed.vertices.push(this.computed.vertices[0]);
     // translate by thing position
     vector3.add_to_list(this.computed.vertices, this.thing.position);
     // no need to compute distance to camera centre... maybe next time? (for 3d optimisation? what)
@@ -408,13 +417,13 @@ export class Shape {
     if (this.activate_scale) vector3.scale_to_list(vs, this.scale);
     if (this.thing.angle) {
       for (const v of vs) {
-        const rotated = vector.rotate(vector.create(), v, this.thing.angle);
+        const rotated = vector.rotate(vector.create(), v, math.round_to(this.thing.angle, 0.001));
         v.x = rotated.x;
         v.y = rotated.y;
       }
     }
     vector3.add_to_list(vs, this.thing.position);
-    return vs;
+    return vector3.round_list(vs, 1, 0.001) as vector3[];
   }
 
   add(thing: Thing) {
@@ -438,8 +447,9 @@ export class Shape {
     if (ui.map.hide_map && this.is_map) return;
     if (this.options.clip) this.draw_clip();
     else this.draw();
-    this.draw_glow();
     this.draw_blink();
+    this.draw_glow();
+    this.draw_highlight();
     if (this.index <= 0) {
       this.draw_health();
       this.draw_repel();
@@ -453,10 +463,12 @@ export class Shape {
       style = clone_object(this.style);
       multiply_and_override_object(style, style_mult);
     }
+    const check_hover = style_mult == undefined && !shadow && (this.hover_start_fn || this.hover_fn || this.hover_end_fn);
     ctx.beginPath();
     this.draw_path(shadow ? this.computed.shadow_vertices : this.computed.screen_vertices);
     const override_pause_opacity: boolean = this.thing.is_player && this.index >= 1 && player.paused && !player.map_mode;
     const opacity_mult = this.opacity * (style.opacity ?? 1) * (this.is_map ? ui.map.opacity : 1) * (override_pause_opacity ? config.graphics.pause_opacity : 1);
+    if (this.options.filter) ctx.filter = this.options.filter;
     if (style.fill && this.closed_loop) {
       ctx.fillStyle = this.color2hex(style.fill);
       ctx.globalAlpha = opacity_mult * (style.fill_opacity ?? 1);
@@ -468,6 +480,14 @@ export class Shape {
       ctx.lineWidth = (style.width ?? 1) * camera.scale * camera.zscale(this.avg_z, true) * config.graphics.linewidth_mult * (this.translucent <= math.epsilon ? 1 : 1.8); // * (this.thing.options.seethrough && this.thing.is_wall ? 0.5 : 1);
       ctx.stroke();
     }
+    if (check_hover) {
+      const hovering = ctx.point_in_path_v(mouse.position);
+      if (hovering && !this.hovering) this.hover_start_fn?.();
+      if (!hovering && this.hovering) this.hover_end_fn?.();
+      if (hovering) this.hover_fn?.();
+      this.hovering = hovering;
+    }
+    if (this.options.filter) ctx.filter = "none";
     if (!shadow && (this.computed.shadow_vertices?.length ?? 0) >= 1) {
       this.draw({ opacity: 0.5, }, true);
     }
@@ -540,6 +560,18 @@ export class Shape {
     ctx.ctx.shadowBlur = 0;
   }
 
+  draw_highlight() {
+    if (!this.options.highlight || this.options.highlight < 0) return;
+    const alpha = this.options.highlight;
+    const col = this.options.highlight_color ?? this.style.fill ?? this.style.stroke ?? color.error;
+    const style_mult: style_type = {
+      stroke_opacity: 0,
+      fill: col,
+      fill_opacity: alpha / (this.style.fill_opacity || 1),
+    };
+    this.draw(style_mult);
+  }
+
   draw_clip() {
     if (this.computed?.screen_vertices == undefined || !this.computed.on_screen || !this.options.clip) return;
     const clip = this.options.clip;
@@ -587,9 +619,9 @@ export class Shape {
     }
   }
 
-  scale_size(size: number) {
-    this.offset = vector3.mult(this.offset, size);
-    vector3.scale_to_list(this.vertices, vector.create(size, size));
+  scale_size(scale: number) {
+    this.offset = vector3.mult(this.offset, scale);
+    vector3.scale_to_list(this.vertices, vector.create(scale, scale));
   }
 
   break(o: {
@@ -650,7 +682,7 @@ export class Polygon extends Shape {
 
   static make(thing: Thing, radius: number, sides: number, angle: number, offset: vector3_ = vector3.create()): Polygon {
     const s = new Polygon(thing);
-    s.closed_loop = true;
+    s.closed_loop = true; // can be false, just in case
     s.radius = radius;
     s.sides = sides;
     s.angle = angle;
@@ -696,7 +728,7 @@ export class Polygon extends Shape {
         ctx.circle_v(c, r.x);
       } else {
         const a = this.thing.angle + this.angle;
-        ctx.arc_v(c, r.x, a + this.arc_start, a + this.arc_end);
+        ctx.arc_v(c, r.x, a + this.arc_start, a + this.arc_end, true);
       }
     } else {
       super.draw_path(vertices);

@@ -18,6 +18,7 @@ export interface maketype {
   // game booleans
   decoration?: boolean; // this won't add a physics object
   floor?: boolean; // a floor the player can stand on
+  safe_floor?: boolean; // save player position when on this floor
   sensor?: boolean; // invisible physics sensor (covers all z values)
   invisible?: boolean; // invisible shape
   movable?: boolean; // dynamic physics object
@@ -25,6 +26,7 @@ export interface maketype {
   seethrough?: boolean; // visibility
   keep_bullets?: boolean; // don't delete bullets if they collide
   switch?: boolean;
+  checkpoint?: boolean;
   cover_z?: boolean; // override cover z
   wall_filter?: wall_filter_type; // none (not a wall) / normal wall (nothing can pass) / window (players can't pass but bullets can) / curtain (bullets can't pass but players can)
 
@@ -127,19 +129,24 @@ export interface maketype_shape {
   v1?: vector; // for lines
   v2?: vector;
   vs?: vector[]; // for polylines
+  open_loop?: boolean;
   arc_start?: number; // for arcs
   arc_end?: number;
 
   // affects display
   force_layer?: number;
+  filter?: string; // use sparingly
   blinking?: boolean;
   glowing?: number;
+  highlight?: number;
+  highlight_color?: string;
   clip?: maketype_shape_clip;
 
   // affects gameplay
   shoot?: string;
   shoot_?: shoot_stats;
   floor?: boolean;
+  safe_floor?: boolean;
   is_map?: boolean;
   shapey_area?: boolean;
 
@@ -398,31 +405,33 @@ make.checkpoint = {
   style: "switch",
   team: 0,
   switch: true,
+  checkpoint: true,
   seethrough: true,
   restitution: 0,
+  safe_floor: true,
 };
-make_shapes.checkpoint = [{
+
+make.checkpoint_streets_room_2 = {
+  make_parent: ["checkpoint"],
+  angle: Math.PI / 6,
+};
+make_shapes.checkpoint_streets_room_2 = [{
   type: "circle",
   radius: 60,
 }, {
   type: "polygon",
   sides: 3,
-  radius: 120,
-  z: 0.2,
+  radius: 360,
   floor: true,
   style_: { stroke_opacity: 0 },
 }, {
-  type: "line",
-  v1: vector3.createpolar_deg(0, 120, 0.2),
-  v2: vector3.createpolar_deg(0, 120, 1),
-}, {
-  type: "line",
-  v1: vector3.createpolar_deg(120, 120, 0.2),
-  v2: vector3.createpolar_deg(120, 120, 1),
-}, {
-  type: "line",
-  v1: vector3.createpolar_deg(240, 120, 0.2),
-  v2: vector3.createpolar_deg(240, 120, 1), // todo remove
+  type: "polygon",
+  sides: 3,
+  radius: 60,
+  z: 0.2,
+  floor: true,
+  safe_floor: false,
+  style_: { stroke_opacity: 0 },
 }];
 
 
@@ -519,6 +528,24 @@ make_shapes.player_basic = [{
   type: "line",
   v2: vector.createpolar_deg(0, 30),
   shoot: "player_basic",
+}];
+
+make_shapes.player_friendly = [{
+  type: "arc",
+  radius: 15,
+  arc_start: -1,
+  arc_end: 1,
+  style_: {
+    fill_opacity: 0,
+  },
+}, {
+  type: "circle",
+  radius: 1,
+  offset: vector.createpolar_deg(135, 14),
+}, {
+  type: "circle",
+  radius: 1,
+  offset: vector.createpolar_deg(225, 14),
 }];
 
 
@@ -1201,11 +1228,11 @@ make.shapey_area = {
   friction: 1,
 };
 
-make.shapey_area_base = {
+make.shapey_area_base_1 = {
   make_parent: ["shapey_area"],
   style: "wall_filled",
 };
-make_shapes.shapey_area_base = [{
+make_shapes.shapey_area_base_1 = [{
   type: "circle",
   radius: 25,
   force_layer: 1,
@@ -1218,11 +1245,11 @@ make_shapes.shapey_area_base = [{
 }];
 
 
-make.shapey_test = {
+make.shapey_friendly_1 = {
   make_parent: ["shapey"],
   style: "wall_filled",
 };
-make_shapes.shapey_test = [{
+make_shapes.shapey_friendly_1 = [{
   type: "circle",
   radius: 15,
   style_: {
@@ -1231,8 +1258,8 @@ make_shapes.shapey_test = [{
 }, {
   type: "arc",
   radius: 7,
-  arc_start: 1,
-  arc_end: -1,
+  arc_start: -1,
+  arc_end: 1,
   style_: {
     fill_opacity: 0,
     width: 0.6,

@@ -1,4 +1,4 @@
-import { clone_object, make, make_shapes, maketype_shape, override_object } from "../game/make.js";
+import { clone_object, make, make_shapes, maketype, maketype_shape, override_object } from "../game/make.js";
 import { Shape } from "../game/shape.js";
 import { Thing } from "../game/thing.js";
 import { m_ui } from "../map/map_ui.js";
@@ -187,9 +187,10 @@ export const map_draw = {
     if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0 || shape.computed.shadow_vertices == undefined) return;
     if (shape.computed.screen_vertices.length <= 1 && shape.computed.options?.is_spawner && shape.computed.options.spawn_enemy) {
       ctx.ctx.save();
+      const options: maketype = make[shape.computed.options.spawn_enemy];
       const shapes: maketype_shape[] = make_shapes[shape.computed.options.spawn_enemy] ?? [];
       for (const o of shapes) {
-        map_draw.draw_shapey(ctx, shape, style, o, shadow);
+        map_draw.draw_spawned_shape(ctx, shape, style, o, options, shadow);
       }
       ctx.ctx.restore();
       return;
@@ -229,7 +230,7 @@ export const map_draw = {
 
 
 
-  draw_shapey: (ctx: Context, shape: map_shape_type, style: style_type, o: maketype_shape, shadow: boolean = false) => {
+  draw_spawned_shape: (ctx: Context, shape: map_shape_type, style: style_type, o: maketype_shape, options: maketype, shadow: boolean = false) => {
     if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0 || shape.computed.shadow_vertices == undefined) return;
     const centre = shadow ? shape.computed.shadow_vertices[0] : shape.computed.screen_vertices[0];
     const z = shape.z + (o.z ?? 0);
@@ -237,12 +238,15 @@ export const map_draw = {
     const r = (o.radius ?? 0) * mult;
     if (o.style) style = clone_object(STYLES_[o.style ?? "error"] ?? style);
     if (o.style_) override_object(style, o.style_);
+    const angle = options.angle ?? 0;
     ctx.beginPath();
     if (o.type === "circle") {
       ctx.circle_v(centre, r);
+    } else if (o.type === "arc") {
+      ctx.arc_v(centre, r, angle + (o.arc_start ?? 0), angle + (o.arc_end ?? 0), true);
     } else if (o.type === "polygon") {
       const sides = o.sides ?? 16;
-      let a = o.angle ?? 0;
+      let a = angle + (o.angle ?? 0);
       ctx.moveTo(centre.x + r * Math.cos(a), centre.y + r * Math.sin(a));
       for (let i = 0; i < sides; i++) {
         a += Math.PI * 2 / sides;
@@ -251,6 +255,10 @@ export const map_draw = {
     } else if (o.type === "line") {
       ctx.moveTo_v(vector.add(centre, vector.mult(o.v1 ?? vector.create(), mult)));
       ctx.lineTo_v(vector.add(centre, vector.mult(o.v2 ?? vector.create(), mult)));
+    } else if (o.type === "polyline") {
+      const vs = vector.mult_list(o.vs ?? [], mult);
+      vector.add_to_list(vs, centre);
+      ctx.lines_v(vs, !o.open_loop);
     }
     if (style.fill) {
       ctx.fillStyle = color2hex_map(style.fill, shape.options.room_id ?? "default");
@@ -301,6 +309,7 @@ export const map_draw = {
         ctx.fill();
         if (selected && shape.vertices.length > 1) {
           const size = 10;
+          ctx.textAlign = "center";
           if (camera.sqrtscale * 6 >= size) {
             ctx.fillStyle = color.black;
             ctx.set_font_mono(camera.sqrtscale * 5);

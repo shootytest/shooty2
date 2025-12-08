@@ -255,10 +255,10 @@ export class Context {
         this.ctx.lineTo(x2, y2);
         this.ctx.stroke();
     }
-    line_v(x1, y1) {
+    line_v(v1, v2) {
         this.ctx.beginPath();
-        this.ctx.moveTo(x1.x, x1.y);
-        this.ctx.lineTo(y1.x, y1.y);
+        this.ctx.moveTo(v1.x, v1.y);
+        this.ctx.lineTo(v2.x, v2.y);
         this.ctx.stroke();
     }
     lines(xs, ys, close_loop = true) {
@@ -278,16 +278,16 @@ export class Context {
         if (close_loop)
             this.ctx.lineTo(xs[0], ys[0]);
     }
-    lines_v(vectors, close_loop = true) {
-        if (vectors.length <= 1) {
+    lines_v(vs, close_loop = true) {
+        if (vs.length <= 1) {
             return;
         }
-        this.ctx.moveTo(vectors[0].x, vectors[0].y);
-        for (let i = 1; i < vectors.length; i++) {
-            this.ctx.lineTo(vectors[i].x, vectors[i].y);
+        this.ctx.moveTo(vs[0].x, vs[0].y);
+        for (let i = 1; i < vs.length; i++) {
+            this.ctx.lineTo(vs[i].x, vs[i].y);
         }
         if (close_loop)
-            this.ctx.lineTo(vectors[0].x, vectors[0].y);
+            this.ctx.lineTo(vs[0].x, vs[0].y);
     }
     polygon(sides, r, x, y, angle = 0) {
         let a = angle;
@@ -346,13 +346,9 @@ export class Context {
     }
     set_font_mono(size, prefix = "") {
         this.ctx.font = `${prefix} ${Math.floor(size)}px roboto mono`.trim();
-        this.textAlign = "center";
-        this.textBaseline = "middle";
     }
     set_font_condensed(size, prefix = "") {
         this.ctx.font = `${prefix} ${Math.floor(size)}px roboto condensed`.trim();
-        this.textAlign = "center";
-        this.textBaseline = "middle";
     }
     draw_image(path, x, y, w, h) {
         if (!images[path]) {

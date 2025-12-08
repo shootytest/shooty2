@@ -1,6 +1,5 @@
-
 // Matter.use('matter-attractors');
-// Matter.use('matter-wrap');\
+// Matter.use('matter-wrap');
 
 import polyDecomp from 'https://cdn.jsdelivr.net/npm/poly-decomp@0.3.0/+esm';
 Matter.Common.setDecomp(polyDecomp);
@@ -86,7 +85,6 @@ export const Contact = Matter.Contact;
 export const Detector = Matter.Detector;
 export const Engine = Matter.Engine;
 export const Events = Matter.Events;
-// export const Grid = Matter.Grid;
 export const Mouse = Matter.Mouse;
 export const MouseConstraint = Matter.MouseConstraint;
 export const Pair = Matter.Pair;
@@ -96,7 +94,6 @@ export const Query = Matter.Query;
 export const Render = Matter.Render;
 export const Resolver = Matter.Resolver;
 export const Runner = Matter.Runner;
-// export const SAT = Matter.SAT;
 export const Sleeping = Matter.Sleeping;
 export const Svg = Matter.Svg;
 export const Vector = Matter.Vector;

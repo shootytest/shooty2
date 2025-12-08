@@ -270,6 +270,16 @@ export const detector = {
                 save.set_switch(switch_id);
                 save.set_switch_time(switch_id, b.thing_time);
             }
+            if (b.options.checkpoint) {
+                player.health?.heal_all();
+                player.object.checkpoint = b;
+                player.object.checkpoint_pair = pair;
+                player.set_checkpoint_here();
+                // activate lol
+                // pair.isSensor = true;
+                // player.teleport_to(b.position);
+                // ui.toggle_pause();
+            }
             b.shapes[0].options.glowing = 1;
         }
     },

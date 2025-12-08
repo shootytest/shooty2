@@ -39,6 +39,7 @@ export class Player extends Thing {
     on_floor = 0; // 2 = safe, 1 = not safe, 0 = fallllling
     floor_z = 0;
     is_safe = true;
+    is_on_checkpoint = false;
     map_room = "";
     map_offset = vector.create();
     map_scale = 1;
@@ -111,6 +112,7 @@ export class Player extends Thing {
             // floors and z stuff
             let on_floor = false;
             let safe_floor = true;
+            let checkpoint_floor = false;
             let floor_z = (save.save.player.position?.z ?? 0) - 2;
             let on_floor_z = floor_z;
             let z = this.target.position.z;
@@ -124,7 +126,9 @@ export class Player extends Thing {
                     if (on_floor) {
                         on_floor_z = s.z;
                         s.thing.is_touching_player = true;
-                        safe_floor = safe_floor && Boolean(s.thing.options.safe_floor);
+                        safe_floor = safe_floor && (s.options.safe_floor ?? s.thing.options.safe_floor ?? false);
+                        if (!checkpoint_floor)
+                            checkpoint_floor = Boolean(s.thing.options.checkpoint);
                     }
                 }
             }
@@ -180,6 +184,7 @@ export class Player extends Thing {
             this.target.position.z = z;
             this.on_floor = (safe_floor && on_floor) ? 2 : (on_floor ? 1 : 0);
             this.floor_z = floor_z;
+            this.is_on_checkpoint = checkpoint_floor;
             // only do thing tick after all that
             super.tick(dt);
         }
@@ -233,9 +238,15 @@ export class Player extends Thing {
             if (Common.union && ui.tick_time % 5 === 0) {
                 const union = Common.union(onion);
                 for (const t of this.temp_things) {
-                    if (!t.options.shapey)
+                    const id = t.object.shapey_id;
+                    if (!t.options.shapey || !id)
                         continue;
+                    const was_inside = save.is_shapey_on(id);
                     const inside = math.is_polygon_in_polygons(t.shapes[0].real_vertices(), union);
+                    if (inside && !was_inside)
+                        ui.shapey[id]?.on_fn?.();
+                    else if (!inside && was_inside)
+                        ui.shapey[id]?.off_fn?.();
                     t.object.inside = inside;
                     t.shapes[0].options.glowing = inside ? 0.5 : 0;
                 }
@@ -244,7 +255,7 @@ export class Player extends Thing {
         }
     }
     shoot(index) {
-        if (save.is_shapey_on("test"))
+        if (save.is_shapey_on("friendly"))
             return 0;
         return super.shoot(index);
     }
@@ -379,6 +390,11 @@ export class Player extends Thing {
         }
         if (o.stats)
             override_object(this.stats, o.stats);
+        // handle shapey too (out of place but ok)
+        for (const [id, n] of Object.entries(save.check_all_shapey())) {
+            if (!ui.shapey[id]?.base && n > 0 && save.is_shapey_on(id))
+                ui.shapey[id]?.on_fn?.();
+        }
     }
     add_xp(xp) {
         this.xp += xp;
@@ -406,6 +422,10 @@ export class Player extends Thing {
             save.add_currency(o.currency_name, o.currency_amount);
             ui.collect.add(o.currency_name, o.currency_amount);
         }
+    }
+    set_checkpoint_here() {
+        this.checkpoint = this.position;
+        this.checkpoint_room = this.room_id;
     }
     set_checkpoint(position, room_id) {
         this.checkpoint = vector3.clone(position);
@@ -628,16 +648,22 @@ export class Player extends Thing {
         Composite.add(world, ui.mouse.constraint);
         const all = save.check_all_shapey();
         for (const id in all) {
-            const o = save.save.shapey[id] ?? { n: 0 };
+            const o = save.save.shapey[id] ?? { n: 1 };
             const t = new Thing();
-            t.make("shapey_" + id);
+            const k = `shapey_${id}_${o.n}`;
+            t.object.shapey_id = id;
+            t.make(k);
             t.position = o.v ?? (t.options.shapey ? spawn : centre);
             t.angle = o.a ?? 0;
-            t.create_id("shapey_" + id);
+            if (!this.is_on_checkpoint)
+                t.options.movable = false;
+            t.create_id(k);
             t.create_body();
             this.temp_things.push(t);
             if (t.body)
                 Composite.add(world, t.body);
+            t.shapes[0].hover_start_fn = () => ui.mouse.hovered = t;
+            t.shapes[0].hover_end_fn = () => ui.mouse.hovered = undefined;
         }
     }
     deactivate_shapes() {

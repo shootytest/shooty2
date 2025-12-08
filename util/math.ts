@@ -324,6 +324,14 @@ export const math = {
     return 0.5 * ( (b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y));
   },
 
+  circle_area: (radius: number): number => {
+    return radius * radius * Math.PI;
+  },
+
+  polygon_area: (sides: number, radius: number): number => {
+    return radius * radius * sides / 2 * Math.sin(math.two_pi / sides);
+  },
+
   rand_point_in_circle: (centre: vector, radius: number): vector => {
     if (radius <= 0) return vector.clone(centre);
     return vector.add(centre, vector.createpolar(math.rand(0, Math.PI * 2), radius * math.sqrt(math.rand())));

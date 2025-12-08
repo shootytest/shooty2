@@ -225,6 +225,10 @@ export class Thing {
 
   make(key: string, reset = false) {
     const o = make[key];
+    if (!o) {
+      console.error(`make not found: ${key}`)
+      return;
+    }
     if (reset) this.options = {};
     override_object(this.options, o);
     this.make_shape_key(key, reset);
@@ -236,9 +240,11 @@ export class Thing {
   make_shape_key(key: string, reset = false) {
     if (reset) for (const shape of shallow_clone_array(this.shapes)) shape.remove();
     const shapes: maketype_shape[] = make_shapes[key] ?? [];
+    const result: Shape[] = [];
     for (const o of shapes) {
-      Shape.from_make(this, o);
+      result.push(Shape.from_make(this, o));
     }
+    return result;
   }
 
   make_shape(m: maketype_shape | maketype_shape[], reset = false) {
@@ -565,7 +571,7 @@ export class Thing {
     // do nothing when hit
   }
 
-  update_angle(smoothness = 1) {
+  update_angle(smoothness: number = 1) {
     if (this.body == undefined) return;
     if (this.target.facing != undefined) this.target.angle = vector.direction(vector.sub(this.target.facing, this.position));
     Body.setAngle(this.body, math.lerp_angle(this.angle, this.target.angle, smoothness));

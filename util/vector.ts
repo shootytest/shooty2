@@ -78,6 +78,20 @@ export const vector = {
     }
     return;
   },
+  mult_list: (vs: vector[], scale: number): vector[] => {
+    const result: vector[] = [];
+    for (const v of vs) {
+      result.push(vector.mult(v, scale));
+    }
+    return result;
+  },
+  mult_to_list: (vs: vector[], scale: number): void => {
+    for (const v of vs) {
+      v.x *= scale;
+      v.y *= scale;
+    }
+    return;
+  },
   sub: (v1: vector, v2: vector): vector => {
     return {
       x: v1.x - v2.x,
