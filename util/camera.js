@@ -46,14 +46,16 @@ export const camera = {
         this.position_target = vector.sub(loc, this.halfworld);
     },
     screen2world: function (screen_vector, scale) {
-        if (scale == undefined)
-            scale = this.scale;
-        return vector.add(vector.mult(screen_vector, 1 / scale), this.position);
+        return vector.add(vector.mult(screen_vector, 1 / (scale ?? this.scale)), this.position);
     },
     world2screen: function (world_vector, scale) {
-        if (scale == undefined)
-            scale = this.scale;
-        return vector.mult(vector.sub(world_vector, this.position), scale);
+        return vector.mult(vector.sub(world_vector, this.position), scale ?? this.scale);
+    },
+    screen2world_target: function (screen_vector, scale) {
+        return vector.add(vector.mult(screen_vector, 1 / (scale ?? this.scale_target)), this.position_target);
+    },
+    world2screen_target: function (world_vector, scale) {
+        return vector.mult(vector.sub(world_vector, this.position), scale ?? this.scale_target);
     },
     /*screen3world: function(screen_vector: vector2, z: number, scale?: number): vector3 {
       if (scale == undefined) scale = this.scale;

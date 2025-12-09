@@ -92,6 +92,13 @@ export const vector = {
     }
     return;
   },
+  rotate_list: (vs: vector[], angle: number): vector[] => {
+    const result: vector[] = [];
+    for (const v of vs) {
+      result.push(vector.rotate(vector.create(), v, angle));
+    }
+    return result;
+  },
   sub: (v1: vector, v2: vector): vector => {
     return {
       x: v1.x - v2.x,
@@ -269,6 +276,18 @@ export const vector = {
       min_y: v.y + (a.min_y - v.y) * scale.y,
       max_y: v.y + (a.max_y - v.y) * scale.y,
     };
+  },
+  aabb_bound: (a: AABB, v: vector): vector => {
+    return {
+      x: math.bound(v.x, a.min_x, a.max_x),
+      y: math.bound(v.y, a.min_y, a.max_y),
+    };
+  },
+  aabb_wraparound: (a: AABB, v: vector): void => {
+    if (v.x < a.min_x) v.x += a.max_x - a.min_x;
+    if (v.x > a.max_x) v.x -= a.max_x - a.min_x;
+    if (v.y < a.min_y) v.y += a.max_y - a.min_y;
+    if (v.y > a.max_y) v.y -= a.max_y - a.min_y;
   },
 };
 

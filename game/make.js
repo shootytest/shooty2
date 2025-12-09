@@ -94,6 +94,7 @@ make.wall_tutorial_curtain = {
 };
 make.wall_tutorial_rock_breakable = {
     make_parent: ["rock"],
+    keep_bullets: false,
     hide_health: true,
     hide_health_until: 450,
     team: 7,

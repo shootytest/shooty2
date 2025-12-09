@@ -13,7 +13,6 @@ import { player } from "./player.js";
 import { save } from "./save.js";
 import type { Polygon } from "./shape.js";
 import type { Thing } from "./thing.js";
-import { ui } from "./ui.js";
 
 /**
  *

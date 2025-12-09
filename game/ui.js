@@ -1,12 +1,12 @@
 import { Events, Mouse, MouseConstraint } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { canvas, canvas_, ctx, resize_canvas } from "../util/canvas.js";
-import { color, color_mix, current_theme } from "../util/color.js";
+import { color, color_mix, current_theme, STYLES } from "../util/color.js";
 import { config } from "../util/config.js";
 import { key, keys, mouse } from "../util/key.js";
 import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
-import { make_shapes, shallow_clone_array } from "./make.js";
+import { make_rooms, make_shapes, shallow_clone_array } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
@@ -135,6 +135,7 @@ export const ui = {
         ui.settings.open = false;
         ui.settings.start_time = -1;
         ui.pause.start_time = player.paused ? ui.time : -1;
+        ui.pause.end_time = player.paused ? -1 : ui.time;
         if (!player.paused)
             return true;
     },
@@ -256,8 +257,10 @@ export const ui = {
     tick: function (dt) {
         ui.tick_time++;
         ui.time += dt;
+        ui.particles.tick();
         ui.map.tick();
         ui.inventory.tick();
+        ui.shapes.tick();
         ui.mouse.tick();
         if (dt <= config.seconds && dt > math.epsilon && ui.tick_time >= 5) {
             ui.debug.dt_queue.push(dt);
@@ -327,6 +330,7 @@ export const ui = {
         }
         if (!config.graphics.debug_display)
             return;
+        // actual draw debug
         const size = ui.size * 1.2;
         const total = ui.debug.dt_total === 0 ? 1 : ui.debug.dt_total;
         const fps = ui.debug.dt_queue.length === 100 ? 1000000 / total : ui.debug.dt_queue.length * 10000 / total; // wow a million
@@ -497,6 +501,7 @@ export const ui = {
     },
     pause: {
         start_time: -1,
+        end_time: -1,
         get time() {
             return ui.time - this.start_time;
         },
@@ -506,6 +511,7 @@ export const ui = {
                 color: color.green,
                 fn: function () {
                     player.paused = false;
+                    ui.pause.end_time = ui.time;
                 },
             },
             {
@@ -635,6 +641,7 @@ export const ui = {
         opacity: 0,
         hide_map: false,
         hide_background: false,
+        world_bounds: vector.make_aabb(),
         get time() {
             return ui.time - this.start_time;
         },
@@ -647,6 +654,18 @@ export const ui = {
             }
             ui.map.hide_map = ui.map.opacity < 0.01;
             ui.map.hide_background = ui.map.opacity > 0.99;
+            if (player.map_mode) {
+                if (mouse.buttons[0]) {
+                    player.map_offset = vector.aabb_bound(ui.map.world_bounds, vector.add(player.map_offset, vector.mult(mouse.drag_change[0], -1 / camera.scale_target)));
+                    camera.lerp_factor = 1;
+                }
+                if (mouse.scroll !== 0) {
+                    let mult = (mouse.scroll < 0) ? 1.3 : (1 / 1.3);
+                    player.map_scale = math.bound(player.map_scale * mult, 0.5, 2);
+                    // todo take into account mouse position when dragging
+                    // player.map_offset = vector.aabb_bound(ui.map.world_bounds, vector.sub(vector.add(player.map_offset, vector.mult(mouse.position, 1 / camera.scale)), vector.mult(mouse.position, 1 / (camera.scale_target * mult))));
+                }
+            }
         },
         activate: () => {
             player.activate_map();
@@ -1036,6 +1055,65 @@ export const ui = {
                 ctx.fill();
             },
         }
+    },
+    particles: {
+        list: [],
+        theme: "",
+        themes: {
+            tutorial: {
+                n: 25,
+                fn: () => {
+                    const p = Particle.make(math.polygon(7, 300, math.randangle()), math.randvector(20));
+                    p.object.theme = "tutorial";
+                    p.is_screen = false;
+                    p.wraparound = true;
+                    p.z = math.round_to(math.rand(0.5, 0.8), 0.001);
+                    p.angle = math.randangle();
+                    p.angular_velocity = math.rand(-0.1, 0.1);
+                    p.style = STYLES.particle;
+                    p.opacity = 0.01;
+                    p.offset = vector.create(math.rand(0, ui.width), math.rand(0, ui.height));
+                    p.time = Thing.time + config.seconds * 1000000;
+                    return p;
+                },
+            },
+            streets: {
+                n: 300,
+                fn: () => {
+                    const p = Particle.make(math.polygon(3, math.rand(10, 14)));
+                    p.velocity = math.randvector(20);
+                    p.object.theme = "streets";
+                    p.is_screen = false;
+                    p.wraparound = true;
+                    p.z = math.rand(0.45, 0.49);
+                    p.z_velocity = math.rand(-0.02, -0.05);
+                    p.z_bounds = [-0.5, 0.5];
+                    p.angle = math.randangle();
+                    p.angular_velocity = math.rand(-1, 1);
+                    p.style = STYLES.particle;
+                    p.opacity = 0.03;
+                    p.offset = vector.create(math.rand(0, ui.width), math.rand(0, ui.height));
+                    p.time = Thing.time + config.seconds * 1000000;
+                    return p;
+                },
+            },
+        },
+        tick: function () {
+            const room = make_rooms[player.room_id];
+            this.theme = room.theme;
+            const o = this.themes[this.theme];
+            if (!o)
+                return;
+            let i = 0;
+            while (this.list.length < o.n && i <= 1000) {
+                const p = o.fn();
+                p.remove_fn = () => {
+                    this.list.remove(p);
+                };
+                this.list.push(p);
+                i++;
+            }
+        },
     },
     toggle_fullscreen: () => {
         if (!document.fullscreenElement) {

@@ -332,6 +332,18 @@ export const math = {
     return radius * radius * sides / 2 * Math.sin(math.two_pi / sides);
   },
 
+  polygon: (sides: number, radius: number = 1, angle: number = 0, offset: vector = vector.create()): vector[] => {
+    const result: vector[] = [];
+    const x = offset.x;
+    const y = offset.y;
+    let a = angle % (Math.PI * 2);
+    for (let i = 0; i < sides + 1; ++i) {
+      result.push(vector.create(x + radius * Math.cos(a), y + radius * Math.sin(a)));
+      a += Math.PI * 2 / sides;
+    }
+    return result;
+  },
+
   rand_point_in_circle: (centre: vector, radius: number): vector => {
     if (radius <= 0) return vector.clone(centre);
     return vector.add(centre, vector.createpolar(math.rand(0, Math.PI * 2), radius * math.sqrt(math.rand())));

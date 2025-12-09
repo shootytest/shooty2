@@ -1,6 +1,4 @@
 import { clone_object, make, make_shapes, maketype, maketype_shape, override_object } from "../game/make.js";
-import { Shape } from "../game/shape.js";
-import { Thing } from "../game/thing.js";
 import { m_ui } from "../map/map_ui.js";
 import { camera } from "./camera.js";
 import { color, color2hex_map, STYLES, STYLES_ } from "./color.js";
@@ -253,8 +251,8 @@ export const map_draw = {
         ctx.lineTo(centre.x + r * Math.cos(a), centre.y + r * Math.sin(a)); // funny function call
       }
     } else if (o.type === "line") {
-      ctx.moveTo_v(vector.add(centre, vector.mult(o.v1 ?? vector.create(), mult)));
-      ctx.lineTo_v(vector.add(centre, vector.mult(o.v2 ?? vector.create(), mult)));
+      ctx.moveTo_v(vector.add(centre, vector.rotate(vector.create(), vector.mult(o.v1 ?? vector.create(), mult), angle)));
+      ctx.lineTo_v(vector.add(centre, vector.rotate(vector.create(), vector.mult(o.v2 ?? vector.create(), mult), angle)));
     } else if (o.type === "polyline") {
       const vs = vector.mult_list(o.vs ?? [], mult);
       vector.add_to_list(vs, centre);

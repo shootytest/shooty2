@@ -96,7 +96,7 @@ export class Player extends Thing {
             if (!this.paused)
                 this.push_by(vector.mult(move_v, config.physics.player_speed));
             else if (this.map_mode) {
-                this.map_offset = vector.add(this.map_offset, vector.mult(move_v, config.graphics.map_move_speed / this.map_scale));
+                this.map_offset = vector.aabb_bound(ui.map.world_bounds, vector.add(this.map_offset, vector.mult(move_v, config.graphics.map_move_speed / this.map_scale)));
                 this.map_scale = math.bound(this.map_scale + 0.05 * ((controls.top ? 1 : 0) - (controls.bottom ? 1 : 0)), 0.5, 2);
             }
             this.update_angle();
@@ -518,6 +518,7 @@ export class Player extends Thing {
                 thing.remove();
             }
         }
+        let aabb = vector.make_aabb();
         for (const s of MAP.shapes ?? []) {
             if (!s.options.is_map)
                 continue;
@@ -529,11 +530,15 @@ export class Player extends Thing {
                 const t = make_from_map_shape(s);
                 if (t)
                     t.z = this.z;
+                if (t instanceof Thing && t.shapes[0]) {
+                    aabb = vector.aabb_combine(aabb, vector.make_aabb(t.shapes[0].real_vertices()));
+                }
             }
             else {
                 // haven't visited yet
             }
         }
+        ui.map.world_bounds = vector.aabb_add(aabb, vector.mult(this.position, -1));
     }
     deactivate_map() {
         for (const thing of shallow_clone_array(Thing.things ?? [])) {

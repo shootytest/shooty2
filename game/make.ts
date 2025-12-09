@@ -1,6 +1,6 @@
 import { color_theme, STYLES, THEMES } from "../util/color.js";
 import { style_type } from "../util/map_type.js";
-import { vector, vector3, vector3_ } from "../util/vector.js";
+import { vector, vector3_ } from "../util/vector.js";
 import { enemy_spawn } from "./enemy.js";
 
 
@@ -311,6 +311,7 @@ make.wall_tutorial_curtain = {
 };
 make.wall_tutorial_rock_breakable = {
   make_parent: ["rock"],
+  keep_bullets: false,
   hide_health: true,
   hide_health_until: 450,
   team: 7,

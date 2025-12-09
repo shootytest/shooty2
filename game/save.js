@@ -9,6 +9,7 @@ import { Thing } from "./thing.js";
 ;
 ;
 ;
+;
 export const save = {
     save: {
         version: config.game.version,
@@ -17,6 +18,7 @@ export const save = {
         shapey: {},
         switches: {},
         currencies: {},
+        achievements: {},
     },
     switch_times: {},
     saves: [],
@@ -125,6 +127,8 @@ export const save = {
         // if (not_autosave) console.log("saving... ", save.save);
         if (!save.save.map)
             save.save.map = {};
+        if (!save.save.achievements)
+            save.save.achievements = {};
         if (!save.save.shapey)
             save.save.shapey = {}; // todo remove
         save.save_to_slot(save.current_slot);
@@ -139,6 +143,7 @@ export const save = {
             shapey: {},
             switches: {},
             currencies: {},
+            achievements: {},
         };
     },
     save_to_slot: (slot) => {

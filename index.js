@@ -33,18 +33,17 @@ if (MAP.shapes.length <= 0)
 let time = -1; // Number(document.timeline.currentTime ?? 0);
 const init_all = () => {
     init_canvas();
-    // ui.init();
     detector.init();
     key.init();
     ui.init();
-    ticks++;
     for (const r_id of always_loaded_rooms) {
         player.load_room(r_id);
     }
+    ticks++;
     requestAnimationFrame(tick_all);
 };
 const tick_all = (timestamp) => {
-    if (is_blur || ticks >= 2) {
+    if (is_blur || ticks > 1) {
         ticks--;
         return;
     }

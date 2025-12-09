@@ -1,5 +1,5 @@
-// all colours are in 6-long hex format
 import { clone_object, make_rooms } from "../game/make.js";
+// all colours are in 6-long hex format
 export const color /*: { [key: string]: `#${string}` }*/ = {
     // legacy colours
     purewhite: "#ffffff",
@@ -340,6 +340,10 @@ export const STYLES /*: { [key: string]: style_type }*/ = {
         health: "enemy",
         fill: "alt",
         fill_opacity: 0.5,
+    },
+    particle: {
+        fill: "main",
+        fill_opacity: 1,
     },
     shapey_base: {
         stroke: "dark",

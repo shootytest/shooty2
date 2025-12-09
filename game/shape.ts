@@ -24,6 +24,7 @@ export class Shape {
   static floor_shapes: Shape[] = [];
   static map_shapes: Shape[] = [];
   static draw_zs: number[] = [];
+  static memo_aabb3: { [key: string]: AABB3 } = {};
 
   static cumulative_id = 0;
   static type: string = "shape";
@@ -135,19 +136,26 @@ export class Shape {
 
   static filter(screen_aabb: AABB3): Shape[] {
     const result: Shape[] = [];
-    const memo_aabb3: { [key: string]: AABB3 } = {};
+    Shape.memo_aabb3 = {};
+    for (let z = -1; z <= 1; z += 0.1) {
+      const z_scale = camera.zscale_inverse(z);
+      const z_string = z.toFixed(1);
+      Shape.memo_aabb3[z_string] = vector3.aabb_scale(screen_aabb, vector3.create(z_scale, z_scale, 1));
+      if (math.equal(z, 0)) Shape.memo_aabb3[z_string.substring(1)] = vector3.aabb_scale(screen_aabb, vector3.create(z_scale, z_scale, 1));
+    }
     for (const s of Shape.shapes) {
       if (s.computed == undefined || s.thing == undefined || s.thing.options.invisible || (player.map_mode && !s.is_map && !s.thing.is_player)) continue;
       // cullingz
-      const z = s.z, z_string = Number(s.z.toFixed(3));
+      const z = s.z, z_string = (math.floor(s.min_z * 10) / 10).toFixed(1);
       if (s.computed.z_range) if (s.max_z < camera.look_z - 1 - math.epsilon || s.min_z > camera.z + math.epsilon) continue;
       else if (z < camera.look_z - 1 - math.epsilon || z > camera.z + math.epsilon) continue;
       s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position); // bottleneck :(
-      if (memo_aabb3[z_string] == undefined) {
+      if (Shape.memo_aabb3[z_string] == undefined) {
+        console.error("[shape/filter] this shouldn't happen: " + z_string);
         const z_scale = camera.zscale_inverse(z >= 0 ? 0 : z);
-        memo_aabb3[z_string] = vector3.aabb_scale(screen_aabb, vector3.create(z_scale, z_scale, 1));
+        Shape.memo_aabb3[z_string] = vector3.aabb_scale(screen_aabb, vector3.create(z_scale, z_scale, 1));
       }
-      const inside = vector3.aabb_intersect(s.computed_aabb, memo_aabb3[z_string]);
+      const inside = vector3.aabb_intersect(s.computed_aabb, Shape.memo_aabb3[z_string]);
       s.computed.on_screen = inside;
       if (inside) {
         result.push(s);
@@ -169,6 +177,16 @@ export class Shape {
       max_z: Number.MAX_SAFE_INTEGER
     };
 
+    /*
+    const screen_topleft_t = camera.screen2world_target({ x: 0, y: 0 });
+    const screen_bottomright_t = camera.screen2world_target({ x: ctx.canvas.width, y: ctx.canvas.height });
+    Shape.screen_aabb = {
+      min_x: screen_topleft_t.x - config.graphics.shape_cull_padding,
+      min_y: screen_topleft_t.y - config.graphics.shape_cull_padding,
+      max_x: screen_bottomright_t.x + config.graphics.shape_cull_padding,
+      max_y: screen_bottomright_t.y + config.graphics.shape_cull_padding
+    };*/
+
     Shape.draw_shapes = Shape.filter(screen_aabb);
     Shape.floor_shapes = [];
     Shape.map_shapes = [];
@@ -185,6 +203,15 @@ export class Shape {
     if (player.paused && !player.map_mode) Shape.draw_shapes.remove(player.shapes[0]);
 
     Shape.draw_zs = [...new Set(Shape.draw_shapes.map(s => s.z))];
+
+    // nowhere else to put this... handle particles
+    for (const p of Particle.particles) {
+      if (p.z !== 0) {
+        const z = math.round_to(p.z, 0.001);
+        if (!Shape.draw_zs.includes(z)) Shape.draw_zs.push(z);
+      }
+    }
+    Particle.particles.sort((p1, p2) => p1.z - p2.z);
 
     // sort everything
     Shape.draw_zs.sort((s1, s2) => s1 - s2);
@@ -211,15 +238,6 @@ export class Shape {
     Shape.draw_shapes.sort(draw_shapes_sort);
     Shape.map_shapes.sort((s1, s2) => draw_shapes_sort(s1, s2));
     Shape.floor_shapes.sort((s1, s2) => -draw_shapes_sort(s1, s2)); // reverse of draw_shapes
-
-    // nowhere else to put this... handle particles
-    for (const p of Particle.particles) {
-      if (p.z !== 0) {
-        const z = math.round_to(p.z, 0.001);
-        if (!Shape.draw_zs.includes(z)) Shape.draw_zs.push(z);
-      }
-    }
-    Particle.particles.sort((p1, p2) => p1.z - p2.z);
 
     Shape.see_vertices = Shape.calc_vertices();
     Shape.see_other_vertices = Shape.calc_other_vertices();
@@ -356,20 +374,19 @@ export class Shape {
   }
 
   init_computed() {
-    const calc_vertices = vector3.add_list(this.vertices, this.offset),
-      vertices = vector3.clone_list(this.vertices);
-    if (this.activate_scale) vector3.scale_to_list(calc_vertices, this.scale);
-    // if (this.closed_loop && calc_vertices.length >= 3) calc_vertices.push(calc_vertices[0]);
-    const aabb = vector.make_aabb(calc_vertices),
-      aabb3 = vector3.make_aabb(calc_vertices),
-      mean = this.closed_loop ? vector3.create2(Vertices.centre(calc_vertices), vector3.meanz(calc_vertices)) : vector3.mean(calc_vertices); // don't be mean...
+    const vertices = vector3.add_list(this.vertices, this.offset);
+    if (this.activate_scale) vector3.scale_to_list(vertices, this.scale);
+    // if (this.closed_loop && vertices.length >= 3) vertices.push(vertices[0]);
+    const aabb = vector.make_aabb(vertices),
+      aabb3 = vector3.make_aabb(vertices),
+      mean = this.closed_loop ? vector3.create2(Vertices.centre(vertices), vector3.meanz(vertices)) : vector3.mean(vertices); // don't be mean...
     if (this.computed == undefined) {
       this.computed = { aabb, aabb3, mean, vertices };
     } else {
       this.computed.aabb = aabb;
       this.computed.aabb3 = aabb3;
       this.computed.mean = mean;
-      this.computed.vertices = calc_vertices;
+      this.computed.vertices = vertices;
     }
     const z_range = vector3.z_range(this.vertices);
     if (!math.equal(z_range[0], z_range[1])) {
@@ -412,7 +429,7 @@ export class Shape {
     // todo compute shadow_vertices
   }
 
-  real_vertices() {
+  real_vertices(round: boolean = true) {
     const vs = vector3.add_list(this.vertices, this.offset);
     if (this.activate_scale) vector3.scale_to_list(vs, this.scale);
     if (this.thing.angle) {
@@ -423,7 +440,8 @@ export class Shape {
       }
     }
     vector3.add_to_list(vs, this.thing.position);
-    return vector3.round_list(vs, 1, 0.001) as vector3[];
+    if (round) return vector3.round_list(vs, 1, 0.001) as vector3[];
+    else return vs;
   }
 
   add(thing: Thing) {

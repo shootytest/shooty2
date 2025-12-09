@@ -1,7 +1,6 @@
 import { make_from_map_shape, MAP } from "../index.js";
-import Matter, { Body, Common, Composite, Engine, Vertices } from "../matter.js";
+import { Body, Common, Composite, Engine, Vertices } from "../matter.js";
 import { camera } from "../util/camera.js";
-import { ctx } from "../util/canvas.js";
 import { config } from "../util/config.js";
 import { keys } from "../util/key.js";
 import { math } from "../util/math.js";
@@ -106,7 +105,7 @@ export class Player extends Thing {
     if (this.body) {
       if (!this.paused) this.push_by(vector.mult(move_v, config.physics.player_speed));
       else if (this.map_mode) {
-        this.map_offset = vector.add(this.map_offset, vector.mult(move_v, config.graphics.map_move_speed / this.map_scale));
+        this.map_offset = vector.aabb_bound(ui.map.world_bounds, vector.add(this.map_offset, vector.mult(move_v, config.graphics.map_move_speed / this.map_scale)));
         this.map_scale = math.bound(this.map_scale + 0.05 * ((controls.top ? 1 : 0) - (controls.bottom ? 1 : 0)), 0.5, 2);
       }
       this.update_angle();
@@ -511,6 +510,7 @@ export class Player extends Thing {
         thing.remove();
       }
     }
+    let aabb = vector.make_aabb();
     for (const s of MAP.shapes ?? []) {
       if (!s.options.is_map) continue;
       if (Thing.things_lookup[s.id]) continue;
@@ -518,10 +518,14 @@ export class Player extends Thing {
         if (s.options.map_hide_when && save.check_map(s.options.map_hide_when)) continue;
         const t = make_from_map_shape(s);
         if (t) t.z = this.z;
+        if (t instanceof Thing && t.shapes[0]) {
+          aabb = vector.aabb_combine(aabb, vector.make_aabb(t.shapes[0].real_vertices()));
+        }
       } else {
         // haven't visited yet
       }
     }
+    ui.map.world_bounds = vector.aabb_add(aabb, vector.mult(this.position, -1));
   }
 
   deactivate_map() {

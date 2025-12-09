@@ -262,8 +262,8 @@ export const map_draw = {
             }
         }
         else if (o.type === "line") {
-            ctx.moveTo_v(vector.add(centre, vector.mult(o.v1 ?? vector.create(), mult)));
-            ctx.lineTo_v(vector.add(centre, vector.mult(o.v2 ?? vector.create(), mult)));
+            ctx.moveTo_v(vector.add(centre, vector.rotate(vector.create(), vector.mult(o.v1 ?? vector.create(), mult), angle)));
+            ctx.lineTo_v(vector.add(centre, vector.rotate(vector.create(), vector.mult(o.v2 ?? vector.create(), mult), angle)));
         }
         else if (o.type === "polyline") {
             const vs = vector.mult_list(o.vs ?? [], mult);

@@ -11,9 +11,11 @@ export interface save_type {
   version: string;
   player: player_save;
   map: { [key: string]: number };
+  // todo markers:
   shapey: { [key: string]: shapey_save };
   switches: { [key: string]: number };
   currencies: { [key: string]: number };
+  achievements: { [key: string]: achievement_save };
 };
 
 export interface shapey_save {
@@ -21,6 +23,10 @@ export interface shapey_save {
   on?: boolean; // activated
   v?: vector; // position
   a?: number; // angle
+};
+
+export interface achievement_save {
+  n: number; // level
 };
 
 export interface player_save {
@@ -63,6 +69,7 @@ export const save = {
     shapey: {},
     switches: {},
     currencies: {},
+    achievements: {},
   } as save_type,
   switch_times: {} as { [key: string]: number },
 
@@ -185,6 +192,7 @@ export const save = {
     }
     // if (not_autosave) console.log("saving... ", save.save);
     if (!save.save.map) save.save.map = {};
+    if (!save.save.achievements) save.save.achievements = {};
     if (!save.save.shapey) save.save.shapey = {}; // todo remove
     save.save_to_slot(save.current_slot);
     save.save_to_storage();
@@ -199,6 +207,7 @@ export const save = {
       shapey: {},
       switches: {},
       currencies: {},
+      achievements: {},
     };
   },
 
