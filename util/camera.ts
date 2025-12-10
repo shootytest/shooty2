@@ -63,7 +63,7 @@ export const camera = {
     if (scale == undefined) scale = this.scale;
     // todo
   },*/
-  world3screen: function(world_vector: vector3, world_center?: vector, scale?: number): vector {
+  world3screen: function(world_vector: vector3, world_center?: vector, scale?: number): vector { // bottleneck :(
     const centre = world_center ? camera.world2screen(world_center) : this.halfscreen;
     const sv = this.world2screen(world_vector, scale);
     return vector.add(centre, vector.mult(vector.sub(sv, centre), this.zscale(world_vector.z)));

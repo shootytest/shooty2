@@ -401,6 +401,7 @@ export const STYLES/*: { [key: string]: style_type }*/ = {
     fill: "alt",
     fill_opacity: 0.5,
   },
+  
   particle: {
     fill: "main",
     fill_opacity: 1,

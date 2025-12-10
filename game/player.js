@@ -501,10 +501,10 @@ export class Player extends Thing {
             this.unload_room(room_id);
         }
     }
-    reload_all_rooms() {
-        // console.log("reloading all rooms");
+    reload_all_rooms(except = []) {
         for (const room_id of shallow_clone_array(this.room_list)) {
-            this.reload_room(room_id);
+            if (!except.includes(room_id))
+                this.reload_room(room_id);
         }
     }
     old_map_ids = [];

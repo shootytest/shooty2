@@ -556,6 +556,11 @@ export const vector3 = {
             (a.min_y <= b.max_y && a.max_y >= b.min_y) &&
             (a.min_z <= b.max_z && a.max_z >= b.min_z);
     },
+    aabb_intersect_add: (a, b, av) => {
+        return (a.min_x + av.x <= b.max_x && a.max_x + av.x >= b.min_x) &&
+            (a.min_y + av.y <= b.max_y && a.max_y + av.y >= b.min_y) &&
+            (a.min_z + av.z <= b.max_z && a.max_z + av.z >= b.min_z);
+    },
     aabb_combine: (a, b) => {
         return {
             min_x: Math.min(a.min_x, b.min_x),

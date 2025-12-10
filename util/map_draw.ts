@@ -231,7 +231,7 @@ export const map_draw = {
   draw_spawned_shape: (ctx: Context, shape: map_shape_type, style: style_type, o: maketype_shape, options: maketype, shadow: boolean = false) => {
     if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0 || shape.computed.shadow_vertices == undefined) return;
     const centre = shadow ? shape.computed.shadow_vertices[0] : shape.computed.screen_vertices[0];
-    const z = shape.z + (o.z ?? 0);
+    const z = (m_ui.editor.map_mode && !shape.computed.options?.is_map) ? camera.look_z : shape.z + (o.z ?? 0);
     const mult = camera.zscale(z) * camera.scale;
     const r = (o.radius ?? 0) * mult;
     if (o.style) style = clone_object(STYLES_[o.style ?? "error"] ?? style);

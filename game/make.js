@@ -180,6 +180,12 @@ make.checkpoint = {
     restitution: 0,
     safe_floor: true,
 };
+make.checkpoint_map = {
+    style: "switch",
+    team: 0,
+    seethrough: true,
+    style_: { stroke_opacity: 0 },
+};
 make.checkpoint_streets_room_2 = {
     make_parent: ["checkpoint"],
     angle: Math.PI / 6,
@@ -201,6 +207,18 @@ make_shapes.checkpoint_streets_room_2 = [{
         floor: true,
         safe_floor: false,
         style_: { stroke_opacity: 0 },
+    }];
+make.checkpoint_map_streets_room_2 = {
+    make_parent: ["checkpoint_map"],
+    angle: Math.PI / 6,
+};
+make_shapes.checkpoint_map_streets_room_2 = [{
+        type: "circle",
+        radius: 60,
+    }, {
+        type: "polygon",
+        sides: 3,
+        radius: 360,
     }];
 // @decorations
 make.map_shape = {
@@ -1239,6 +1257,12 @@ export const make_rooms = {
         theme: "streets",
     },
     ["streets room 2"]: {
+        theme: "streets",
+    },
+    ["streets room 3"]: {
+        theme: "streets",
+    },
+    ["streets room 4"]: {
         theme: "streets",
     },
     ["streets side room 1"]: {

@@ -155,17 +155,16 @@ export class Shape {
                     continue;
                 else if (z < camera.look_z - 1 - math.epsilon || z > camera.z + math.epsilon)
                     continue;
-            s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position); // bottleneck :(
+            // s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position); // bottleneck :(
             if (Shape.memo_aabb3[z_string] == undefined) {
-                console.error("[shape/filter] this shouldn't happen: " + z_string);
+                // console.error("[shape/filter] this shouldn't happen: " + z_string);
                 const z_scale = camera.zscale_inverse(z >= 0 ? 0 : z);
                 Shape.memo_aabb3[z_string] = vector3.aabb_scale(screen_aabb, vector3.create(z_scale, z_scale, 1));
             }
-            const inside = vector3.aabb_intersect(s.computed_aabb, Shape.memo_aabb3[z_string]);
+            const inside = vector3.aabb_intersect_add(s.computed.aabb3, Shape.memo_aabb3[z_string], s.thing.position); // new bottleneck but faster i think! :)
             s.computed.on_screen = inside;
-            if (inside) {
+            if (inside)
                 result.push(s);
-            }
         }
         return result;
     }
@@ -361,7 +360,7 @@ export class Shape {
     }
     // computed
     computed;
-    computed_aabb; // for use in Shape.filter()
+    // computed_aabb?: AABB3; // for use in Shape.filter()
     // map_shape_type_object?: map_shape_type;
     style = {};
     has_style = false;
@@ -676,6 +675,7 @@ export class Shape {
         p.style = style;
         p.time = Thing.time + time;
         p.z = this.z;
+        p.z_bounds = [p.z - 0.5, p.z + 0.5];
         if (o.type === "triangulate" && this.computed.vertices.length <= 2) {
             console.error(`[shape/break] can't triangulate 2 or less vertices!`);
             o.type = "fade";

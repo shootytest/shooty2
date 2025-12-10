@@ -491,10 +491,9 @@ export class Player extends Thing {
     }
   }
 
-  reload_all_rooms() {
-    // console.log("reloading all rooms");
+  reload_all_rooms(except: string[] = []) {
     for (const room_id of shallow_clone_array(this.room_list)) {
-      this.reload_room(room_id);
+      if (!except.includes(room_id)) this.reload_room(room_id);
     }
   }
 

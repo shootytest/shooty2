@@ -3,7 +3,7 @@ import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
-import { make, make_shapes, make_waves, shallow_clone_array } from "./make.js";
+import { clone_object, make, make_shapes, make_waves, shallow_clone_array } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
@@ -127,6 +127,7 @@ export class Spawner {
     room_id = "";
     z = 0;
     vertices = [];
+    options;
     spawn;
     wave;
     waves = [];
@@ -154,6 +155,7 @@ export class Spawner {
         }
     }
     make_map(o) {
+        this.options = clone_object(o.computed?.options ?? o.options);
         this.vertices = vector.clone_list(o.vertices);
         this.create_id(o.id);
         if (o.options.room_id) {
@@ -265,6 +267,8 @@ export class Spawner {
     spawn_enemy(type, position) {
         const e = new Enemy(this);
         e.make_enemy(type, position ?? vector3.create2(this.random_position(), this.z), this.room_id);
+        if (this.options?.is_map)
+            e.options.is_map = true;
         e.wave_number = this.wave_progress + 1;
         e.create_room(this.room_id);
         this.enemies.push(e);

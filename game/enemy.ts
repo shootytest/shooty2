@@ -1,10 +1,10 @@
 import { color, STYLES_ } from "../util/color.js";
 import { config } from "../util/config.js";
-import { map_shape_type } from "../util/map_type.js";
+import { map_shape_options_type, map_shape_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
-import { make, make_shapes, make_waves, maketype_wave, maketype_wave_round, shallow_clone_array } from "./make.js";
+import { clone_object, make, make_shapes, make_waves, maketype_wave, maketype_wave_round, shallow_clone_array } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
@@ -147,6 +147,7 @@ export class Spawner {
   z: number = 0;
   vertices: vector3_[] = [];
 
+  options?: map_shape_options_type;
   spawn?: enemy_spawn;
   wave?: maketype_wave;
   waves: maketype_wave_round[] = [];
@@ -178,6 +179,7 @@ export class Spawner {
   }
 
   make_map(o: map_shape_type) {
+    this.options = clone_object(o.computed?.options ?? o.options) as map_shape_options_type;
     this.vertices = vector.clone_list(o.vertices);
     this.create_id(o.id);
     if (o.options.room_id) {
@@ -284,6 +286,7 @@ export class Spawner {
   spawn_enemy(type: string, position?: vector3) {
     const e = new Enemy(this);
     e.make_enemy(type, position ?? vector3.create2(this.random_position(), this.z), this.room_id);
+    if (this.options?.is_map) e.options.is_map = true;
     e.wave_number = this.wave_progress + 1;
     e.create_room(this.room_id);
     this.enemies.push(e);

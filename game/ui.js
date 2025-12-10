@@ -1078,20 +1078,20 @@ export const ui = {
                 },
             },
             streets: {
-                n: 300,
+                n: 100,
                 fn: () => {
-                    const p = Particle.make(math.polygon(3, math.rand(10, 14)));
+                    const p = Particle.make(math.polygon(3, math.rand(10, 14))); // Particle.make_circle(math.rand(10, 14));
                     p.velocity = math.randvector(20);
                     p.object.theme = "streets";
                     p.is_screen = false;
                     p.wraparound = true;
-                    p.z = math.rand(0.45, 0.49);
-                    p.z_velocity = math.rand(-0.02, -0.05);
-                    p.z_bounds = [-0.5, 0.5];
+                    p.z = math.rand(0, 0.25);
+                    // p.z_velocity = math.rand(-0.02, -0.05);
+                    // p.z_bounds = [-0.5, 0.5];
                     p.angle = math.randangle();
                     p.angular_velocity = math.rand(-1, 1);
                     p.style = STYLES.particle;
-                    p.opacity = 0.03;
+                    p.opacity = 0.02;
                     p.offset = vector.create(math.rand(0, ui.width), math.rand(0, ui.height));
                     p.time = Thing.time + config.seconds * 1000000;
                     return p;

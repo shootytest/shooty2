@@ -47,7 +47,7 @@ export class Particle {
     }
     static make_circle(radius, offset = vector3.create()) {
         const p = new Particle();
-        p.vertices = [offset, vector3.create(radius, 0, 0), vector3.create(-123, -123, -123)];
+        p.vertices = [offset, vector3.add(offset, vector3.create(radius, 0, 0)), vector3.create(-123, -123, -123)];
         return p;
     }
     static make_icon(icon, radius, position, velocity, acceleration, jerk) {
@@ -142,7 +142,8 @@ export class Particle {
                     this.offset.y %= canvas.height;
                 }
                 else if (!player.paused && (ui.time - ui.pause.end_time) > 0.1 * config.seconds) {
-                    vector.aabb_wraparound(Shape.memo_aabb3[(math.floor(this.z_bounds[0] * 10) / 10).toFixed(1)], this.offset);
+                    const wrap_z = this.z_velocity ? this.z_bounds[0] : this.z;
+                    vector.aabb_wraparound(Shape.memo_aabb3[(math.floor(wrap_z * 10) / 10).toFixed(1)], this.offset);
                 }
             }
         }
@@ -188,7 +189,7 @@ export class Particle {
         this.compute_screen();
         if (this.is_circle) {
             const [c, r] = this.screen_vertices;
-            ctx.circle(Math.round(c.x + this.offset.x), Math.round(c.y + this.offset.y), r.x);
+            ctx.circle_v(c, r.x);
         }
         else if (this.icon) {
             console.error("[particle/draw_path] icons don't have paths to draw");
@@ -206,7 +207,7 @@ export class Particle {
         }
         else {
             const vs = [];
-            for (const vertex of this.is_circle ? this.vertices : vector.rotate_list(this.vertices, this.angle)) {
+            for (const vertex of this.is_circle ? this.vertices.slice(0, 2) : vector.rotate_list(this.vertices, this.angle)) {
                 const world_v = vector3.create2(vector.add(vertex, this.offset), this.total_z);
                 const v = camera.world3screen(world_v, player);
                 vs.push(vector3.create2(v, world_v.z - camera.look_z));

@@ -262,17 +262,19 @@ export const detector = {
         save.set_switch(switch_id);
         save.set_switch_time(switch_id, b.thing_time);
       }
+      if (b.shapes[0]) b.shapes[0].options.glowing = 1;
       if (b.options.checkpoint) {
         player.health?.heal_all();
         player.object.checkpoint = b;
         player.object.checkpoint_pair = pair;
         player.set_checkpoint_here();
+        player.change_room(player.checkpoint_room, true);
+        player.reload_all_rooms([player.checkpoint_room]); // reload everything except current room
         // activate lol
         // pair.isSensor = true;
         // player.teleport_to(b.position);
         // ui.toggle_pause();
       }
-      b.shapes[0].options.glowing = 1;
     }
   },
   collision_end: (pair: Matter.Pair, a: Thing, b: Thing, z_diff: boolean = false) => {
@@ -689,6 +691,17 @@ export const detector = {
         }
         thing.object.next_time = thing.thing_time + 0.5 * config.seconds; // todo why must i wait 0.5 seconds before triggering the first time create
       }
+    },
+
+    // streets doors
+    ["streets room 2 door 1"]: (door) => {
+      switch_door(door, "streets room 2 checkpoint", "streets room 2 door 1");
+    },
+    ["streets room 2 door 2"]: (door) => {
+      switch_door(door, "streets room 2 checkpoint", "streets room 2 door 2");
+    },
+    ["streets room 2 door 3"]: (door) => {
+      switch_door(door, "streets room 2 checkpoint", "streets room 2 door 3");
     },
   } as { [key: string]: (thing: Thing) => void },
 
