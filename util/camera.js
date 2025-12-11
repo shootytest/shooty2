@@ -139,7 +139,7 @@ export const camera = {
     /*
     scale_tick: function(screen_position: vector, newscale: number) {
       // copied from myself 1.5 years ago, which is copied from myself 2 years ago
-      // 2 years later update: i don't need this! see scale_adjust above!
+      // update from another 2 years later: i don't need this! see scale_adjust above!
       const world_point = vector.add(vector.mult(screen_position, 1 / this.scale), this.position);
       this.scale = newscale;
       this.position_target = vector.sub(world_point, vector.mult(screen_position, 1 / this.scale));

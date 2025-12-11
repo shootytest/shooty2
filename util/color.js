@@ -1,4 +1,5 @@
-import { clone_object, make_rooms } from "../game/make.js";
+import { clone_object } from "../game/make.js";
+import { make_rooms } from "../make/rooms.js";
 // all colours are in 6-long hex format
 export const color /*: { [key: string]: `#${string}` }*/ = {
     // legacy colours

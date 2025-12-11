@@ -1,9 +1,10 @@
+import { make_waves } from "../make/waves.js";
 import { color, STYLES_ } from "../util/color.js";
 import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
-import { clone_object, make, make_shapes, make_waves, shallow_clone_array } from "./make.js";
+import { clone_object, make, make_shapes, shallow_clone_array } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
@@ -39,7 +40,7 @@ export class Enemy extends Thing {
         this.position = position;
         this.original_position = vector3.clone(position);
         if (!this.options.angle)
-            this.angle = math.rand(0, Math.PI * 2);
+            this.angle = math.randangle();
         if (!this.options.decoration)
             this.create_body(this.create_body_options(filters.thing(this.team)));
         if (this.body)
@@ -59,7 +60,7 @@ export class Enemy extends Thing {
             super.die();
     }
     tick(dt) {
-        if (this.is_seeing_player && !this.options.enemy_safe)
+        if (this.options.behaviour && this.is_seeing_player && !this.options.enemy_safe)
             player.enemy_can_see = true;
         super.tick(dt);
     }

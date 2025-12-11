@@ -49,6 +49,8 @@ export class Shoot {
             this.shoot_bullet();
             this.delayed = 0;
         }
+        if (this.stats.always_shoot)
+            this.shoot();
     }
     shoot() {
         const S = this.stats;
@@ -80,16 +82,20 @@ export class Shoot {
             const str = player.current_gun + "/" + (S.make ?? "bullet");
             player.stats.bullets_shot[str] = (player.stats.bullets_shot[str] ?? 0) + 1;
         }
-        let angle = S.spread_angle === -1 ? math.rand(0, Math.PI * 2) : math.randgauss(this.thing.angle + (vector.deg_to_rad(S.angle ?? 0)), S.spread_angle ?? 0);
+        let angle = S.spread_angle === -1 ? math.randangle() : math.randgauss(this.thing.angle + (vector.deg_to_rad(S.angle ?? 0)), S.spread_angle ?? 0);
         if (S.random_angle)
             angle += math.rand(-S.random_angle, S.random_angle);
         let speed = math.randgauss(S.speed ?? 0, S.spread_speed ?? 0);
         if (S.random_speed)
             speed += math.rand(-S.random_speed, S.random_speed);
+        let angular_speed = math.randgauss(S.angular_speed ?? 0, S.spread_angular_speed ?? 0);
+        if (S.random_angular_speed)
+            speed += math.rand(-S.random_angular_speed, S.random_angular_speed);
         const thing_velocity = Vector.rotate(this.thing.velocity, -angle).x;
         if (speed !== 0 && thing_velocity !== 0)
             speed += thing_velocity * config.physics.velocity_shoot_boost * (S.boost_mult ?? 1);
         bullet.velocity = vector.createpolar(angle, speed);
+        bullet.angular_velocity = angular_speed;
         bullet.angle = angle;
         bullet.bullet_total_time = (S.time ?? 1000000) * config.seconds;
         bullet.bullet_time = Thing.time + bullet.bullet_total_time;

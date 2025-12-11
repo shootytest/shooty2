@@ -17,7 +17,7 @@ const init_all = function () {
     load_map_settings();
     requestAnimationFrame(tick_all);
 };
-const tick_all = function (timestamp_unused) {
+const tick_all = function (_timestamp_unused) {
     m_ui.tick();
     m_ui.draw();
     camera.tick(167); // don't care about dt for now

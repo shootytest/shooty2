@@ -4,10 +4,12 @@ import { maketype_health } from "./make.js";
 import type { Player } from "./player.js";
 import { Thing } from "./thing.js";
 
+export type health_type = "none" | "health" | "ability" | "shield";
 
 export class Health {
 
   thing: Thing;
+  type: health_type = "none";
 
   value = 0;
   capacity = 0;
@@ -21,8 +23,9 @@ export class Health {
   hit_time = -1234567890; // time last hit
   hit_clear = 0; // time from last hit to regen
 
-  constructor(thing: Thing) {
+  constructor(thing: Thing, type: health_type) {
     this.thing = thing;
+    this.type = type;
   }
 
   get ratio() {
@@ -80,7 +83,7 @@ export class Health {
     this.bound();
     this.hit_time = Thing.time;
     const real_damage = old_health - this.value;
-    this.thing.hit(real_damage);
+    this.thing.hit(this.type, real_damage);
     return real_damage;
   }
 

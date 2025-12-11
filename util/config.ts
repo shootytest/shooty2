@@ -26,6 +26,7 @@ export const config = {
   graphics: {
     fps: 60,
     resolution_mult: 1,
+    particle_setting: 2,
     debug_display: false,
     fullscreen: false,
     shape_cull_padding: 50, // 16 should be ok, 50 is just to be safe

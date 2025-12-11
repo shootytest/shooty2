@@ -376,7 +376,7 @@ export class Context {
     this.ctx.moveTo(x + r * Math.cos(a), y + r * Math.sin(a));
     // draw one more side because lineCap is weird if it is square
     for (let i = 0; i < sides + 1; ++i) {
-      a += Math.PI * 2 / sides;
+      a += math.two_pi / sides;
       this.ctx.lineTo(x + r * Math.cos(a), y + r * Math.sin(a));
     }
   }

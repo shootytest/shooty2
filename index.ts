@@ -1,11 +1,11 @@
 import { detector } from "./game/detector.js";
 import { Spawner } from "./game/enemy.js";
-import { always_loaded_rooms } from "./game/make.js";
 import { Particle } from "./game/particle.js";
 import { player } from "./game/player.js";
 import { save } from "./game/save.js";
 import { Thing } from "./game/thing.js";
 import { ui } from "./game/ui.js";
+import { always_loaded_rooms } from "./make/rooms.js";
 import { Engine } from "./matter.js";
 import { camera } from "./util/camera.js";
 import { ctx, init_canvas } from "./util/canvas.js";

@@ -1,4 +1,5 @@
-import { clone_object, make_rooms } from "../game/make.js";
+import { clone_object } from "../game/make.js";
+import { make_rooms } from "../make/rooms.js";
 import { style_type } from "./map_type.js";
 
 // all colours are in 6-long hex format
@@ -401,7 +402,7 @@ export const STYLES/*: { [key: string]: style_type }*/ = {
     fill: "alt",
     fill_opacity: 0.5,
   },
-  
+
   particle: {
     fill: "main",
     fill_opacity: 1,

@@ -3,6 +3,7 @@ import { math } from "../util/math.js";
 import { Thing } from "./thing.js";
 export class Health {
     thing;
+    type = "none";
     value = 0;
     capacity = 0;
     regen = 0;
@@ -12,8 +13,9 @@ export class Health {
     hit_tick = 0; // e.g. poison damage
     hit_time = -1234567890; // time last hit
     hit_clear = 0; // time from last hit to regen
-    constructor(thing) {
+    constructor(thing, type) {
         this.thing = thing;
+        this.type = type;
     }
     get ratio() {
         return this.value / this.capacity;
@@ -70,7 +72,7 @@ export class Health {
         this.bound();
         this.hit_time = Thing.time;
         const real_damage = old_health - this.value;
-        this.thing.hit(real_damage);
+        this.thing.hit(this.type, real_damage);
         return real_damage;
     }
     hit_all() {

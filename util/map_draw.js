@@ -236,7 +236,7 @@ export const map_draw = {
     draw_spawned_shape: (ctx, shape, style, o, options, shadow = false) => {
         if (shape.computed?.screen_vertices == undefined || shape.computed.screen_vertices.length <= 0 || shape.computed.shadow_vertices == undefined)
             return;
-        const centre = shadow ? shape.computed.shadow_vertices[0] : shape.computed.screen_vertices[0];
+        let centre = shadow ? shape.computed.shadow_vertices[0] : shape.computed.screen_vertices[0];
         const z = (m_ui.editor.map_mode && !shape.computed.options?.is_map) ? camera.look_z : shape.z + (o.z ?? 0);
         const mult = camera.zscale(z) * camera.scale;
         const r = (o.radius ?? 0) * mult;
@@ -245,6 +245,8 @@ export const map_draw = {
         if (o.style_)
             override_object(style, o.style_);
         const angle = options.angle ?? 0;
+        if (o.offset)
+            centre = vector3.create2(vector.add(centre, vector.mult(o.offset, mult)), centre.z);
         ctx.beginPath();
         if (o.type === "circle") {
             ctx.circle_v(centre, r);
@@ -257,7 +259,7 @@ export const map_draw = {
             let a = angle + (o.angle ?? 0);
             ctx.moveTo(centre.x + r * Math.cos(a), centre.y + r * Math.sin(a));
             for (let i = 0; i < sides; i++) {
-                a += Math.PI * 2 / sides;
+                a += math.two_pi / sides;
                 ctx.lineTo(centre.x + r * Math.cos(a), centre.y + r * Math.sin(a)); // funny function call
             }
         }
@@ -279,6 +281,26 @@ export const map_draw = {
             ctx.strokeStyle = color2hex_map(style.stroke, shape.options.room_id ?? "default");
             ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
             ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (shadow ? 0.5 : 1);
+            ctx.stroke();
+        }
+        if (options.enemy_detect_range) {
+            ctx.beginPath();
+            ctx.circle_v(centre, options.enemy_detect_range * mult);
+            if (!style.stroke)
+                ctx.strokeStyle = color.enemy_main;
+            ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
+            ctx.globalAlpha = 0.1;
+            ctx.stroke();
+        }
+        if (options.repel_range) {
+            ctx.beginPath();
+            ctx.circle_v(centre, options.repel_range * mult);
+            ctx.fillStyle = color.white;
+            ctx.strokeStyle = color.white;
+            ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
+            ctx.globalAlpha = 0.05;
+            ctx.fill();
+            ctx.globalAlpha = 0.1;
             ctx.stroke();
         }
     },

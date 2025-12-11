@@ -1,4 +1,5 @@
 import { engine, MAP } from "../index.js";
+import { make_data } from "../make/data.js";
 import { Events } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { STYLES } from "../util/color.js";
@@ -7,12 +8,12 @@ import { map_shape_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { Enemy, Spawner } from "./enemy.js";
-import { clone_object, make_data, maketype_behaviour } from "./make.js";
+import { clone_object, maketype_behaviour } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
 import type { Polygon } from "./shape.js";
-import type { Thing } from "./thing.js";
+import { Thing } from "./thing.js";
 
 /**
  *
@@ -223,7 +224,8 @@ export const detector = {
     // console.log(`[detector/collision_start] Collision started betwixt ${ba.label} & ${bb.label}!`);
     if (a.is_player) {
       if (b.options.sensor) {
-        detector.sensor_start_fns[b.id]?.(b);
+        const id = b.id.split("|")[0];
+        detector.sensor_start_fns[id]?.(b);
         if (b.options.sensor_fov_mult != undefined) player.fov_mult = b.options.sensor_fov_mult || 1;
         if (!b.options.sensor_dont_set_room) player.change_room(b.room_id);
         b.is_touching_player = true;
@@ -348,20 +350,20 @@ export const detector = {
       const train_position = save.get_switch("train");
       if (train_position === 11 && (train.object.train_distance || 0) > 0) {
         const dv = vector.create(-(train.object.train_distance || 0), 0);
-        for (const t of thing.all_things()) {
+        for (const t of Thing.things) {
           if (!t.id.startsWith("train")) continue;
           if (t.body) t.translate(dv);
           else t.position = vector.add(t.position, dv);
           if (t.object.original_position) t.object.original_position = vector.add(t.object.original_position, dv);
         }
         train.object.train_distance = 0;
-        thing.lookup("train floor").options.invisible = false;
-        thing.lookup("train floor broken bottom").z = 0;
-        thing.lookup("train floor broken middle").z = 0;
-        thing.lookup("train floor broken top").z = 0;
+        Thing.lookup("train floor").options.invisible = false;
+        Thing.lookup("train floor broken bottom").z = 0;
+        Thing.lookup("train floor broken middle").z = 0;
+        Thing.lookup("train floor broken top").z = 0;
       } else if (math.equal(train_position, 11.5) && train.object.train_distance !== 6150) {
         const dv = vector.create(6150 - (train.object.train_distance || 0), 0);
-        for (const t of thing.all_things()) {
+        for (const t of Thing.things) {
           if (!t.id.startsWith("train")) continue;
           if (t.body) t.translate(dv);
           else t.position = vector.add(t.position, dv);
@@ -371,10 +373,10 @@ export const detector = {
         // also do crash
         player.object.train_time = 10 * config.seconds;
         train.object.crashed = 1;
-        thing.lookup("train floor").options.invisible = true;
-        thing.lookup("train floor broken bottom").z = -0.4;
-        thing.lookup("train floor broken middle").z = -0.2;
-        thing.lookup("train floor broken top").z = -0.4;
+        Thing.lookup("train floor").options.invisible = true;
+        Thing.lookup("train floor broken bottom").z = -0.4;
+        Thing.lookup("train floor broken middle").z = -0.2;
+        Thing.lookup("train floor broken top").z = -0.4;
       }
     },
     ["station tutorial floor"]: (thing, dt) => {
@@ -397,22 +399,22 @@ export const detector = {
       const train_time = (player.object.train_time ?? 0) + dt;
       player.object.train_time = train_time;
       save.visit_map("station map train");
-      const train = thing.lookup("train");
+      const train = Thing.lookup("train");
       if (train_time > 2.1 * config.seconds || train.object.crashed) {
         if (train.object.crashed) {
           if (train_time < 2 * config.seconds) player.object.train_time += 2 * config.seconds;
-          const t = (thing.thing_time - (train.object.crashed ?? 0)) / config.seconds;
+          const t = (Thing.time - (train.object.crashed ?? 0)) / config.seconds;
           if (t > 1.1) return;
           const z = -0.4 * (math.bound(t, 0, 1) ** 2);
-          thing.lookup("train floor broken bottom").z = z;
-          thing.lookup("train floor broken middle").z = z / 2;
-          thing.lookup("train floor broken top").z = z;
+          Thing.lookup("train floor broken bottom").z = z;
+          Thing.lookup("train floor broken middle").z = z / 2;
+          Thing.lookup("train floor broken top").z = z;
         } else {
           const train_speed = math.bound((train_time - 2.1 * config.seconds) / 1000, 0, Math.min(config.physics.train_speed, 6150 - (train.object.train_distance || 0)));
           if (train_speed === 0 && (train.object.train_distance || 0) > 6149) {
             // crash!
-            train.object.crashed = thing.thing_time;
-            thing.lookup("train floor").options.invisible = true;
+            train.object.crashed = Thing.time;
+            Thing.lookup("train floor").options.invisible = true;
             // player.push_by(vector.create(125, 0));
             save.set_switch("train", 11.5);
             player.save();
@@ -420,7 +422,7 @@ export const detector = {
             // continue moving train
             train.object.train_distance = (train.object.train_distance || 0) + train_speed;
             const dv = vector.create(train_speed, 0);
-            for (const t of thing.all_things()) {
+            for (const t of Thing.things) {
               if (!t.id.startsWith("train") && !t.parent.is_player) continue;
               if (t.body) t.translate(dv);
               else t.position = vector.add(t.position, dv);
@@ -430,23 +432,23 @@ export const detector = {
           }
         }
       }
-      thing.lookup("train ceiling").shapes[0].style.fill_opacity = 0.5 * math.bound(1 / (player.object.train_time / (0.2 * config.seconds)), 0, 1);
+      Thing.lookup("train ceiling").shapes[0].style.fill_opacity = 0.5 * math.bound(1 / (player.object.train_time / (0.2 * config.seconds)), 0, 1);
     },
   } as { [thing_id: string]: (thing: Thing, dt: number) => void },
 
 
   sensor_start_fns: {
     // nothing for now
-    ["tutorial room 1 door sensor"]: (thing) => {
-      thing.lookup("tutorial room 1 arrow").shapes[0].style.stroke_opacity = 0;
+    ["tutorial room 1 door sensor"]: (_thing) => {
+      Thing.lookup("tutorial room 1 arrow").shapes[0].style.stroke_opacity = 0;
     },
     ["tutorial room 2.5 sensor"]: (_thing) => {
       // const centre = Vertices.centre(Spawner.spawners_lookup["tutorial room 2 breakables 4"].vertices);
       // player.set_checkpoint(vector3.create_(centre, 0));
     },
-    ["tutorial room 3 end sensor"]: (thing) => {
-      thing.lookup("tutorial window 1")?.die();
-      thing.lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
+    ["tutorial room 3 end sensor"]: (_thing) => {
+      Thing.lookup("tutorial window 1")?.die();
+      Thing.lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
     },
     ["tutorial room 5 sensor boss"]: (_thing) => {
       const boss = Spawner.get_enemy("tutorial room 5 boss");
@@ -466,6 +468,24 @@ export const detector = {
     },
     ["train sensor"]: (_thing) => {
       player.is_safe = false;
+    },
+    ["streets room 3 turret 1 button"]: (thing) => {
+      const n = +thing.id.split("|")[1];
+      thing.shapes[0].style.fill_opacity = 0.5;
+      thing.shapes[0].style.stroke_opacity = 0.5;
+      thing.shapes[1].style.stroke_opacity = 0.5;
+      const parent = thing.parent;
+      if (!parent.object.ns) parent.object.ns = [];
+      const arr = parent.object.ns as number[];
+      if (!arr.includes(n)) {
+        arr.push(n);
+        parent.shield?.hit(100);
+      }
+      if (arr.length >= 6 || parent.shield?.is_zero) {
+        for (const c of (parent.object.children ?? []) as Thing[]) {
+          for (const s of c.shapes) s.opacity = 0.3;
+        }
+      }
     },
   } as { [thing_id: string]: (thing: Thing) => void },
 
@@ -502,6 +522,25 @@ export const detector = {
         });
       }
     },
+    ["enemy_streets_turret_1"]: (thing) => {
+      const centre = thing.position;
+      thing.object.ns = [] as number[];
+      thing.object.children = [] as Thing[];
+      for (let i = 0; i < 6; i++) {
+        const angle = 60 * i;
+        const t = new Thing();
+        t.parent = thing;
+        t.position = vector3.add_(centre, vector.createpolar_deg(angle, 240));
+        t.angle = vector.deg_to_rad(angle);
+        t.make("button_streets_turret_1");
+        t.create_id("streets room 3 turret 1 button|" + i);
+        t.create_body();
+        thing.object.children.push(t);
+      }
+      thing.remove_fn = () => {
+        for (const c of thing.object.children ?? []) c.remove();
+      };
+    },
   } as {
     [spawner_id: string]: // can choose spawner_id or make_id
       (thing: Enemy) => void
@@ -521,6 +560,15 @@ export const detector = {
       for (const shape of thing.shapes) {
         shape.style.opacity = 0.5;
       }
+      return true;
+    },
+    ["streets room 3 enemy turret"]: (thing) => {
+      (thing as Enemy).remove_static();
+      delete thing.options.behaviour;
+      // thing.options.enemy_safe = true;
+      thing.shapes[1].remove();
+      thing.make_shape_key("deco_sad_streets_turret_1");
+      Thing.lookup("streets room 3 turret 1 button|0").object.dead = true;
       return true;
     },
   } as {
@@ -565,13 +613,13 @@ export const detector = {
           thing.shapes[0].scale.x = -1;
           const warning_offset = vector.create(160, 500);
           for (let i = 0; i < 3; i++) {
-            const shape = thing.lookup("tutorial room 2 warning" + (i > 0 ? " " + i : "")).shapes[0];
+            const shape = Thing.lookup("tutorial room 2 warning" + (i > 0 ? " " + i : "")).shapes[0];
             shape.offset = vector3.create2(warning_offset);
             shape.style.stroke = STYLES.enemy.stroke;
             shape.style.stroke_opacity = 0.6;
             shape.init_computed();
           }
-          thing.lookup("tutorial room 2 arrow 2").shapes[0].style.opacity = 0.6;
+          Thing.lookup("tutorial room 2 arrow 2").shapes[0].style.opacity = 0.6;
         }
         if (!thing.object.block_done) {
           const block = Spawner.get_enemy("tutorial room 2 block");
@@ -582,7 +630,7 @@ export const detector = {
           }
         }
       } else {
-        thing.lookup("tutorial room 2 arrow 2").shapes[0].style.opacity = 0;
+        Thing.lookup("tutorial room 2 arrow 2").shapes[0].style.opacity = 0;
       }
     },
 
@@ -703,6 +751,10 @@ export const detector = {
     ["streets room 2 door 3"]: (door) => {
       switch_door(door, "streets room 2 checkpoint", "streets room 2 door 3");
     },
+    ["streets room 3 door 1"]: (door) => {
+      switch_door(door, Thing.lookup("streets room 3 turret 1 button|0")?.object.dead, "streets room 3 door 1");
+    },
+
   } as { [key: string]: (thing: Thing) => void },
 
 };

@@ -402,6 +402,17 @@ export const vector3 = {
         }
         return;
     },
+    scale_list: (vs, v_scale) => {
+        const result = [];
+        for (const v of vs) {
+            result.push({
+                x: v.x * v_scale.x,
+                y: v.y * v_scale.y,
+                z: v.z * (v_scale.z ?? 1),
+            });
+        }
+        return result;
+    },
     scale_to_list: (vs, v_scale) => {
         for (const v of vs) {
             v.x *= v_scale.x;

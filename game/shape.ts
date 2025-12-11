@@ -1,3 +1,4 @@
+import { make_rooms } from "../make/rooms.js";
 import { Vertices } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { ctx } from "../util/canvas.js";
@@ -7,7 +8,7 @@ import { mouse } from "../util/key.js";
 import { map_shape_compute_type, map_shape_type, style_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { AABB3, vector, vector3, vector3_ } from "../util/vector.js";
-import { clone_object, make_rooms, make_shoot, maketype_shape, multiply_and_override_object, override_object } from "./make.js";
+import { clone_object, make_shoot, maketype_shape, multiply_and_override_object, override_object } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { Bullet, Thing } from "./thing.js";
@@ -149,13 +150,13 @@ export class Shape {
       const z = s.z, z_string = (math.floor(s.min_z * 10) / 10).toFixed(1);
       if (s.computed.z_range) if (s.max_z < camera.look_z - 1 - math.epsilon || s.min_z > camera.z + math.epsilon) continue;
       else if (z < camera.look_z - 1 - math.epsilon || z > camera.z + math.epsilon) continue;
-      // s.computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position); // bottleneck :(
+      // const computed_aabb = vector3.aabb_add(s.computed.aabb3, s.thing.position); // bottleneck :(
       if (Shape.memo_aabb3[z_string] == undefined) {
         // console.error("[shape/filter] this shouldn't happen: " + z_string);
         const z_scale = camera.zscale_inverse(z >= 0 ? 0 : z);
         Shape.memo_aabb3[z_string] = vector3.aabb_scale(screen_aabb, vector3.create(z_scale, z_scale, 1));
       }
-      const inside = vector3.aabb_intersect_add(s.computed.aabb3, Shape.memo_aabb3[z_string], s.thing.position); // new bottleneck but faster i think! :)
+      const inside = Boolean(s.thing.options.repel_range) || vector3.aabb_intersect_add(s.computed.aabb3, Shape.memo_aabb3[z_string], s.thing.position); // new bottleneck but faster i think! :)
       s.computed.on_screen = inside;
       if (inside) result.push(s);
     }
@@ -372,8 +373,15 @@ export class Shape {
   }
 
   init_computed() {
-    const vertices = vector3.add_list(this.vertices, this.offset);
-    if (this.activate_scale) vector3.scale_to_list(vertices, this.scale);
+    let vertices = this.vertices;
+    if (this.activate_scale) {
+      if (this.vertices.length > 2) vertices = vector3.scale_list(this.vertices, this.scale);
+      else if (this.vertices.length === 2) {
+        const [v1, v2] = this.vertices;
+        vertices = [v1, vector3.create(v1.x + (v2.x - v1.x) * this.scale.x, v1.y + (v2.y - v1.y) * this.scale.y)];
+      }
+    }
+    vector3.add_to_list(vertices, this.offset);
     // if (this.closed_loop && vertices.length >= 3) vertices.push(vertices[0]);
     const aabb = vector.make_aabb(vertices),
       aabb3 = vector3.make_aabb(vertices),
@@ -395,8 +403,16 @@ export class Shape {
   compute_screen() {
     if (this.computed?.vertices == undefined) return;
     // compute vertices and offset by shape offset
-    this.computed.vertices = vector3.add_list(this.vertices, this.offset);
-    if (this.activate_scale) vector3.scale_to_list(this.computed.vertices, this.scale);
+    let vertices = this.vertices;
+    if (this.activate_scale) {
+      if (this.vertices.length > 2) vertices = vector3.scale_list(this.vertices, this.scale);
+      else if (this.vertices.length === 2) {
+        const [v1, v2] = this.vertices;
+        vertices = [v1, vector3.create(v1.x + (v2.x - v1.x) * this.scale.x, v1.y + (v2.y - v1.y) * this.scale.y)];
+      }
+    }
+    vertices = vector3.add_list(vertices, this.offset);
+    this.computed.vertices = vertices;
     // rotate by thing angle
     if (this.thing.angle) {
       for (const v of this.computed.vertices) {
@@ -532,7 +548,7 @@ export class Shape {
     ctx.beginPath();
     ctx.moveTo(c.x, c.y);
     const angle = (this.thing.is_player ? 0 : this.thing.angle) - (Thing.time / config.seconds * config.graphics.health_rotate_speed);
-    ctx.arc_v(c, 123456, angle % (Math.PI * 2), (angle + Math.PI * 2 * ratio) % (Math.PI * 2));
+    ctx.arc_v(c, 123456, angle % math.two_pi, (angle + math.two_pi * ratio) % math.two_pi);
     ctx.lineTo(c.x, c.y);
     ctx.clip();
     const health_color = this.style.health ?? color.red;
@@ -595,7 +611,7 @@ export class Shape {
     let angle = 0; // -Thing.time / config.seconds * config.graphics.health_rotate_speed;
     if (clip.timing === "fixed") {
       ratio = clip.end - clip.start;
-      angle = clip.start * Math.PI * 2;
+      angle = clip.start * math.two_pi;
     } else if (clip.timing === "bullet") {
       ratio = 1 - ((this.thing as Bullet).bullet_time_ratio - clip.start) / (clip.end - clip.start);
     }
@@ -607,7 +623,7 @@ export class Shape {
     const c = this.is_circle ? this.computed.screen_vertices[0] : vector.aabb_centre(vector.make_aabb(this.computed.screen_vertices));
     ctx.beginPath();
     ctx.moveTo(c.x, c.y);
-    ctx.arc_v(c, 123456, angle % (Math.PI * 2), (angle + Math.PI * 2 * ratio) % (Math.PI * 2));
+    ctx.arc_v(c, 123456, angle % math.two_pi, (angle + math.two_pi * ratio) % math.two_pi);
     ctx.lineTo(c.x, c.y);
     ctx.clip();
     this.draw();
@@ -616,7 +632,7 @@ export class Shape {
 
   draw_repel() {
     if (!this.thing.options.repel_range || this.computed?.screen_vertices == undefined || !this.computed?.on_screen) return;
-    const c = this.is_circle ? this.computed.screen_vertices[0] : vector.aabb_centre(vector.make_aabb(this.computed.screen_vertices));
+    const c = camera.world3screen(this.thing.position); // this.is_circle ? this.computed.screen_vertices[0] : vector.aabb_centre(vector.make_aabb(this.computed.screen_vertices));
     const r = this.thing.options.repel_range * camera.scale * camera.zscale(this.thing.z);
     ctx.beginPath();
     ctx.circle_v(c, r);
@@ -626,6 +642,15 @@ export class Shape {
     ctx.fillStyle = color.white + "22";
     ctx.fill();
     ctx.stroke();
+    if (this.thing.shield) {
+      const ratio = this.thing.shield.display_ratio;
+      if (math.equal(ratio, 1)) return;
+      const angle = (Thing.time / config.seconds * config.graphics.health_rotate_speed);
+      ctx.beginPath();
+      ctx.arc_v(c, r, angle % math.two_pi, (angle + math.two_pi * ratio) % math.two_pi);
+      ctx.strokeStyle = color.red + "55";
+      ctx.stroke();
+    }
   }
 
   remove() {
@@ -734,7 +759,7 @@ export class Polygon extends Shape {
     let a = this.angle;
     for (let i = 0; i < sides + 1; ++i) {
       this.vertices.push(vector3.create(x + r * Math.cos(a), y + r * Math.sin(a), 0));
-      a += Math.PI * 2 / sides;
+      a += math.two_pi / sides;
     }
   }
 

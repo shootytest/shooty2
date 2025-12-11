@@ -1,7 +1,8 @@
-import { clone_object, make_rooms } from "../game/make.js";
+import { clone_object } from "../game/make.js";
 import { Particle } from "../game/particle.js";
 import { player } from "../game/player.js";
 import { Shape } from "../game/shape.js";
+import { make_rooms } from "../make/rooms.js";
 import { Common } from "../matter.js";
 import { camera } from "./camera.js";
 import { canvas, ctx } from "./canvas.js";

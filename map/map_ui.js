@@ -631,8 +631,8 @@ export const m_ui = {
             let ratio = Math.min(1, (m_ui.time - m_ui.circle_menu.active_time) ** 0.7 / 5);
             if (!m_ui.circle_menu.active)
                 ratio = 1 - ratio;
-            const a = Math.PI * 2 / m_ui.circle_menu.options.length;
-            const a_ = (m_ui.time / 100) % (Math.PI * 2);
+            const a = math.two_pi / m_ui.circle_menu.options.length;
+            const a_ = (m_ui.time / 100) % math.two_pi;
             size = 50 * ratio;
             ctx.fillStyle = color.black + "99";
             ctx.beginPath();

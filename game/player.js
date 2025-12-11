@@ -1,4 +1,5 @@
 import { make_from_map_shape, MAP } from "../index.js";
+import { always_loaded_rooms } from "../make/rooms.js";
 import { Body, Common, Composite, Engine, Vertices } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { config } from "../util/config.js";
@@ -7,7 +8,7 @@ import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { filters } from "./detector.js";
 import { Enemy, Spawner } from "./enemy.js";
-import { always_loaded_rooms, make, override_object, shallow_clone_array } from "./make.js";
+import { make, override_object, shallow_clone_array } from "./make.js";
 import { save } from "./save.js";
 import { Shape } from "./shape.js";
 import { Thing } from "./thing.js";
@@ -175,11 +176,12 @@ export class Player extends Thing {
             if (controls.shoot || this.autoshoot) {
                 this.shoot();
             }
-            if (this.is_safe && (safe_floor && on_floor) && grounded && Thing.time >= this.autosave_time) { // only save while safe
-                if (this.autosave_time < 0)
-                    this.autosave_time = Thing.time + config.game.autosave_interval;
-                else
-                    this.save();
+            if (Thing.time >= this.autosave_time) { // run every autosave interval
+                this.autosave_time = Thing.time + config.game.autosave_interval;
+                if (this.is_safe && (safe_floor && on_floor) && grounded)
+                    this.save(); // only save while safe
+                if (this.enemy_can_see)
+                    this.enemy_can_see = false;
             }
             this.target.position.z = z;
             this.on_floor = (safe_floor && on_floor) ? 2 : (on_floor ? 1 : 0);
@@ -241,7 +243,7 @@ export class Player extends Thing {
                     const id = t.object.shapey_id;
                     if (!t.options.shapey || !id)
                         continue;
-                    const was_inside = save.is_shapey_on(id);
+                    const was_inside = Boolean(save.is_shapey_on(id));
                     const inside = math.is_polygon_in_polygons(t.shapes[0].real_vertices(), union);
                     if (inside && !was_inside)
                         ui.shapey[id]?.on_fn?.();
@@ -286,11 +288,13 @@ export class Player extends Thing {
         this.target.position.z = save.save.player.position?.z ?? this.checkpoint.z ?? 0;
         return this.target.position.z;
     }
-    hit(damage) {
-        super.hit(damage);
-        player.save_but_health_only(); // save when hit to prevent reloading tricks :(
-        if (damage > 0)
-            this.health?.set_invincible(config.game.invincibility_time);
+    hit(type, damage) {
+        super.hit(type, damage);
+        if (type === "health") {
+            player.save_but_health_only(); // save when hit to prevent reloading tricks :(
+            if (damage > 0)
+                this.health?.set_invincible(config.game.invincibility_time);
+        }
     }
     camera_position() {
         this.camera_target = vector.lerp(this.camera_target, this.camera_target_target, config.graphics.camera_target_smoothness);
@@ -338,7 +342,6 @@ export class Player extends Thing {
             return false;
         }
         else {
-            this.autosave_time = Thing.time + config.game.autosave_interval;
             const o = {
                 position: this.position,
                 room_id: this.room_id,
@@ -392,7 +395,7 @@ export class Player extends Thing {
             override_object(this.stats, o.stats);
         // handle shapey too (out of place but ok)
         for (const [id, n] of Object.entries(save.check_all_shapey())) {
-            if (!ui.shapey[id]?.base && n > 0 && save.is_shapey_on(id))
+            if (!ui.shapey[id]?.base && n > 0 && save.is_shapey_on(id) > 0)
                 ui.shapey[id]?.on_fn?.();
         }
     }

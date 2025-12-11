@@ -1,3 +1,4 @@
+import { make_rooms } from "../make/rooms.js";
 import { Events, Mouse, MouseConstraint } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { canvas, canvas_, ctx, resize_canvas } from "../util/canvas.js";
@@ -6,7 +7,7 @@ import { config } from "../util/config.js";
 import { key, keys, mouse } from "../util/key.js";
 import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
-import { make_rooms, make_shapes, shallow_clone_array } from "./make.js";
+import { make_shapes, shallow_clone_array } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
@@ -401,7 +402,7 @@ export const ui = {
                         ctx.strokeStyle = color.white + math.component_to_hex(255 * (health_fpart * 10) ** 2);
                         ctx.fillStyle = color.white + math.component_to_hex(51 * (health_fpart * 10) ** 2);
                     }
-                    ctx.arc(x, y, r, angle % (Math.PI * 2), (angle - health_fpart * Math.PI * 2) % (Math.PI * 2));
+                    ctx.arc(x, y, r, angle % math.two_pi, (angle - math.two_pi * health_fpart) % math.two_pi);
                     ctx.stroke();
                     ctx.beginPath();
                     ctx.circle(x, y, r * 1.2);
@@ -631,6 +632,16 @@ export const ui = {
                 color: color.purple,
                 fn: function () {
                     config.graphics.debug_display = !config.graphics.debug_display;
+                    save.save_settings();
+                },
+            },
+            {
+                get icon() {
+                    return "particles_" + ["none", "one", "less", "more"][config.graphics.particle_setting];
+                },
+                color: color.orange,
+                fn: function () {
+                    config.graphics.particle_setting = (config.graphics.particle_setting + 3) % 4;
                     save.save_settings();
                 },
             },
@@ -1061,7 +1072,7 @@ export const ui = {
         theme: "",
         themes: {
             tutorial: {
-                n: 25,
+                n: [0, 5, 12, 25],
                 fn: () => {
                     const p = Particle.make(math.polygon(7, 300, math.randangle()), math.randvector(20));
                     p.object.theme = "tutorial";
@@ -1078,7 +1089,7 @@ export const ui = {
                 },
             },
             streets: {
-                n: 100,
+                n: [0, 20, 50, 100],
                 fn: () => {
                     const p = Particle.make(math.polygon(3, math.rand(10, 14))); // Particle.make_circle(math.rand(10, 14));
                     p.velocity = math.randvector(20);
@@ -1104,13 +1115,19 @@ export const ui = {
             const o = this.themes[this.theme];
             if (!o)
                 return;
+            const n = o.n[config.graphics.particle_setting];
             let i = 0;
-            while (this.list.length < o.n && i <= 1000) {
+            while (this.list.length < n && i <= 1000) {
                 const p = o.fn();
                 p.remove_fn = () => {
                     this.list.remove(p);
                 };
                 this.list.push(p);
+                i++;
+            }
+            i = 0;
+            while (this.list.length > n && i <= 1000) {
+                this.list[this.list.length - 1].remove();
                 i++;
             }
         },

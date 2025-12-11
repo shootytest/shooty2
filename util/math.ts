@@ -63,7 +63,7 @@ export const math = {
   },
   lerp_circle: (a: number, b: number, mod: number, t: number): number => {
     if (Math.abs(b - a) - mod / 2 < mod * 0.1) return math.lerp(a, b, t);
-    const m = Math.PI * 2 / mod;
+    const m = math.two_pi / mod;
     return math.lerp_angle(a * m, b * m, t) / m;
   },
   lerp_color: (ca: string, cb: string, t: number): string => {
@@ -336,17 +336,17 @@ export const math = {
     const result: vector[] = [];
     const x = offset.x;
     const y = offset.y;
-    let a = angle % (Math.PI * 2);
+    let a = angle % math.two_pi;
     for (let i = 0; i < sides + 1; ++i) {
       result.push(vector.create(x + radius * Math.cos(a), y + radius * Math.sin(a)));
-      a += Math.PI * 2 / sides;
+      a += math.two_pi / sides;
     }
     return result;
   },
 
   rand_point_in_circle: (centre: vector, radius: number): vector => {
     if (radius <= 0) return vector.clone(centre);
-    return vector.add(centre, vector.createpolar(math.rand(0, Math.PI * 2), radius * math.sqrt(math.rand())));
+    return vector.add(centre, vector.createpolar(math.randangle(), radius * math.sqrt(math.rand())));
   },
 
   rand_point_in_polygon: (vertices: vector[]): vector => {

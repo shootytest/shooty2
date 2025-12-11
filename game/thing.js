@@ -22,6 +22,9 @@ export class Thing {
     static things_lookup = {};
     static things_rooms = {};
     static cumulative_id = 0;
+    static lookup(id) {
+        return Thing.things_lookup[id];
+    }
     static tick_things(dt) {
         this.update_body_list();
         Thing.tick_time++;
@@ -67,17 +70,20 @@ export class Thing {
     body = undefined; // physics body
     options = {};
     object = {}; // for any random things
+    remove_fn;
     shapes = [];
     shoots = [];
     team = 0;
     damage = 0;
     health;
     ability;
+    shield;
     parent = this;
     target = {
         position: vector3.create(),
         angle: 0,
         facing: vector.create(),
+        angular_velocity: 0,
         velocity: vector.create(),
         vz: 0,
     };
@@ -130,6 +136,12 @@ export class Thing {
     }
     set angle(angle) {
         this.target.angle = angle;
+    }
+    get angular_velocity() {
+        return (this.body) ? this.body.angularVelocity : this.target.angular_velocity;
+    }
+    set angular_velocity(angular_velocity) {
+        this.target.angular_velocity = angular_velocity;
     }
     get velocity() {
         return vector.clone((this.body) ? this.body.velocity : this.target.velocity);
@@ -244,13 +256,18 @@ export class Thing {
             this.team = this.options.team;
         if (this.options.health != undefined) {
             if (this.health == undefined)
-                this.health = new Health(this);
+                this.health = new Health(this, "health");
             this.health.make(this.options.health);
         }
         if (this.options.ability != undefined) {
             if (this.ability == undefined)
-                this.ability = new Health(this);
+                this.ability = new Health(this, "ability");
             this.ability.make(this.options.ability);
+        }
+        if (this.options.shield != undefined) {
+            if (this.shield == undefined)
+                this.shield = new Health(this, "shield");
+            this.shield.make(this.options.shield);
         }
     }
     create_id(id) {
@@ -365,6 +382,7 @@ export class Thing {
         if (add_body)
             Composite.add(world, this.body);
         Body.setVelocity(body, this.target.velocity);
+        Body.setAngularVelocity(body, this.target.angular_velocity);
     }
     die() {
         const id = this.id.split("#")[0].trim();
@@ -385,6 +403,7 @@ export class Thing {
     remove() {
         if (this.is_removed)
             return;
+        this.remove_fn?.();
         this.remove_list();
         this.remove_body();
         this.remove_children();
@@ -512,6 +531,12 @@ export class Thing {
         else {
             this.health?.tick();
             this.ability?.tick();
+            this.shield?.tick();
+        }
+        if (this.shield?.is_zero && this.options.repel_range) {
+            this.options.repel_range = math.max(this.options.repel_range / 1.1, 0);
+            if (this.options.repel_range < 1)
+                delete this.options.repel_range;
         }
         if (this.options.zzz_sleeping) {
             // make zzz particles around 4 times a second
@@ -530,8 +555,8 @@ export class Thing {
             for (const b of Query.region(world.bodies, Bounds.create([vector.add(this.position, vector.create(-r, -r)), vector.add(this.position, vector.create(r, r))]))) {
                 const dv = vector.sub(b.position, this.position);
                 const other = b.thing;
-                if (vector.length2(dv) < (r + other.radius) ** 2) {
-                    const pushforce = vector.normalise(dv, this.options.repel_force);
+                if (other.parent !== this && vector.length2(dv) < (r + other.radius) ** 2) {
+                    const pushforce = vector.normalise(dv, this.options.repel_force * 100);
                     other.push_by(pushforce);
                 }
             }
@@ -562,8 +587,8 @@ export class Thing {
             return number_of_shoots;
         }
     }
-    hit(_damage) {
-        // do nothing when hit
+    hit(_type, _damage) {
+        // do nothing when hit (for now)
     }
     update_angle(smoothness = 1) {
         if (this.body == undefined)
@@ -777,6 +802,11 @@ export class Thing {
         if (!this.body)
             return;
         Body.setVelocity(this.body, v);
+    }
+    set_angular_velocity(w) {
+        if (!this.body)
+            return;
+        Body.setAngularVelocity(this.body, w);
     }
     reset_velocity() {
         if (!this.body)

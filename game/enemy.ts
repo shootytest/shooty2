@@ -1,10 +1,11 @@
+import { make_waves } from "../make/waves.js";
 import { color, STYLES_ } from "../util/color.js";
 import { config } from "../util/config.js";
 import { map_shape_options_type, map_shape_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
-import { clone_object, make, make_shapes, make_waves, maketype_wave, maketype_wave_round, shallow_clone_array } from "./make.js";
+import { clone_object, make, make_shapes, maketype_wave, maketype_wave_round, shallow_clone_array } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
@@ -41,7 +42,7 @@ export class Enemy extends Thing {
     }
     this.position = position;
     this.original_position = vector3.clone(position);
-    if (!this.options.angle) this.angle = math.rand(0, Math.PI * 2);
+    if (!this.options.angle) this.angle = math.randangle();
     if (!this.options.decoration) this.create_body(this.create_body_options(filters.thing(this.team)));
     if (this.body) this.body.label = id;
     if (this.options.angle) this.rotate_to(this.options.angle);
@@ -58,7 +59,7 @@ export class Enemy extends Thing {
   }
 
   tick(dt: number) {
-    if (this.is_seeing_player && !this.options.enemy_safe) player.enemy_can_see = true;
+    if (this.options.behaviour && this.is_seeing_player && !this.options.enemy_safe) player.enemy_can_see = true;
     super.tick(dt);
   }
 

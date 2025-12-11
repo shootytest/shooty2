@@ -6,7 +6,7 @@ import { map_shape_options_type, map_shape_type } from "../util/map_type.js";
 import { math } from "../util/math.js";
 import { vector, vector3, vector3_ } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
-import { Health } from "./health.js";
+import { Health, health_type } from "./health.js";
 import { make, make_shapes, shoot_stats, override_object, make_shoot, shallow_clone_array, clone_object, maketype_shape, multiply_object, maketype_behaviour } from "./make.js";
 import type { Player } from "./player.js";
 import { save } from "./save.js";
@@ -28,6 +28,10 @@ export class Thing {
   static things_rooms: { [room_key: string]: Thing[] } = {};
 
   static cumulative_id = 0;
+
+  static lookup(id: string) {
+    return Thing.things_lookup[id];
+  }
 
   static tick_things(dt: number) { // except player
     this.update_body_list();
@@ -71,6 +75,7 @@ export class Thing {
   options: map_shape_options_type = {};
 
   object: { [key: string]: any } = {}; // for any random things
+  remove_fn?: () => void;
 
   shapes: Shape[] = [];
   shoots: Shoot[] = [];
@@ -79,18 +84,21 @@ export class Thing {
   damage = 0;
   health?: Health;
   ability?: Health;
+  shield?: Health;
   parent: Thing = this;
 
   target: {
     position: vector3,
     angle: number,
     facing: vector,
+    angular_velocity: number,
     velocity: vector,
     vz: number,
   } = {
     position: vector3.create(),
     angle: 0,
     facing: vector.create(),
+    angular_velocity: 0,
     velocity: vector.create(),
     vz: 0,
   };
@@ -159,6 +167,13 @@ export class Thing {
   }
   set angle(angle) {
     this.target.angle = angle;
+  }
+
+  get angular_velocity() {
+    return (this.body) ? this.body.angularVelocity : this.target.angular_velocity;
+  }
+  set angular_velocity(angular_velocity) {
+    this.target.angular_velocity = angular_velocity;
   }
 
   get velocity(): vector {
@@ -268,12 +283,16 @@ export class Thing {
     if (this.options.damage != undefined) this.damage = this.options.damage;
     if (this.options.team != undefined) this.team = this.options.team;
     if (this.options.health != undefined) {
-      if (this.health == undefined) this.health = new Health(this);
+      if (this.health == undefined) this.health = new Health(this, "health");
       this.health.make(this.options.health);
     }
     if (this.options.ability != undefined) {
-      if (this.ability == undefined) this.ability = new Health(this);
+      if (this.ability == undefined) this.ability = new Health(this, "ability");
       this.ability.make(this.options.ability);
+    }
+    if (this.options.shield != undefined) {
+      if (this.shield == undefined) this.shield = new Health(this, "shield");
+      this.shield.make(this.options.shield);
     }
   }
 
@@ -381,6 +400,7 @@ export class Thing {
     (this.body as any).thing = this;
     if (add_body) Composite.add(world, this.body);
     Body.setVelocity(body, this.target.velocity);
+    Body.setAngularVelocity(body, this.target.angular_velocity);
   }
 
   die() {
@@ -402,6 +422,7 @@ export class Thing {
 
   remove() {
     if (this.is_removed) return;
+    this.remove_fn?.();
     this.remove_list();
     this.remove_body();
     this.remove_children();
@@ -523,6 +544,11 @@ export class Thing {
     } else {
       this.health?.tick();
       this.ability?.tick();
+      this.shield?.tick();
+    }
+    if (this.shield?.is_zero && this.options.repel_range) {
+      this.options.repel_range = math.max(this.options.repel_range / 1.1, 0);
+      if (this.options.repel_range < 1) delete this.options.repel_range;
     }
     if (this.options.zzz_sleeping) {
       // make zzz particles around 4 times a second
@@ -540,8 +566,8 @@ export class Thing {
       for (const b of Query.region(world.bodies, Bounds.create([vector.add(this.position, vector.create(-r, -r)), vector.add(this.position, vector.create(r, r))]))) {
         const dv = vector.sub(b.position, this.position);
         const other = ((b as any).thing as Thing);
-        if (vector.length2(dv) < (r + other.radius) ** 2) {
-          const pushforce = vector.normalise(dv, this.options.repel_force);
+        if (other.parent !== this && vector.length2(dv) < (r + other.radius) ** 2) {
+          const pushforce = vector.normalise(dv, this.options.repel_force * 100);
           other.push_by(pushforce);
         }
       };
@@ -567,8 +593,8 @@ export class Thing {
     }
   }
 
-  hit(_damage: number) {
-    // do nothing when hit
+  hit(_type: health_type, _damage: number) {
+    // do nothing when hit (for now)
   }
 
   update_angle(smoothness: number = 1) {
@@ -759,6 +785,11 @@ export class Thing {
   set_velocity(v: vector) {
     if (!this.body) return;
     Body.setVelocity(this.body, v);
+  }
+
+  set_angular_velocity(w: number) {
+    if (!this.body) return;
+    Body.setAngularVelocity(this.body, w);
   }
 
   reset_velocity() {

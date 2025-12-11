@@ -105,7 +105,6 @@ export class Particle {
   max_offset_length?: number;
 
   object: { [key: string]: any } = {};
-
   remove_fn?: () => void;
 
   constructor() {
@@ -138,9 +137,9 @@ export class Particle {
       this.acceleration = vector3.add_(this.acceleration, vector3.mult_(this.jerk, mult));
 
       this.angle += this.angular_velocity * mult;
-      if (this.angular_velocity) this.angle %= Math.PI * 2;
+      if (this.angular_velocity) this.angle %= math.two_pi;
       this.angular_velocity += this.angular_acceleration * mult;
-      if (this.angular_acceleration) this.angular_velocity %= Math.PI * 2;
+      if (this.angular_acceleration) this.angular_velocity %= math.two_pi;
 
       this.z += this.z_velocity;
       this.z_velocity += this.z_acceleration;

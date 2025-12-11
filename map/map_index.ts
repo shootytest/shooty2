@@ -26,7 +26,7 @@ const init_all = function() {
   requestAnimationFrame(tick_all);
 };
 
-const tick_all = function(timestamp_unused: number) {
+const tick_all = function(_timestamp_unused: number) {
 
   m_ui.tick();
   m_ui.draw();

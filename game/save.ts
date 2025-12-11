@@ -55,7 +55,7 @@ export interface player_stats {
 };
 
 export interface settings_save {
-  graphics: [ number, number, boolean, boolean ];
+  graphics: [ number, number, boolean, boolean, number ];
 };
 
 
@@ -116,8 +116,9 @@ export const save = {
     return save.save.shapey[id]?.n ?? -1;
   },
 
-  is_shapey_on: (id: string): boolean => {
-    return Boolean(save.save.shapey[id]?.on);
+  is_shapey_on: (id: string): number => {
+    const o = save.save.shapey[id];
+    return o?.on ? o.n : 0;
   },
 
   check_shapey: (id: string): boolean => {
@@ -153,7 +154,7 @@ export const save = {
     if (!save.save.shapey[id]) save.save.shapey[id] = { n: 0 };
     const o = save.save.shapey[id];
     o.v = vector.create(Math.floor(thing.position.x), Math.floor(thing.position.y));
-    o.a = +((thing.angle % (Math.PI * 2)).toFixed(3));
+    o.a = +((thing.angle % math.two_pi).toFixed(3));
     save.changed(true);
   },
 
@@ -167,7 +168,7 @@ export const save = {
       if (save.save.shapey[id]) {
         const o = save.save.shapey[id];
         o.v = vector.create(Math.floor(t.x), Math.floor(t.y));
-        o.a = +((t.angle % (Math.PI * 2)).toFixed(3));
+        o.a = +((t.angle % math.two_pi).toFixed(3));
         o.on = Boolean(t.object.inside);
       }
     }
@@ -256,6 +257,7 @@ export const save = {
         math.round_to(config.graphics.resolution_mult, 0.1),
         config.graphics.debug_display,
         config.graphics.fullscreen,
+        Math.round(config.graphics.particle_setting),
       ],
     };
     localStorage.setItem("settings", zipson.stringify(o));
@@ -268,10 +270,11 @@ export const save = {
       return;
     }
     const o = zipson.parse(raw) as settings_save;
-    config.graphics.fps = o.graphics[0];
+    config.graphics.fps = o.graphics[0] ?? 60;
     config.graphics.resolution_mult = o.graphics[1];
-    config.graphics.debug_display = o.graphics[2];
-    config.graphics.fullscreen = o.graphics[3];
+    config.graphics.debug_display = o.graphics[2] ?? false;
+    config.graphics.fullscreen = o.graphics[3] ?? false;
+    config.graphics.particle_setting = o.graphics[4] ?? 2;
   },
 
 };
