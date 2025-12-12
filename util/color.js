@@ -249,6 +249,12 @@ export const STYLES /*: { [key: string]: style_type }*/ = {
         fill: "#a6ff00",
         fill_opacity: 0.2,
     },
+    collect_streets: {
+        stroke: THEMES.streets.main,
+        stroke_opacity: 1,
+        fill: THEMES.streets.main,
+        fill_opacity: 0.3,
+    },
     // the one
     player: {
         stroke: color.white,

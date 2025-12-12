@@ -118,7 +118,7 @@ make.wall_streets_fake = { // wall street???
   make_parent: ["wall"],
   style: "wall",
   style_: {
-    opacity: 0.65,
+    opacity: 0.6,
   },
   hide_health: true,
   hide_health_until: 450,

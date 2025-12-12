@@ -1,4 +1,5 @@
 import { make_rooms } from "../make/rooms.js";
+import { make_shoot_mods } from "../make/shoots.js";
 import { Events, Mouse, MouseConstraint } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { canvas, canvas_, ctx, resize_canvas } from "../util/canvas.js";
@@ -6,8 +7,8 @@ import { color, color_mix, current_theme, STYLES } from "../util/color.js";
 import { config } from "../util/config.js";
 import { key, keys, mouse } from "../util/key.js";
 import { math } from "../util/math.js";
-import { vector } from "../util/vector.js";
-import { make_shapes, shallow_clone_array } from "./make.js";
+import { vector, vector3 } from "../util/vector.js";
+import { clone_object, make_shapes, shallow_clone_array } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
@@ -58,7 +59,7 @@ export const ui = {
         hovered: undefined,
         others: [],
         original_positions: [],
-        original_angle: 0,
+        original_angles: [],
         get selected_id() {
             return (ui.mouse.selected?.object.shapey_id ?? ui.mouse.hovered?.object.shapey_id);
         },
@@ -86,7 +87,7 @@ export const ui = {
                 ui.mouse.thing = t;
                 ui.mouse.others = [t];
                 ui.mouse.original_positions = [t.position];
-                ui.mouse.original_angle = t.angle;
+                ui.mouse.original_angles = [t.angle];
                 if (player.shapes_mode) {
                     if (!t.options.wall_filter) {
                         const old = ui.mouse.selected;
@@ -105,6 +106,7 @@ export const ui = {
                                 if (t.options.shapey && math.is_polygon_in_polygons(t.shapes[0].real_vertices(), [area])) {
                                     ui.mouse.others.push(t);
                                     ui.mouse.original_positions.push(t.position);
+                                    ui.mouse.original_angles.push(t.angle);
                                 }
                             }
                             continue;
@@ -904,6 +906,22 @@ export const ui = {
                 ctx.fill();
             },
         },
+        egg: {
+            key: "egg",
+            name: "egg",
+            fill: color.train,
+            multiple: 1,
+            draw: function (x, y, r) {
+                ctx.fillStyle = color.train;
+                ctx.beginPath();
+                ctx.donut(x, y, r * 0.6, r);
+                ctx.fill();
+                ctx.fillStyle = color.train + "88";
+                ctx.beginPath();
+                ctx.circle(x, y, r * 0.6);
+                ctx.fill();
+            },
+        },
     },
     shapey: {
         friendly: {
@@ -930,6 +948,15 @@ export const ui = {
                 });
             },
         },
+        triangle_speed: {
+            title: "speedy",
+            description: [
+                "fire a speedy shot every 6 bullets (+50% speed)",
+                "fire a speedy shot every 5 bullets (+60% speed)",
+                "fire a speedy shot every 4 bullets (+70% speed)",
+                "fire a speedy shot every 3 bullets (+80% speed)",
+            ],
+        },
         area_base: {
             title: "base",
             base: true,
@@ -937,6 +964,32 @@ export const ui = {
                 "move shapes into this area to enable them!\nshapes are only movable at checkpoints",
             ],
         },
+    },
+    shapey_on: function (id) {
+        const o = ui.shapey[id];
+        if (!o)
+            return;
+        o.on_fn?.();
+        const n = save.get_shapey(id);
+        const string = "shapey_" + id + "_" + n;
+        if (make_shoot_mods[string]) {
+            for (const s of player.shoots) {
+                s.add_mod_key(string);
+            }
+        }
+    },
+    shapey_off: function (id) {
+        const o = ui.shapey[id];
+        if (!o)
+            return;
+        o.off_fn?.();
+        const n = save.get_shapey(id);
+        const string = "shapey_" + id + "_" + n;
+        if (make_shoot_mods[string]) {
+            for (const s of player.shoots) {
+                s.remove_mod_key(string);
+            }
+        }
     },
     init_shapey() {
         for (const [k, o] of Object.entries(ui.shapey)) {
@@ -1130,6 +1183,22 @@ export const ui = {
                 this.list[this.list.length - 1].remove();
                 i++;
             }
+        },
+        jump_ready: function () {
+            const p = new Particle();
+            p.object.radius = player.radius + 1;
+            p.is_screen = false;
+            p.z = player.z;
+            p.style = clone_object(STYLES.player);
+            p.style.stroke_opacity = 0;
+            p.opacity = 0.9;
+            const time = 0.55 * config.seconds;
+            p.fade_time = time;
+            p.time = Thing.time + time;
+            p.tick_fn = () => {
+                const offset = player.position;
+                p.vertices = [offset, vector3.add(offset, vector3.create(++p.object.radius, 0, 0)), vector3.create(-123, -123, -123)];
+            };
         },
     },
     toggle_fullscreen: () => {

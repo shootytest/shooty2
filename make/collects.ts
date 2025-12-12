@@ -5,12 +5,11 @@ import { vector } from "../util/vector.js";
 
 export default function() {
 
-// @collectibles
-
 make.collect = {
   seethrough: true,
 };
 
+// @coins
 make.collect_coin = {
   make_parent: ["collect"],
   style: "collect_coin",
@@ -63,6 +62,30 @@ make_shapes.collect_coin_10 = [{
   radius: 8,
 }];
 
+// @eggs
+make.collect_egg = {
+  make_parent: ["collect"],
+  style: "train",
+  movable: false,
+};
+
+make.collect_egg_1 = {
+  make_parent: ["collect_egg"],
+  collectible: {
+    currency_name: "egg",
+    currency_amount: 1,
+  },
+};
+make_shapes.collect_egg_1 = [{
+  type: "circle",
+  radius: 24,
+  glowing: 0.1,
+}, {
+  type: "circle",
+  radius: 1,
+}];
+
+// @guns
 make.collect_gun = {
   make_parent: ["collect"],
   style: "collect_gun",
@@ -91,6 +114,46 @@ make_shapes.collect_gun_basic = [{
 }, {
   type: "line",
   v2: vector.createpolar_deg(0, 30),
+}];
+
+// @shapey
+make.collect_shapey = {
+  make_parent: ["collect"],
+  movable: false,
+};
+
+make.collect_shapey_triangle_speed = {
+  make_parent: ["collect_shapey"],
+  collectible: {
+    shapey: "triangle_speed",
+  },
+  style: "collect_streets",
+};
+make_shapes.collect_shapey_triangle_speed = [{
+  type: "polygon",
+  sides: 3,
+  radius: 35,
+}, {
+  type: "polygon",
+  sides: 3,
+  radius: 10,
+  offset: vector.create(12, 0),
+  style_: { width: 0.5, fill_opacity: 0, },
+}, {
+  type: "line",
+  v1: vector.create(3, 0),
+  v2: vector.create(-12, 0),
+  style_: { width: 0.5, },
+}, {
+  type: "line",
+  v1: vector.create(3, 4),
+  v2: vector.create(-6, 4),
+  style_: { width: 0.5, },
+}, {
+  type: "line",
+  v1: vector.create(3, -4),
+  v2: vector.create(-9, -4),
+  style_: { width: 0.5, },
 }];
 
 };

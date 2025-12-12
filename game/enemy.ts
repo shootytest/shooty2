@@ -28,7 +28,7 @@ export class Enemy extends Thing {
     this.is_enemy = true;
   }
 
-  make_enemy(key: string, position: vector3, room_id: string, id?: string) {
+  make_enemy(key: string, position: vector3, angle: number, room_id: string, id?: string) {
     if (make[key] == undefined) return console.error(`[enemy/make_enemy] no such enemy: '${key}'`);
     this.make(key);
     this.create_room(room_id);
@@ -42,7 +42,7 @@ export class Enemy extends Thing {
     }
     this.position = position;
     this.original_position = vector3.clone(position);
-    if (!this.options.angle) this.angle = math.randangle();
+    if (!this.options.angle) this.angle = angle;
     if (!this.options.decoration) this.create_body(this.create_body_options(filters.thing(this.team)));
     if (this.body) this.body.label = id;
     if (this.options.angle) this.rotate_to(this.options.angle);
@@ -106,6 +106,7 @@ export class Enemy extends Thing {
 
 export interface enemy_spawn {
   type: string;
+  angle?: number;
   delay?: number;
   repeat?: number;
   repeat_delay?: number;
@@ -115,6 +116,7 @@ export interface enemy_delay {
   type: string;
   time: number;
   position: vector3;
+  angle: number;
   particle?: Particle;
 };
 
@@ -196,6 +198,7 @@ export class Spawner {
     } else if (o.options.spawn_enemy) {
       this.spawn = {
         type: o.options.spawn_enemy ?? "enemy",
+        angle: (o.options.spawn_angle != undefined) ? vector.deg_to_rad(o.options.spawn_angle) : undefined,
         delay: o.options.spawn_delay,
         repeat: o.options.spawn_repeat,
         repeat_delay: o.options.spawn_repeat_delay,
@@ -233,18 +236,20 @@ export class Spawner {
     }
     this.delays = this.delays.filter((d) => {
       if (Thing.time < d.time) return true;
-      this.spawn_enemy(d.type, d.position);
+      this.spawn_enemy(d.type, d.position, d.angle);
       return false;
     });
   }
 
   do_spawn(spawn: enemy_spawn) {
-    for (let i = 0; i < (spawn.repeat ?? 1); i++) {
+    const repeat = spawn.repeat ?? 1;
+    for (let i = 0; i < repeat; i++) {
       const seconds = ((spawn.delay ?? 0) + i * (spawn.repeat_delay ?? 0));
       const delay: enemy_delay = {
         type: spawn.type,
         time: Thing.time + seconds * config.seconds,
         position: vector3.create2(this.random_position(), this.z),
+        angle: spawn.angle ?? math.randangle(),
       };
       if (seconds > 0) {
         const p = Particle.make_icon("spawn",
@@ -264,7 +269,7 @@ export class Spawner {
       }
       this.delays.push(delay);
     }
-    return spawn.repeat ?? 1;
+    return repeat;
   }
 
   do_waves(wave: maketype_wave_round) {
@@ -284,9 +289,9 @@ export class Spawner {
     this.total_enemies = total;
   }
 
-  spawn_enemy(type: string, position?: vector3) {
+  spawn_enemy(type: string, position?: vector3, angle?: number) {
     const e = new Enemy(this);
-    e.make_enemy(type, position ?? vector3.create2(this.random_position(), this.z), this.room_id);
+    e.make_enemy(type, position ?? vector3.create2(this.random_position(), this.z), angle ?? math.randangle(), this.room_id);
     if (this.options?.is_map) e.options.is_map = true;
     e.wave_number = this.wave_progress + 1;
     e.create_room(this.room_id);

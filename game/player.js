@@ -18,6 +18,8 @@ export class Player extends Thing {
     fov_mult = 1;
     autosave_time = -1;
     last_floor_time = -1;
+    jump_time = -9999999;
+    jump_land_time = -9999999;
     die_time = 0;
     old_position = vector.create();
     checkpoint = vector3.create();
@@ -74,6 +76,8 @@ export class Player extends Thing {
             this.camera_target = this.position;
         }
         this.camera_target_target = this.position;
+        const jump_unlocked = config.game.debug_mode || save.check_switch("jump");
+        const dash_unlocked = config.game.debug_mode || save.check_switch("dash");
         const controls = {
             up: keys["ArrowUp"] === true || (keys["KeyW"] === true),
             down: keys["ArrowDown"] === true || (keys["KeyS"] === true),
@@ -81,8 +85,8 @@ export class Player extends Thing {
             right: keys["ArrowRight"] === true || (keys["KeyD"] === true),
             top: keys["KeyQ"] === true,
             bottom: keys["KeyE"] === true,
-            jump: (config.game.debug_mode || save.check_switch("jump")) && keys["Space"] === true,
-            dash: (config.game.debug_mode || save.check_switch("dash")) && (keys["ShiftLeft"] === true || keys["ShiftRight"] === true),
+            jump: jump_unlocked && keys["Space"] === true,
+            dash: dash_unlocked && (keys["ShiftLeft"] === true || keys["ShiftRight"] === true),
             shoot: keys["Mouse"] === true || keys["KeyJ"] === true,
             rshoot: keys["MouseRight"] === true || keys["KeyK"] === true,
             facingx: Math.floor(camera.mouse_v.x),
@@ -133,11 +137,14 @@ export class Player extends Thing {
                     }
                 }
             }
+            // jumping
             const grounded = math.equal(z, floor_z);
             if (grounded) {
                 this.target.vz = 0;
                 if (on_floor) {
                     // grounded
+                    if (Thing.time - this.last_floor_time > config.physics.coyote_time && Thing.time - this.jump_time < config.seconds)
+                        this.jump_land_time = Thing.time;
                     this.last_floor_time = Thing.time;
                     if (move_z > 0)
                         this.jump(); // only jump while grounded
@@ -147,9 +154,16 @@ export class Player extends Thing {
                     z = this.fall_back();
                 }
             }
-            if (move_z > 0 && Thing.time - this.last_floor_time < config.physics.coyote_time) {
-                this.jump(); // handle coyote time too
+            else if (move_z > 0 && Thing.time - this.last_floor_time < config.physics.coyote_time) {
+                this.jump(); // handle coyote time too and dynamic jump height
             }
+            if (jump_unlocked) {
+                const can_jump = this.can_jump;
+                if (!this.could_jump && can_jump)
+                    ui.particles.jump_ready();
+                this.could_jump = can_jump;
+            }
+            // falling
             if (z < floor_z - 1.95)
                 z = this.fall_back();
             else if (!this.map_mode && !this.inventory_mode && Shape.floor_shapes.length) { // todo bug: when far away floor shapes is also 0...
@@ -225,9 +239,10 @@ export class Player extends Thing {
                     if (ui.mouse.others.length >= 2) { // drag the shapes with it
                         const tv = ui.mouse.original_positions[0];
                         const dv = vector.sub(t.position, tv);
-                        const da = t.angle - ui.mouse.original_angle;
+                        const da = t.angle - ui.mouse.original_angles[0];
                         for (let i = 1; i < ui.mouse.others.length; i++) {
-                            ui.mouse.others[i].teleport_to(vector.add(dv, vector.rotate(tv, ui.mouse.original_positions[i], da)));
+                            ui.mouse.others[i].teleport_to(vector.add(dv, vector.rotate_about(tv, ui.mouse.original_positions[i], da)));
+                            ui.mouse.others[i].rotate_to(ui.mouse.original_angles[i] + da);
                         }
                     }
                 }
@@ -246,12 +261,20 @@ export class Player extends Thing {
                     const was_inside = Boolean(save.is_shapey_on(id));
                     const inside = math.is_polygon_in_polygons(t.shapes[0].real_vertices(), union);
                     if (inside && !was_inside)
-                        ui.shapey[id]?.on_fn?.();
+                        ui.shapey_on(id);
                     else if (!inside && was_inside)
-                        ui.shapey[id]?.off_fn?.();
+                        ui.shapey_off(id);
                     t.object.inside = inside;
                     t.shapes[0].options.glowing = inside ? 0.5 : 0;
                 }
+                // todo remove debug draw
+                // ctx.fillStyle = "white";
+                // ctx.beginPath();
+                // for (const u of union) {
+                //   const us = u.map((v) => { return camera.world2screen(v) });
+                //   ctx.lines_v(us);
+                // }
+                // ctx.fill();
                 save.save_all_shapey();
             }
         }
@@ -261,9 +284,16 @@ export class Player extends Thing {
             return 0;
         return super.shoot(index);
     }
+    could_jump = true;
+    get can_jump() {
+        return !this.enemy_can_see || (Thing.time - this.jump_land_time) >= config.physics.jump_reload_time;
+    }
     jump(power = 1) {
+        if (!this.can_jump)
+            return;
         this.target.vz = power * config.physics.player_jump;
         this.die_time -= config.seconds;
+        this.jump_time = Thing.time;
     }
     die() {
         this.stats.deaths++;
@@ -396,7 +426,7 @@ export class Player extends Thing {
         // handle shapey too (out of place but ok)
         for (const [id, n] of Object.entries(save.check_all_shapey())) {
             if (!ui.shapey[id]?.base && n > 0 && save.is_shapey_on(id) > 0)
-                ui.shapey[id]?.on_fn?.();
+                ui.shapey_on(id);
         }
     }
     add_xp(xp) {
@@ -424,6 +454,10 @@ export class Player extends Thing {
         if (o.currency_name) {
             save.add_currency(o.currency_name, o.currency_amount);
             ui.collect.add(o.currency_name, o.currency_amount);
+        }
+        if (o.shapey) {
+            save.add_shapey(o.shapey);
+            // todo shapey collect ui
         }
     }
     set_checkpoint_here() {
@@ -658,7 +692,12 @@ export class Player extends Thing {
         for (const id in all) {
             const o = save.save.shapey[id] ?? { n: 1 };
             const t = new Thing();
-            const k = `shapey_${id}_${o.n}`;
+            let n = o.n + 1;
+            let k = "among us!";
+            while (make[k] == undefined && n > 0) {
+                n--;
+                k = `shapey_${id}_${n}`;
+            }
             t.object.shapey_id = id;
             t.make(k);
             t.position = o.v ?? (t.options.shapey ? spawn : centre);

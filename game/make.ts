@@ -125,6 +125,7 @@ export interface maketype_collect {
   allow_bullet_collect?: boolean;
   restore_health?: number;
   restore_all_health?: boolean;
+  shapey?: string;
 };
 
 export interface maketype_shape {
@@ -175,6 +176,7 @@ export interface maketype_shape_clip {
 export interface shoot_stats {
   parent?: string[];
   mult?: string[];
+  mods?: bullet_mod[];
   make?: string;
   size?: number;
   spread_size?: number;
@@ -218,6 +220,20 @@ export interface bullet_death_type {
   repeat?: number;
   angle_increment?: number;
   offset_increment?: vector;
+};
+
+export interface bullet_mod {
+  stats: shoot_stats;
+  id?: string;
+  period?: number;
+  chance?: number;
+  chance_increment?: number;
+  calc?: {
+    number: number;
+    stats: shoot_stats;
+    period?: number;
+    chance?: number;
+  };
 };
 
 

@@ -225,7 +225,7 @@ export const m_ui = {
 
     m_ui.click.new_fns = [() => {}, () => {}, () => {}];
 
-    const MOVE_SPEED = 10;
+    const MOVE_SPEED = 20;
     if (!key.shift() && !keys.ShiftLeft && !keys.ShiftRight) {
       let dx = 0;
       let dy = 0;
@@ -585,6 +585,7 @@ export const m_ui = {
     ctx.stroke();
     ctx.fillStyle = color.black;
     ctx.set_font_condensed(10);
+    ctx.textAlign = "center";
     ctx.text(math.round_dp(camera.z / camera.scale, 1) + "", x, y);
     hovering = ctx.point_in_path_v(mouse.position);
     if (hovering) {
@@ -990,6 +991,14 @@ export const m_ui = {
         show: "is_spawner",
         name: "enemy name",
         type: "text",
+      },
+      spawn_angle: {
+        show: "is_spawner",
+        name: "enemy angle",
+        type: "number",
+        min: 0,
+        max: 360,
+        step: 1,
       },
       spawn_repeat: {
         show: "is_spawner",

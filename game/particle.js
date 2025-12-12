@@ -78,7 +78,7 @@ export class Particle {
     z = 0;
     z_velocity = 0;
     z_acceleration = 0;
-    z_bounds = [0, 1];
+    z_bounds = [-1000000, 1000000];
     angle = 0;
     angular_velocity = 0;
     angular_acceleration = 0;
@@ -94,6 +94,7 @@ export class Particle {
     fade_time = -1;
     max_offset_length;
     object = {};
+    tick_fn;
     remove_fn;
     constructor() {
         Particle.particles.push(this);
@@ -110,6 +111,7 @@ export class Particle {
         this.offset = vector3.add_(this.offset, vector3.create2(c));
     }
     tick(dt) {
+        this.tick_fn?.();
         if (this.target != undefined) {
             const offset = vector.lerp(this.offset, this.target, this.smoothness ?? 0.1);
             this.offset.x = offset.x;
@@ -151,19 +153,19 @@ export class Particle {
             this.remove();
             return;
         }
-        else if (this.fade_time > 0) {
-            this.opacity = (this.time - Thing.time) / this.fade_time;
-        }
         if (this.object.theme && ui.particles.theme !== this.object.theme)
             this.remove();
     }
     draw() {
         const style = this.style;
+        let opacity_mult = (style.opacity ?? 1) * this.opacity;
+        if (this.fade_time > 0)
+            opacity_mult = math.bound(opacity_mult * (this.time - Thing.time) / this.fade_time, 0, 1);
         if (this.icon) {
             this.compute_screen();
             const [c, r] = this.screen_vertices;
             ctx.fillStyle = color2hex(style.fill ?? color.error);
-            ctx.globalAlpha = (style.opacity ?? 1) * (style.fill_opacity ?? 1) * this.opacity;
+            ctx.globalAlpha = opacity_mult * (style.fill_opacity ?? 1);
             ctx.svg(this.icon, Math.round(c.x + this.offset.x), Math.round(c.y + this.offset.y), r.x);
         }
         else {
@@ -171,7 +173,6 @@ export class Particle {
             this.draw_path();
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
-            const opacity_mult = (style.opacity ?? 1) * this.opacity;
             if (style.fill) {
                 ctx.fillStyle = color2hex(style.fill ?? color.error);
                 ctx.globalAlpha = opacity_mult * (style.fill_opacity ?? 1);
@@ -202,7 +203,7 @@ export class Particle {
         if (this.is_screen) {
             this.screen_vertices = [];
             for (const vertex of this.vertices) {
-                this.screen_vertices.push(vector.add(vector.rotate(vector.create(), vertex, this.angle), this.offset));
+                this.screen_vertices.push(vector.add(vector.rotate(vertex, this.angle), this.offset));
             }
         }
         else {

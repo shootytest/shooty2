@@ -269,7 +269,7 @@ export class Shape {
       result.push(vs);
     }
     if (Shape.draw_shapes.length > 0) Shape.see_z_range = [min_z, max_z];
-    return result;
+    return result; // stored in see_vertices
   };
 
   static calc_other_vertices() {
@@ -283,7 +283,7 @@ export class Shape {
       if (!result[translucent]) result[translucent] = [];
       result[translucent]?.push(vs);
     }
-    return result;
+    return result; // stored in see_other_vertices
   };
 
   id: number = ++Shape.cumulative_id;
@@ -381,7 +381,7 @@ export class Shape {
         vertices = [v1, vector3.create(v1.x + (v2.x - v1.x) * this.scale.x, v1.y + (v2.y - v1.y) * this.scale.y)];
       }
     }
-    vector3.add_to_list(vertices, this.offset);
+    vertices = vector3.add_list(vertices, this.offset);
     // if (this.closed_loop && vertices.length >= 3) vertices.push(vertices[0]);
     const aabb = vector.make_aabb(vertices),
       aabb3 = vector3.make_aabb(vertices),
@@ -416,7 +416,7 @@ export class Shape {
     // rotate by thing angle
     if (this.thing.angle) {
       for (const v of this.computed.vertices) {
-        const rotated = vector.rotate(vector.create(), v, this.thing.angle);
+        const rotated = vector.rotate(v, this.thing.angle);
         v.x = rotated.x;
         v.y = rotated.y;
       }
@@ -448,7 +448,7 @@ export class Shape {
     if (this.activate_scale) vector3.scale_to_list(vs, this.scale);
     if (this.thing.angle) {
       for (const v of vs) {
-        const rotated = vector.rotate(vector.create(), v, math.round_to(this.thing.angle, 0.001));
+        const rotated = vector.rotate(v, math.round_to(this.thing.angle, 0.001));
         v.x = rotated.x;
         v.y = rotated.y;
       }
@@ -782,7 +782,7 @@ export class Polygon extends Shape {
       if (this.computed == undefined) return;
       let c = vector3.clone(this.offset);
       let r = vector3.create(this.radius, 0, 0);
-      const rotated = vector.rotate(vector.create(), c, this.thing.angle);
+      const rotated = vector.rotate(c, this.thing.angle);
       c.x = rotated.x;
       c.y = rotated.y;
       c = vector3.add(c, this.thing.position);

@@ -1,5 +1,42 @@
 import { make_shoot } from "../game/make.js";
 import { vector } from "../util/vector.js";
+export const make_shoot_mods = {
+    shapey_triangle_speed_1: {
+        stats: {
+            make: "bullet_triangle",
+            speed: 1.5,
+            time: 1 / 1.25,
+        },
+        period: 6,
+    },
+    shapey_triangle_speed_2: {
+        stats: {
+            make: "bullet_triangle",
+            speed: 1.6,
+            time: 1 / 1.3,
+        },
+        period: 5,
+    },
+    shapey_triangle_speed_3: {
+        stats: {
+            make: "bullet_triangle",
+            speed: 1.7,
+            time: 1 / 1.35,
+        },
+        period: 4,
+    },
+    shapey_triangle_speed_4: {
+        stats: {
+            make: "bullet_triangle",
+            speed: 1.8,
+            time: 1 / 1.4,
+        },
+        period: 3,
+    },
+};
+for (const [k, v] of Object.entries(make_shoot_mods)) {
+    v.id = k;
+}
 export default function () {
     make_shoot.player = {
         make: "bullet",

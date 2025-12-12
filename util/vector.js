@@ -76,7 +76,7 @@ export const vector = {
     rotate_list: (vs, angle) => {
         const result = [];
         for (const v of vs) {
-            result.push(vector.rotate(vector.create(), v, angle));
+            result.push(vector.rotate(v, angle));
         }
         return result;
     },
@@ -128,7 +128,12 @@ export const vector = {
     rad_to_vector: (radians) => {
         return vector.create(Math.cos(radians), Math.sin(radians));
     },
-    rotate: (center, v, angle) => {
+    rotate: (v, angle) => {
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        return vector.create((cos * v.x) - (sin * v.y), (cos * v.y) + (sin * v.x));
+    },
+    rotate_about: (center, v, angle) => {
         const cos = Math.cos(angle);
         const sin = Math.sin(angle);
         const nx = (cos * (v.x - center.x)) - (sin * (v.y - center.y)) + center.x;

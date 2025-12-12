@@ -16,6 +16,7 @@ export const config = {
         player_jump: 0.02,
         player_gravity: 0.001,
         coyote_time: 0.111 * SECONDS,
+        jump_reload_time: 2.5 * SECONDS,
         train_speed: 10,
         force_factor: 0.0005,
         recoil_factor: 10,

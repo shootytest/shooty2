@@ -43,7 +43,7 @@ export default function () {
     };
     make_shapes.inventory_coin_100 = [{
             type: "circle",
-            radius: 14,
+            radius: 13,
             style_: {
                 width: 0.8,
                 fill_opacity: 0.3,
@@ -60,6 +60,34 @@ export default function () {
                 width: 1,
                 fill_opacity: 0.4,
             },
+        }];
+    make.inventory_egg_1 = {
+        make_parent: ["inventory"],
+        style: "train",
+        style_: {
+            width: 0.8,
+        },
+    };
+    make_shapes.inventory_egg_1 = [{
+            type: "circle",
+            radius: 15,
+        }, {
+            type: "circle",
+            radius: 1,
+        }];
+    make.inventory_egg_10 = {
+        make_parent: ["inventory"],
+        style: "train",
+        style_: {
+            width: 1.2,
+        },
+    };
+    make_shapes.inventory_egg_10 = [{
+            type: "circle",
+            radius: 28,
+        }, {
+            type: "circle",
+            radius: 1,
         }];
     // @shapey
     make.shapey = {
@@ -127,6 +155,36 @@ export default function () {
             style_: {
                 width: 0.5,
             },
+        }];
+    make.shapey_triangle_speed_1 = {
+        make_parent: ["shapey"],
+        style: "wall_filled",
+    };
+    make_shapes.shapey_triangle_speed_1 = [{
+            type: "polygon",
+            sides: 3,
+            radius: 35,
+        }, {
+            type: "polygon",
+            sides: 3,
+            radius: 10,
+            offset: vector.create(12, 0),
+            style_: { width: 0.5, fill_opacity: 0, },
+        }, {
+            type: "line",
+            v1: vector.create(3, 0),
+            v2: vector.create(-12, 0),
+            style_: { width: 0.5, },
+        }, {
+            type: "line",
+            v1: vector.create(3, 4),
+            v2: vector.create(-6, 4),
+            style_: { width: 0.5, },
+        }, {
+            type: "line",
+            v1: vector.create(3, -4),
+            v2: vector.create(-9, -4),
+            style_: { width: 0.5, },
         }];
 }
 ;

@@ -453,18 +453,36 @@ export const math = {
         }
         return vector.length2(vector.sub(polygon[0], centre)) < radius2; // final check: if any point on the polygon lies in the circle
     },
-    line_segment_intersection: (line1, line2) => {
+    line_segment_intersection_old: (line1, line2) => {
         const [p, p_] = line1, [q, q_] = line2, r = vector.sub(p_, p), s = vector.sub(q_, q), c = vector.cross(r, s);
         if (math.equal(c, 0))
             return false;
         const d = vector.sub(q, p), t = vector.cross(d, s), u = vector.cross(d, r), zero = -math.epsilon, one = c + math.epsilon;
         return (t >= zero && t <= one && u >= zero && u <= one);
     },
+    line_segment_intersection: (line1, line2) => {
+        const [p, p_] = line1, [q, q_] = line2;
+        const s10_x = p_.x - p.x, s10_y = p_.y - p.y, s32_x = q_.x - q.x, s32_y = q_.y - q.y;
+        const denom = s10_x * s32_y - s32_x * s10_y;
+        if (denom == 0)
+            return false;
+        const s02_x = p.x - q.x, s02_y = p.y - q.y;
+        const s_numer = s10_x * s02_y - s10_y * s02_x;
+        if (s_numer < 0 == denom > 0)
+            return false;
+        const t_numer = s32_x * s02_y - s32_y * s02_x;
+        if (t_numer < 0 == denom > 0)
+            return false;
+        if (s_numer > denom == denom > 0 || t_numer > denom == denom > 0)
+            return false;
+        return true;
+    },
     is_line_intersecting_polygons: (v1, v2, polygons) => {
         for (const polygon of polygons) {
-            for (let i = 0; i < polygon.length - 1; i++) {
+            const l = polygon.length;
+            for (let i = 0; i < l - 1; i++) {
                 if (math.line_segment_intersection([v1, v2], [polygon[i], polygon[i + 1]]))
-                    return true;
+                    return [polygon, i];
             }
         }
         return false;

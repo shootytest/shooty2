@@ -643,9 +643,9 @@ export class Thing {
     // this.do_move(this.is_seeing_player ? (this.options.move_mode ?? "none") : (this.options.move_mode_idle ?? "none"));
   }
 
-  can_see_player() {
+  can_see_player(): vector3 | false {
     const player = Thing.things_lookup["player"] as Player;
-    if (this.options.enemy_detect_range === 0 || vector.length2(vector.sub(this.position, player.position)) > (this.options.enemy_detect_range ?? 1000) ** 2) {
+    if (this.options.enemy_detect_range === 0 || vector.length2(vector.sub(this.position, player.position)) > (this.options.enemy_detect_range ?? 500) ** 2) {
       this.is_seeing_player = false;
       return false;
     }
@@ -749,7 +749,7 @@ export class Thing {
     } else if (move_mode === "direct") {
       this.push_to(this.target.facing, (b.move_speed ?? 1));
     } else if (move_mode === "spiral") {
-      const v = vector.rotate(vector.create(), vector.sub(this.position, this.player_position), vector.deg_to_rad(80));
+      const v = vector.rotate(vector.sub(this.position, this.player_position), vector.deg_to_rad(80));
       this.push_to(vector.add(this.target.facing, vector.mult(v, 0.5)), (b.move_speed ?? 1));
     } else if (move_mode === "wander") {
       if (this.behaviour.wander_reached) {

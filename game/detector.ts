@@ -259,6 +259,7 @@ export const detector = {
     }
     // player/bullets and switches
     if (Math.floor(a.team) === 1 && b.options.switch) {
+      if (b.options.checkpoint && !a.is_player) return; // no shooting to activate checkpoints!
       const switch_id = (b as Enemy).spawner.id;
       if (!save.check_switch(switch_id)) {
         save.set_switch(switch_id);
@@ -750,6 +751,9 @@ export const detector = {
     },
     ["streets room 2 door 3"]: (door) => {
       switch_door(door, "streets room 2 checkpoint", "streets room 2 door 3");
+    },
+    ["streets room 2 door 4"]: (door) => {
+      switch_door(door, "streets room 2 switch", "streets room 2 door 4");
     },
     ["streets room 3 door 1"]: (door) => {
       switch_door(door, Thing.lookup("streets room 3 turret 1 button|0")?.object.dead, "streets room 3 door 1");

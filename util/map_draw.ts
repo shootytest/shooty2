@@ -236,8 +236,8 @@ export const map_draw = {
     const r = (o.radius ?? 0) * mult;
     if (o.style) style = clone_object(STYLES_[o.style ?? "error"] ?? style);
     if (o.style_) override_object(style, o.style_);
-    const angle = options.angle ?? 0;
-    if (o.offset) centre = vector3.create2(vector.add(centre, vector.mult(o.offset, mult)), centre.z);
+    const angle = (options.angle ?? 0) + vector.deg_to_rad(shape.options.spawn_angle ?? 0);
+    if (o.offset) centre = vector3.create2(vector.add(centre, vector.mult(vector.rotate(o.offset, angle), mult)), centre.z);
     ctx.beginPath();
     if (o.type === "circle") {
       ctx.circle_v(centre, r);
@@ -252,8 +252,8 @@ export const map_draw = {
         ctx.lineTo(centre.x + r * Math.cos(a), centre.y + r * Math.sin(a)); // funny function call
       }
     } else if (o.type === "line") {
-      ctx.moveTo_v(vector.add(centre, vector.rotate(vector.create(), vector.mult(o.v1 ?? vector.create(), mult), angle)));
-      ctx.lineTo_v(vector.add(centre, vector.rotate(vector.create(), vector.mult(o.v2 ?? vector.create(), mult), angle)));
+      ctx.moveTo_v(vector.add(centre, vector.rotate(vector.mult(o.v1 ?? vector.create(), mult), angle)));
+      ctx.lineTo_v(vector.add(centre, vector.rotate(vector.mult(o.v2 ?? vector.create(), mult), angle)));
     } else if (o.type === "polyline") {
       const vs = vector.mult_list(o.vs ?? [], mult);
       vector.add_to_list(vs, centre);

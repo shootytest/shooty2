@@ -1,10 +1,11 @@
+import { make_shoot_mods } from "../make/shoots.js";
 import { Vector } from "../matter.js";
 import { STYLES, STYLES_ } from "../util/color.js";
 import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector } from "../util/vector.js";
 import { filters } from "./detector.js";
-import { clone_object, override_object } from "./make.js";
+import { clone_object, multiply_and_override_object, override_object, shallow_clone_array } from "./make.js";
 import { Shape } from "./shape.js";
 import { Bullet, Thing } from "./thing.js";
 export class Shoot {
@@ -26,6 +27,7 @@ export class Shoot {
         if (this.shape)
             this.shape.activate_scale = true;
         this.stats = stats;
+        this.init_mods();
         if (thing.is_player || (thing.is_bullet && thing.bullet_shoot?.is_player))
             this.is_player = true;
     }
@@ -34,11 +36,50 @@ export class Shoot {
             return 1;
         return math.bound((this.time / (this.stats.reload ?? 1) - (this.stats.delay ?? 0) + 1) % 1, 0, 1);
     }
+    init_mods(exclude_objects = []) {
+        if (this.stats.mods)
+            for (const m of shallow_clone_array(this.stats.mods)) {
+                if (exclude_objects.includes(m))
+                    continue;
+                const modded_stats = clone_object(this.stats);
+                multiply_and_override_object(modded_stats, m.stats);
+                m.calc = {
+                    number: 0,
+                    stats: modded_stats,
+                    period: m.period,
+                    chance: m.chance,
+                };
+            }
+    }
+    add_mod(mod) {
+        if (!this.stats.mods)
+            this.stats.mods = [];
+        let old_mods = shallow_clone_array(this.stats.mods ?? []);
+        this.stats.mods.push(mod);
+        this.init_mods(old_mods);
+    }
+    add_mod_key(key) {
+        if (!make_shoot_mods[key])
+            return;
+        this.add_mod(make_shoot_mods[key]);
+    }
+    remove_mod_key(id) {
+        if (!this.stats.mods)
+            return;
+        for (const m of shallow_clone_array(this.stats.mods)) {
+            if (m.id === id)
+                this.stats.mods.remove(m);
+        }
+    }
     set_stats(new_stats) {
+        let old_mods = shallow_clone_array(this.stats.mods ?? []);
         override_object(this.stats, new_stats);
-        // for (const [k, v] of Object.entries(new_stats)) {
-        //   (this.stats as any)[k] = v;
-        // }
+        this.init_mods(old_mods);
+    }
+    mult_stats(new_stats) {
+        let old_mods = shallow_clone_array(this.stats.mods ?? []);
+        multiply_and_override_object(this.stats, new_stats);
+        this.init_mods(old_mods);
     }
     tick(dt) {
         if (this.time < (this.stats.reload ?? 0)) {
@@ -65,7 +106,27 @@ export class Shoot {
     }
     // todo make this function faster? perhaps?
     shoot_bullet() {
-        const S = this.stats;
+        // handle mods first
+        let the_stats = this.stats;
+        if (the_stats.mods)
+            for (const m of shallow_clone_array(the_stats.mods)) {
+                const o = m.calc;
+                if (!o)
+                    continue;
+                o.number++;
+                if (o.number >= (o.period ?? 1)) {
+                    if (o.chance != undefined && math.rand() > o.chance) {
+                        o.chance += m.chance_increment ?? 0;
+                        if (o.chance < 0)
+                            o.chance = m.chance;
+                        continue;
+                    }
+                    the_stats = o.stats;
+                    o.number = 0;
+                    o.chance = m.chance;
+                }
+            }
+        const S = the_stats;
         const position = vector.add(this.thing.position, Vector.rotate(vector.create((this.offset.x ?? 0) + (this.stats.offset?.x ?? 0), (this.offset.y ?? 0) + (this.stats.offset?.y ?? 0)), this.thing.angle));
         const bullet = new Bullet();
         bullet.position = position;
