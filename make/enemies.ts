@@ -296,8 +296,7 @@ make.enemy_tutorial_down = {
       shoot_mode: "normal",
     }
   },
-  angle: 110,
-  enemy_detect_range: 300,
+  enemy_detect_range: 350,
 };
 make_shapes.enemy_tutorial_down = [{
   type: "polygon",
@@ -581,6 +580,39 @@ make_shapes.enemy_streets_turret_1 = [{
   v1: vector.createpolar_deg(0, -24),
   v2: vector.createpolar_deg(0, 48),
   shoot: "enemy_streets_turret_1",
+}];
+
+make.enemy_streets_turret_spam = {
+  make_parent: ["enemy_streets"],
+  movable: false,
+  behaviour: {
+    normal: {
+      shoot_mode: "normal",
+    },
+    idle: {
+      shoot_mode: "normal",
+    },
+  },
+  enemy_detect_range: 400,
+  health: {
+    capacity: 700,
+  },
+  repel_force: 1,
+  repel_range: 50,
+  death: [
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.6, spread_angle: -1 }, repeat: 6 },
+  ],
+  xp: 100,
+};
+make_shapes.enemy_streets_turret_spam = [{
+  type: "polygon",
+  sides: 3,
+  radius: 36,
+}, {
+  type: "line",
+  v1: vector.createpolar_deg(0, -18),
+  v2: vector.createpolar_deg(0, 36),
+  shoot: "enemy_streets_turret_spam",
 }];
 
 // scattered cameras in streets

@@ -52,7 +52,7 @@ const tick_all = (timestamp) => {
         time = now;
     let real_dt = math.bound(now - time, 0, config.seconds * 1);
     const dt = real_dt * engine.timing.timeScale;
-    if (config.graphics.fps < 60) {
+    if (config.graphics.fps < 60) { // todo why does this block not work nicely now
         const interval = config.seconds / config.graphics.fps;
         if (real_dt < interval) {
             requestAnimationFrame(tick_all);

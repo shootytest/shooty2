@@ -5,7 +5,7 @@ export default function () {
         movable: true,
         seethrough: true,
     };
-    make.bullet_homing = {
+    make.bullet_homing_5 = {
         make_parent: ["bullet"],
         behaviour: {
             normal: {

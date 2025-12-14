@@ -96,8 +96,8 @@ export class Player extends Thing {
       down: keys["ArrowDown"] === true || (keys["KeyS"] === true),
       left: keys["ArrowLeft"] === true || (keys["KeyA"] === true),
       right: keys["ArrowRight"] === true || (keys["KeyD"] === true),
-      top: keys["KeyQ"] === true,
-      bottom: keys["KeyE"] === true,
+      top: keys["KeyZ"] === true,
+      bottom: keys["KeyX"] === true,
       jump: jump_unlocked && keys["Space"] === true,
       dash: dash_unlocked && (keys["ShiftLeft"] === true || keys["ShiftRight"] === true),
       shoot: keys["Mouse"] === true || keys["KeyJ"] === true,
@@ -163,6 +163,7 @@ export class Player extends Thing {
       } else if (move_z > 0 && Thing.time - this.last_floor_time < config.physics.coyote_time) {
         this.jump(); // handle coyote time too and dynamic jump height
       }
+      // jump particle
       if (jump_unlocked) {
         const can_jump = this.can_jump;
         if (!this.could_jump && can_jump) ui.particles.jump_ready();
@@ -170,7 +171,7 @@ export class Player extends Thing {
       }
       // falling
       if (z < floor_z - 1.95) z = this.fall_back();
-      else if (!this.map_mode && !this.inventory_mode && Shape.floor_shapes.length) { // todo bug: when far away floor shapes is also 0...
+      else if (!this.map_mode && !this.inventory_mode && Shape.floor_shapes.length) { // todo bug: when (very) far away floor shapes is also 0...
         const v_mult = math.bound(dt / 167, 0, 3);
         z = math.bound(z + this.target.vz * v_mult, z < floor_z - 0.1 ? floor_z - 2 : floor_z, floor_z + 1000);
         if (Thing.time - this.die_time >= 0.5 * config.seconds) {
@@ -291,6 +292,7 @@ export class Player extends Thing {
     this.target.vz = power * config.physics.player_jump;
     this.die_time -= config.seconds;
     this.jump_time = Thing.time;
+    ui.particles.jumped = true;
   }
 
   die() {
@@ -448,7 +450,12 @@ export class Player extends Thing {
       ui.collect.add(o.currency_name, o.currency_amount);
     }
     if (o.shapey) {
-      save.add_shapey(o.shapey);
+      const id = o.shapey;
+      save.add_shapey(id);
+      if (save.is_shapey_on(id)) {
+        ui.shapey_off(id);
+        ui.shapey_on(id);
+      }
       // todo shapey collect ui
     }
   }
@@ -677,23 +684,17 @@ export class Player extends Thing {
     this.temp_border_2 = window.shapes[0].real_vertices();
     const spawn: vector = Vertices.centre(this.temp_border_2);
     for (const b of (window?.body as any)?.walls ?? []) Composite.add(world, b);
-    Composite.add(world, ui.mouse.constraint);
+    if (this.is_on_checkpoint) Composite.add(world, ui.mouse.constraint);
 
     const all = save.check_all_shapey();
     for (const id in all) {
       const o = save.save.shapey[id] ?? { n: 1 };
       const t = new Thing();
-      let n = o.n + 1;
-      let k = "among us!";
-      while (make[k] == undefined && n > 0) {
-        n--;
-        k = `shapey_${id}_${n}`;
-      }
+      const k = ui.get_shapey_key(id, o.n);
       t.object.shapey_id = id;
       t.make(k);
-      t.position = o.v ?? (t.options.shapey ? spawn : centre);
+      t.position = o.v ?? vector.add((t.options.shapey ? spawn : centre), math.randvector(10));
       t.angle = o.a ?? 0;
-      if (!this.is_on_checkpoint) t.options.movable = false;
       t.create_id(k);
       t.create_body();
       this.temp_things.push(t);

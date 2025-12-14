@@ -472,9 +472,10 @@ export const detector = {
     },
     ["streets room 3 turret 1 button"]: (thing) => {
       const n = +thing.id.split("|")[1];
-      thing.shapes[0].style.fill_opacity = 0.5;
-      thing.shapes[0].style.stroke_opacity = 0.5;
-      thing.shapes[1].style.stroke_opacity = 0.5;
+      thing.shapes[0].style.fill_opacity = 0.6;
+      thing.shapes[0].style.stroke_opacity = 0.6;
+      thing.shapes[0].options.glowing = 1;
+      thing.shapes[1].style.stroke_opacity = 0.6;
       const parent = thing.parent;
       if (!parent.object.ns) parent.object.ns = [];
       const arr = parent.object.ns as number[];
@@ -484,7 +485,10 @@ export const detector = {
       }
       if (arr.length >= 6 || parent.shield?.is_zero) {
         for (const c of (parent.object.children ?? []) as Thing[]) {
-          for (const s of c.shapes) s.opacity = 0.3;
+          for (const s of c.shapes) {
+            s.opacity = 0.4;
+            delete s.options.glowing;
+          }
         }
       }
     },

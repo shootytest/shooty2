@@ -189,9 +189,30 @@ export default function () {
         seethrough: true,
         style_: { stroke_opacity: 0 },
     };
+    make.checkpoint_tutorial_room_2 = {
+        make_parent: ["checkpoint"],
+    };
+    make_shapes.checkpoint_tutorial_room_2 = [{
+            type: "circle",
+            radius: 50,
+        }, {
+            type: "polygon",
+            sides: 7,
+            radius: 150,
+            floor: true,
+            style_: { stroke_opacity: 0 },
+        }, {
+            type: "polygon",
+            sides: 7,
+            radius: 50,
+            z: 0.25,
+            floor: true,
+            safe_floor: false,
+            style_: { stroke_opacity: 0 },
+        }];
     make.checkpoint_streets_room_2 = {
         make_parent: ["checkpoint"],
-        angle: Math.PI / 6,
+        angle: 30,
     };
     make_shapes.checkpoint_streets_room_2 = [{
             type: "circle",
@@ -213,7 +234,7 @@ export default function () {
         }];
     make.checkpoint_map_streets_room_2 = {
         make_parent: ["checkpoint_map"],
-        angle: Math.PI / 6,
+        angle: 30,
     };
     make_shapes.checkpoint_map_streets_room_2 = [{
             type: "circle",

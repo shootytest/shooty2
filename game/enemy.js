@@ -41,12 +41,12 @@ export class Enemy extends Thing {
         this.original_position = vector3.clone(position);
         if (!this.options.angle)
             this.angle = angle;
+        else
+            this.angle = vector.deg_to_rad(this.options.angle);
         if (!this.options.decoration)
             this.create_body(this.create_body_options(filters.thing(this.team)));
         if (this.body)
             this.body.label = id;
-        if (this.options.angle)
-            this.rotate_to(this.options.angle);
         if (this.options.switch && save.check_switch(this.spawner.id)) {
             this.shapes[0].options.glowing = 1;
         }

@@ -143,7 +143,7 @@ make_shoot.enemy_tutorial_boss_homing = {
   time: 3,
   death: [{
     type: "enemy_tutorial_boss_homing",
-    stats: { make: "bullet_homing", death: [{type: "none"}], speed: 15, friction: 0.06, time: 0.5, damage: 200, },
+    stats: { make: "bullet_homing_5", death: [{type: "none"}], speed: 15, friction: 0.06, time: 0.5, damage: 200, },
     repeat: 1,
     angle: 180,
     offset: vector.create(0, -10),
@@ -215,6 +215,16 @@ make_shoot.enemy_streets_turret_1 = {
   angular_speed: 0.3,
   reload: 0.75,
   speed: 6.5,
+  time: 2,
+};
+
+make_shoot.enemy_streets_turret_spam = {
+  parent: ["enemy"],
+  make: "bullet_triangle",
+  size: 10,
+  random_angular_speed: 0.2,
+  reload: 0.7,
+  speed: 4,
   time: 2,
 };
 

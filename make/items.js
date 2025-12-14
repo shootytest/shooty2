@@ -158,7 +158,7 @@ export default function () {
         }];
     make.shapey_triangle_speed_1 = {
         make_parent: ["shapey"],
-        style: "wall_filled",
+        style: "collect_streets",
     };
     make_shapes.shapey_triangle_speed_1 = [{
             type: "polygon",

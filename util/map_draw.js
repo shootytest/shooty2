@@ -244,7 +244,7 @@ export const map_draw = {
             style = clone_object(STYLES_[o.style ?? "error"] ?? style);
         if (o.style_)
             override_object(style, o.style_);
-        const angle = (options.angle ?? 0) + vector.deg_to_rad(shape.options.spawn_angle ?? 0);
+        const angle = vector.deg_to_rad((options.angle ?? 0) + (shape.options.spawn_angle ?? 0)) || m_ui.time * 0.01;
         if (o.offset)
             centre = vector3.create2(vector.add(centre, vector.mult(vector.rotate(o.offset, angle), mult)), centre.z);
         ctx.beginPath();
@@ -332,7 +332,12 @@ export const map_draw = {
             // draw vertex circle
             if (selected || math.equal(v.z, 0) || screen_vertices.length < 2) {
                 ctx.begin();
-                ctx.circle(v.x, v.y, vertex_size);
+                if (shape.vertices[i].z != undefined) {
+                    ctx.rectangle(v.x, v.y, vertex_size * 2, vertex_size * 2);
+                }
+                else {
+                    ctx.circle(v.x, v.y, vertex_size);
+                }
                 ctx.fillStyle = colorhex + (shadow ? "88" : "");
                 ctx.lineWidth = camera.sqrtscale * 2;
                 ctx.fill();

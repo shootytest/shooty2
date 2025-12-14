@@ -151,7 +151,7 @@ export class Shoot {
             speed += math.rand(-S.random_speed, S.random_speed);
         let angular_speed = math.randgauss(S.angular_speed ?? 0, S.spread_angular_speed ?? 0);
         if (S.random_angular_speed)
-            speed += math.rand(-S.random_angular_speed, S.random_angular_speed);
+            angular_speed += math.rand(-S.random_angular_speed, S.random_angular_speed);
         const thing_velocity = Vector.rotate(this.thing.velocity, -angle).x;
         if (speed !== 0 && thing_velocity !== 0)
             speed += thing_velocity * config.physics.velocity_shoot_boost * (S.boost_mult ?? 1);

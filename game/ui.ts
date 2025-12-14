@@ -238,6 +238,8 @@ export const ui = {
     key.add_key_listener("KeyU", ui.toggle_map);
     key.add_key_listener("KeyI", ui.toggle_inventory);
     key.add_key_listener("KeyO", ui.toggle_shapes);
+    key.add_key_listener("KeyQ", ui.toggle_left);
+    key.add_key_listener("KeyE", ui.toggle_right);
     key.add_key_listener("BracketLeft", ui.toggle_left);
     key.add_key_listener("BracketRight", ui.toggle_right);
 
@@ -520,9 +522,10 @@ export const ui = {
         },
       },
       {
-        icon: "logout",
+        icon: "changelog",
         color: color.red,
         fn: function() {
+          window.open("/changelog/", "_blank");
         },
       },
       {
@@ -981,12 +984,22 @@ export const ui = {
     }
   },
 
-  init_shapey() {
+  get_shapey_key: function(id: string, n: number) {
+    n++;
+    let k = "among us!";
+    while (make[k] == undefined && n > 0) {
+      n--;
+      k = `shapey_${id}_${n}`;
+    }
+    return k;
+  },
+
+  init_shapey: function() {
     for (const [k, o] of Object.entries(ui.shapey)) {
-      let n = 1;
       const areas: number[] = [];
-      while (make_shapes["shapey_" + k + "_" + n] != undefined && n < 100) {
-        const ss = make_shapes["shapey_" + k + "_" + n];
+      for (let n = 1; n <= o.description.length; n++) {
+        const string = ui.get_shapey_key(k, n);
+        const ss = make_shapes[string];
         let area = 0;
         for (const s of ss) {
           const mult = (o.base && !s.shapey_area) ? -1 : 1;
@@ -1163,7 +1176,10 @@ export const ui = {
         i++;
       }
     },
+    jumped: false,
     jump_ready: function() {
+      if (!ui.particles.jumped) return;
+      ui.particles.jumped = false;
       const p = new Particle();
       p.object.radius = player.radius + 1;
       p.is_screen = false;
