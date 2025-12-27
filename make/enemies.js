@@ -537,8 +537,10 @@ export default function () {
         shield: {
             capacity: 600,
         },
+        hide_shield: true,
         repel_force: 1,
         repel_range: 100,
+        repel_angles: [[0, 360]],
         death: [
             { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.6, spread_angle: -1 }, repeat: 6 },
         ],
@@ -567,10 +569,11 @@ export default function () {
         },
         enemy_detect_range: 400,
         health: {
-            capacity: 700,
+            capacity: 50,
         },
         repel_force: 1,
         repel_range: 50,
+        repel_angles: [[-150, 150]],
         death: [
             { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.6, spread_angle: -1 }, repeat: 6 },
         ],

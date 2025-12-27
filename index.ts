@@ -94,7 +94,7 @@ const tick_all = (timestamp: number) => {
   // ctx.clear();
   ctx.fill_screen(color.black);
   tick_colours(real_dt);
-  do_visibility(dt); // draw all shapes
+  do_visibility(dt); // <-- shapes and particles are all drawn here!
   ui.tick(real_dt);
   ui.draw();
   mouse.tick();

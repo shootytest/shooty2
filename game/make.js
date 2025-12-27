@@ -48,7 +48,7 @@ export const clone_object = function (obj) {
         if (Array.isArray(v)) {
             result[k] = [];
             for (const a of v)
-                result[k].push(typeof a === "object" ? clone_object(a) : a);
+                result[k].push(typeof a === "object" && !Array.isArray(a) ? clone_object(a) : a);
         }
         else if (typeof v === "object") {
             result[k] = clone_object(v);
@@ -65,9 +65,10 @@ export const override_object = function (m_target, m_override) {
             if (m_target[k] == undefined)
                 m_target[k] = [];
             for (const [i, a] of v.entries()) {
+                const is_object = typeof a === "object" && !Array.isArray(a);
                 if (i >= m_target[k].length)
-                    m_target[k].push(typeof a === "object" ? clone_object(a) : a);
-                else if (typeof a === "object")
+                    m_target[k].push(is_object ? clone_object(a) : a);
+                else if (is_object)
                     override_object(m_target[k][i], a);
                 else
                     m_target[k][i] = a;
@@ -103,7 +104,7 @@ export const multiply_and_override_object = function (m_target, m_override) {
             for (const [i, a] of v.entries()) {
                 if (i >= m_target[k].length)
                     m_target[k].push(typeof a === "object" ? clone_object(a) : a);
-                else if (typeof a === "object")
+                else if (typeof a === "object" && !Array.isArray(a))
                     override_object(m_target[k][i], a);
                 else
                     m_target[k][i] = a;

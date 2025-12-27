@@ -369,6 +369,14 @@ export const ui = {
     ctx.lines_v(points, false);
     ctx.stroke();
     ctx.fill();
+
+    // draw last save position
+    const last_save_position = save.save.player.position;
+    if (last_save_position) {
+      const p = camera.world3screen(last_save_position, player);
+      ctx.fillStyle = color.green + "33";
+      ctx.svg_v("x", p, player.radius * 3 * camera.zscale(last_save_position.z));
+    }
   },
 
   draw_health: function() {
@@ -403,7 +411,7 @@ export const ui = {
             ctx.strokeStyle = color.white + math.component_to_hex(255 * (health_fpart * 10) ** 2);
             ctx.fillStyle = color.white + math.component_to_hex(51 * (health_fpart * 10) ** 2);
           }
-          ctx.arc(x, y, r, angle % math.two_pi, (angle - math.two_pi * health_fpart) % math.two_pi);
+          ctx.arc(x, y, r, math.mod_angle(angle), math.mod_angle(angle - math.two_pi * health_fpart));
           ctx.stroke();
           ctx.beginPath();
           ctx.circle(x, y, r * 1.2);
@@ -1005,6 +1013,7 @@ export const ui = {
           const mult = (o.base && !s.shapey_area) ? -1 : 1;
           if (s.type === "circle") area += mult * math.circle_area(s.radius ?? 0);
           else if (s.type === "polygon") area += mult * math.polygon_area(s.sides ?? 16, s.radius ?? 0);
+          else if (s.type === "polyline") area += mult * math.vertices_area(s.vs ?? []);
           // else area += mult * 0;
           if (!o.base) break;
         }

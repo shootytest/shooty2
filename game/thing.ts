@@ -227,10 +227,10 @@ export class Thing {
     this.make_shoot(this.options.shoots);
     this.make_the_rest();
     if (this.options.spawn_permanent && save.check_switch(this.id)) {
-      this.remove(); // or die?
+      this.remove(); // or die? // todo unimportant: make it die earlier in this function maybe
     }
     if (this.options.sensor) {
-      // check if player on sensor right now... just in case the physics engine doesn't like me
+      // check if player is on the sensor just as it spawns... just in case matter.js doesn't like me
       const vs = this.shapes[0].computed?.vertices;
       if (vs && math.is_circle_in_polygon(Thing.things_lookup.player.position, Thing.things_lookup.player.radius, vector.add_list(vs, this.position))) {
         this.object.run_start = true;
@@ -299,6 +299,9 @@ export class Thing {
   create_id(id: string) {
     this.id = id;
     Thing.things_lookup[id] = this;
+    if (id !== "player") { // important! if not circular stuff happens
+      detector.make_fns[id]?.(this);
+    }
     return;
   }
 
@@ -314,7 +317,7 @@ export class Thing {
     const result: IBodyDefinition = {
       isStatic: !this.options.movable,
       isSensor: this.options.sensor,
-      angle: this.options.angle == undefined ? this.target.angle : vector.deg_to_rad(this.options.angle),
+      angle: this.options.angle == undefined ? this.target.angle : math.deg_to_rad(this.options.angle),
       friction: this.options.friction_contact ?? 0.1,
       frictionAir: this.options.friction ?? 0.01,
       restitution: this.options.restitution ?? 0,
@@ -563,8 +566,10 @@ export class Thing {
     if (this.options.repel_range && this.options.repel_force) {
       // handle repelling
       const r = this.options.repel_range;
+      const angles = this.options.repel_angles;
       for (const b of Query.region(world.bodies, Bounds.create([vector.add(this.position, vector.create(-r, -r)), vector.add(this.position, vector.create(r, r))]))) {
         const dv = vector.sub(b.position, this.position);
+        if (angles && !math.angle_in_ranges(math.rad_to_deg(vector.angle(dv) - this.angle), angles)) continue;
         const other = ((b as any).thing as Thing);
         if (other.parent !== this && vector.length2(dv) < (r + other.radius) ** 2) {
           const pushforce = vector.normalise(dv, this.options.repel_force * 100);
@@ -649,16 +654,16 @@ export class Thing {
       this.is_seeing_player = false;
       return false;
     }
-    const player_size = (player.shapes[0] as Polygon)?.radius ?? 0;
+    const player_size = player.radius;
     const checks = [
       vector3.clone(player.position),
-      vector3.add(player.position, vector3.create(player_size, 0, 0)),
-      vector3.add(player.position, vector3.create(0, player_size, 0)),
-      vector3.add(player.position, vector3.create(-player_size, 0, 0)),
-      vector3.add(player.position, vector3.create(0, -player_size, 0)),
+      vector3.add(player.position, vector3.create(player_size, 0)),
+      vector3.add(player.position, vector3.create(0, player_size)),
+      vector3.add(player.position, vector3.create(-player_size, 0)),
+      vector3.add(player.position, vector3.create(0, -player_size)),
     ];
     for (const check of checks) {
-      if (!math.is_line_intersecting_polygons(this.position, check, Shape.see_vertices)) {
+      if (!math.is_line_intersecting_polygons(this.position, check, this.team < 0 ? Shape.see_vertices : Shape.enemy_block_vertices)) {
       // if (Query.ray(Thing.body_list, this.position, check).length === 0) {
         this.is_seeing_player = true;
         this.player_position = check;
@@ -749,7 +754,7 @@ export class Thing {
     } else if (move_mode === "direct") {
       this.push_to(this.target.facing, (b.move_speed ?? 1));
     } else if (move_mode === "spiral") {
-      const v = vector.rotate(vector.sub(this.position, this.player_position), vector.deg_to_rad(80));
+      const v = vector.rotate(vector.sub(this.position, this.player_position), math.deg_to_rad(80));
       this.push_to(vector.add(this.target.facing, vector.mult(v, 0.5)), (b.move_speed ?? 1));
     } else if (move_mode === "wander") {
       if (this.behaviour.wander_reached) {

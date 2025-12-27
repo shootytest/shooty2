@@ -72,6 +72,15 @@ export const make_rooms = {
     ["streets room 5"]: {
         theme: "streets",
     },
+    ["streets room 5.1"]: {
+        theme: "streets",
+    },
+    ["streets room 6"]: {
+        theme: "streets",
+    },
+    ["streets room 7"]: {
+        theme: "streets",
+    },
     ["streets side room 1"]: {
         theme: "streets",
         theme_mix: "tutorial",

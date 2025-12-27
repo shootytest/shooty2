@@ -32,6 +32,51 @@ export default function () {
         style: "wall_window",
         keep_bullets: true,
         seethrough: true,
+        translucent: 0.35,
+        translucent_color: "alt",
+        style_: {
+            width: 0.555,
+        },
+    };
+    make.wall_window_deco = {
+        wall_filter: "window",
+        style: "wall_window",
+        keep_bullets: true,
+        seethrough: true,
+    };
+    make.wall_secret_window = {
+        wall_filter: "wall",
+        style: "wall_secret_window",
+        keep_bullets: false,
+        seethrough: true,
+        translucent: 0.35,
+        translucent_color: "coin",
+        style_: {
+            width: 0.555,
+        },
+    };
+    make.wall_player_window = {
+        wall_filter: "wall",
+        wall_team: 1,
+        style: "wall_player_window",
+        keep_bullets: false,
+        seethrough: true,
+        style_: {
+            stroke_opacity: 0,
+        },
+    };
+    make.wall_enemy_window_3 = {
+        wall_filter: "wall",
+        wall_team: 3,
+        style: "wall_enemy_window",
+        keep_bullets: false,
+        seethrough: true,
+        translucent: 0.3,
+        translucent_color: "enemy",
+        style_: {
+            stroke_opacity: 0,
+            width: 0.555,
+        },
     };
     make.wall_floor = {
         wall_filter: "wall",
@@ -115,6 +160,15 @@ export default function () {
         },
         xp: 200,
     };
+    make.wall_fake_opaque = {
+        make_parent: ["wall"],
+        hide_health: true,
+        hide_health_until: 450,
+        health: {
+            capacity: 700,
+        },
+        xp: 500,
+    };
     // @floors
     make.floor = {
         floor: true,
@@ -156,6 +210,21 @@ export default function () {
     make_shapes.switch = [{
             type: "circle",
             radius: 15,
+        }];
+    make.switch_enemy = {
+        style: "switch",
+        team: 0,
+        switch_enemy: true,
+        seethrough: true,
+        restitution: 0,
+    };
+    make_shapes.switch_enemy = [{
+            type: "circle",
+            radius: 15,
+        }, {
+            type: "circle",
+            style: "enemy",
+            radius: 1,
         }];
     make.button_streets_turret_1 = {
         make_parent: ["sensor"],

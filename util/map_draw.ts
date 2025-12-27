@@ -236,7 +236,7 @@ export const map_draw = {
     const r = (o.radius ?? 0) * mult;
     if (o.style) style = clone_object(STYLES_[o.style ?? "error"] ?? style);
     if (o.style_) override_object(style, o.style_);
-    const angle = vector.deg_to_rad((options.angle ?? 0) + (shape.options.spawn_angle ?? 0)) || m_ui.time * 0.01;
+    const angle = math.deg_to_rad((options.angle ?? 0) + (shape.options.spawn_angle ?? 0)) || m_ui.time * 0.01;
     if (o.offset) centre = vector3.create2(vector.add(centre, vector.mult(vector.rotate(o.offset, angle), mult)), centre.z);
     ctx.beginPath();
     if (o.type === "circle") {

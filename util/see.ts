@@ -6,7 +6,7 @@ import { make_rooms } from "../make/rooms.js";
 import { Common } from "../matter.js";
 import { camera } from "./camera.js";
 import { canvas, ctx } from "./canvas.js";
-import { color, color_mix, color_theme, current_theme, THEMES, THEMES_UID_MAX } from "./color.js";
+import { color, color2hex, color_mix, color_theme, current_theme, THEMES, THEMES_UID_MAX } from "./color.js";
 import { config } from "./config.js";
 import { math } from "./math.js";
 import { circle, segment, segment_point, vector, vector3 } from "./vector.js";
@@ -58,16 +58,19 @@ export const do_visibility = (_dt: number) => {
   see_origin = player.some_mode ? camera.location : player.position;
   const path = calc_visibility_path_2(see_origin, Shape.see_vertices);
   const other_vertices = Shape.see_other_vertices;
-  const other_list: { [z: string]: { alpha: number, z: number, inverted: Path2D }[]} = {};
+  const other_list: { [z: string]: { alpha: number, z: number, inverted: Path2D, color: string }[]} = {};
   const inverted = invert_path(path);
   let has_other_vertices = false;
   for (const other_key in other_vertices) {
-    const [alpha, z] = other_key.split("|").map((n) => Number(n));
+    const splitted = other_key.split("|");
+    const alpha = Number(splitted[0]);
+    const z = Number(splitted[1]);
+    const color = (splitted.length >= 3) ? splitted[2] : "";
     const inverted = invert_path(calc_visibility_path_2(see_origin, other_vertices[other_key]));
     for (let z2 = Math.floor(z * 10) / 10; z2 < math.round_to(player.z + 1, 0.1); z2 += 0.1) {
       const zs = z2.toFixed(3);
       if (!other_list[zs]) other_list[zs] = [];
-      other_list[zs].push({ alpha, z, inverted });
+      other_list[zs].push({ alpha, z, inverted, color });
     }
     has_other_vertices = true;
   }
@@ -94,7 +97,9 @@ export const do_visibility = (_dt: number) => {
     if (has_other_vertices && other_list[zs]) {
       for (const other of other_list[zs]) {
         ctx.ctx.save();
-        ctx.fillStyle = math.equal(z, other.z) ? color_mix(current_theme.dark, color.blackground, 0.5) + math.component_to_hex(other.alpha * 255) : (color.blackground + math.component_to_hex(other.alpha * wall_opacity * 2));
+        ctx.fillStyle = math.equal(z, other.z)
+          ? (other.color ? color2hex(other.color) : color_mix(current_theme.dark, color.blackground, 0.5)) + math.component_to_hex(other.alpha * 255)
+          : (color.blackground + math.component_to_hex(other.alpha * wall_opacity * 2));
         clip_path(see_origin, other.inverted, z, true);
         ctx.ctx.restore();
       }

@@ -101,10 +101,11 @@ export const m_ui = {
                         target.shape.vertices[target.index] = vector.clone(target.shape.vertices[target.index]);
                         map_draw.change("reset z of vertex #" + target.index, target.shape);
                     }
-                    else {
+                    else if (dx || dy) {
                         v.x = math.round(v.x + dx);
                         v.y = math.round(v.y + dy);
-                        v.z = math.round_to((v.z ?? target.shape.z) + dz, 0.1);
+                        if (dz)
+                            v.z = math.round_to((v.z ?? target.shape.z) + dz, 0.1);
                         if (dx || dy || dz)
                             map_draw.change("move vertex #" + target.index, target.shape);
                     }
@@ -633,7 +634,7 @@ export const m_ui = {
             if (!m_ui.circle_menu.active)
                 ratio = 1 - ratio;
             const a = math.two_pi / m_ui.circle_menu.options.length;
-            const a_ = (m_ui.time / 100) % math.two_pi;
+            const a_ = math.mod_angle(m_ui.time / 100);
             size = 50 * ratio;
             ctx.fillStyle = color.black + "99";
             ctx.beginPath();

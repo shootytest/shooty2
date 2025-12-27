@@ -167,6 +167,7 @@ export default function () {
     };
     make_shoot.enemy_streets_easy_back = {
         parent: ["enemy"],
+        damage: 0,
         size: 5,
         spread_angle: 0.1,
         reload: 0.25,

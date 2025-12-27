@@ -49,6 +49,18 @@ export const math = {
     atan2_v: (v) => {
         return Math.atan2(v.y, v.x);
     },
+    deg_to_rad: (degrees) => {
+        return degrees / 180 * Math.PI;
+    },
+    rad_to_deg: (radians) => {
+        return radians * 180 / Math.PI;
+    },
+    mod: (n, m) => {
+        return ((n % m) + m) % m;
+    },
+    mod_angle: (radians) => {
+        return math.mod(radians, math.two_pi);
+    },
     lerp: (a, b, t) => {
         return a * (1 - t) + b * t;
     },
@@ -176,6 +188,26 @@ export const math = {
     },
     point_in_circle: (px, py, cx, cy, r) => {
         return math.dist2(px - cx, py - cy) < r * r;
+    },
+    // in degrees
+    angle_in_ranges: (angle, ranges) => {
+        const aaa = math.mod(angle, 360);
+        for (const [a1, a2] of ranges) {
+            if (math.equal(Math.abs(a2 - a1), 360))
+                return true;
+            const one = math.mod(a1, 360), two = math.mod(a2, 360);
+            if (one === two)
+                continue;
+            else if (one < two) {
+                if (one <= aaa && aaa <= two)
+                    return true;
+            }
+            else {
+                if (aaa <= two || one <= aaa)
+                    return true;
+            }
+        }
+        return false;
     },
     expand_line: (v1, v2, width) => {
         const v0 = vector.mean([v1, v2]);
@@ -330,11 +362,22 @@ export const math = {
     polygon_area: (sides, radius) => {
         return radius * radius * sides / 2 * Math.sin(math.two_pi / sides);
     },
+    vertices_area: (vertices) => {
+        let a = 0;
+        const l = vertices.length;
+        if (l <= 2)
+            return 0;
+        for (let i = 0; i < l; i++) {
+            const v1 = vertices[i], v2 = vertices[(i == l - 1) ? 0 : i + 1];
+            a += v1.x * v2.y - v2.x * v1.y;
+        }
+        return Math.abs(a * 0.5);
+    },
     polygon: (sides, radius = 1, angle = 0, offset = vector.create()) => {
         const result = [];
         const x = offset.x;
         const y = offset.y;
-        let a = angle % math.two_pi;
+        let a = math.mod_angle(angle);
         for (let i = 0; i < sides + 1; ++i) {
             result.push(vector.create(x + radius * Math.cos(a), y + radius * Math.sin(a)));
             a += math.two_pi / sides;

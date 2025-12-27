@@ -107,14 +107,23 @@ export const vector = {
     round_to: (v, n = 1) => {
         return vector.create(math.round_to(v.x, n), math.round_to(v.y, n));
     },
+    angle: (v) => {
+        return Math.atan2(v.y, v.x);
+    },
+    angle_deg: (v) => {
+        return math.rad_to_deg(Math.atan2(v.y, v.x));
+    },
     direction: (v) => {
         return Math.atan2(v.y, v.x);
+    },
+    direction_deg: (v) => {
+        return math.rad_to_deg(Math.atan2(v.y, v.x));
     },
     createpolar: (theta, r = 1) => {
         return vector.create(r * Math.cos(theta), r * Math.sin(theta));
     },
     createpolar_deg: (theta, r = 1) => {
-        return vector.createpolar(vector.deg_to_rad(theta), r);
+        return vector.createpolar(math.deg_to_rad(theta), r);
     },
     lerp: (v1, v2, t) => {
         return vector.add(vector.mult(v1, 1 - t), vector.mult(v2, t));

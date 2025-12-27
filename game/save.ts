@@ -154,7 +154,7 @@ export const save = {
     if (!save.save.shapey[id]) save.save.shapey[id] = { n: 0 };
     const o = save.save.shapey[id];
     o.v = vector.create(Math.floor(thing.position.x), Math.floor(thing.position.y));
-    o.a = +((thing.angle % math.two_pi).toFixed(3));
+    o.a = +(math.mod_angle(thing.angle).toFixed(3));
     save.changed(true);
   },
 
@@ -168,7 +168,7 @@ export const save = {
       if (save.save.shapey[id]) {
         const o = save.save.shapey[id];
         o.v = vector.create(Math.floor(t.x), Math.floor(t.y));
-        o.a = +((t.angle % math.two_pi).toFixed(3));
+        o.a = +(math.mod_angle(t.angle).toFixed(3));
         o.on = Boolean(t.object.inside);
       }
     }

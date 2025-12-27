@@ -99,6 +99,8 @@ export const filters = {
   },
 };
 
+export const shared_object: { [key: string]: any } = {};
+
 export const detector = {
   // magic!
   meow_check: function(pair: Matter.Pair, ba: any, bb: any, a: Thing, b: Thing, type: "start" | "middle" | "end") {
@@ -235,6 +237,13 @@ export const detector = {
       }
     }
     if (!hittingz) return;
+    if (a.is_wall && a.options.wall_team
+      && (Math.floor(b.team) < 0 || math.equal(Math.floor(b.team), a.options.wall_team))
+      && !(a.options.wall_team === 1 && b.is_bullet && !b.options.collectible)
+    ) {
+      pair.isSensor = true;
+      return;
+    }
     if (a.is_bullet) {
       if (!b.options.sensor && !b.options.keep_bullets && !a.options.collectible && !b.options.breakable && different_team && !b.health?.invincible) {
         if (b.is_player) a.options.death = []; // please don't explode if it hits the player // todo how about exploding coins?
@@ -258,7 +267,7 @@ export const detector = {
       }
     }
     // player/bullets and switches
-    if (Math.floor(a.team) === 1 && b.options.switch) {
+    if ((Math.floor(a.team) === 1 && b.options.switch) || (Math.floor(a.team) > 1 && b.options.switch_enemy)) {
       if (b.options.checkpoint && !a.is_player) return; // no shooting to activate checkpoints!
       const switch_id = (b as Enemy).spawner.id;
       if (!save.check_switch(switch_id)) {
@@ -449,7 +458,9 @@ export const detector = {
     },
     ["tutorial room 3 end sensor"]: (_thing) => {
       Thing.lookup("tutorial window 1")?.die();
-      Thing.lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
+      const s = Thing.lookup("tutorial window 1 deco").shapes[0];
+      s.style.stroke_opacity = 0;
+      s.seethrough = true;
     },
     ["tutorial room 5 sensor boss"]: (_thing) => {
       const boss = Spawner.get_enemy("tutorial room 5 boss");
@@ -482,6 +493,7 @@ export const detector = {
       if (!arr.includes(n)) {
         arr.push(n);
         parent.shield?.hit(100);
+        parent.options.repel_angles?.remove(thing.object.range);
       }
       if (arr.length >= 6 || parent.shield?.is_zero) {
         for (const c of (parent.object.children ?? []) as Thing[]) {
@@ -536,10 +548,13 @@ export const detector = {
         const t = new Thing();
         t.parent = thing;
         t.position = vector3.add_(centre, vector.createpolar_deg(angle, 240));
-        t.angle = vector.deg_to_rad(angle);
+        t.angle = math.deg_to_rad(angle);
         t.make("button_streets_turret_1");
         t.create_id("streets room 3 turret 1 button|" + i);
         t.create_body();
+        const range: [number, number] = [angle, angle + 60];
+        thing.options.repel_angles?.push(range);
+        t.object.range = range;
         thing.object.children.push(t);
       }
       thing.remove_fn = () => {
@@ -584,14 +599,12 @@ export const detector = {
   spawner_calc_fns: {
     ["tutorial room 3 enemy 1"]: (spawner) => {
       if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 2") > 0) {
-        spawner.thing_lookup("tutorial window 1")?.die();
-        spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
+        detector.sensor_start_fns["tutorial room 3 end sensor"](new Thing());
       }
     },
     ["tutorial room 3 enemy 2"]: (spawner) => {
       if (spawner.wave_progress > 0 && spawner.check_progress("tutorial room 3 enemy 1") > 0) {
-        spawner.thing_lookup("tutorial window 1")?.die();
-        spawner.thing_lookup("tutorial window 1 deco").shapes[0].style.stroke_opacity = 0;
+        detector.sensor_start_fns["tutorial room 3 end sensor"](new Thing());
       }
     },
   } as { [spawner_id: string]: (spawner: Spawner) => void },
@@ -599,7 +612,33 @@ export const detector = {
 
   map_shape_make_fns: {
 
-  } as { [shape_id: string]: (map_shape: map_shape_type) => void },
+  } as { [map_shape_id: string]: (map_shape: map_shape_type) => void },
+
+
+  make_fns: {
+    ["train wall 1"]: (wall) => {
+      const x = (Thing.lookup("train").object.train_distance ?? 0 + 1900);
+      const y = 4025;
+      wall.shapes[0].tick_fn = function() {
+        this.draw_z_offset = (player.x > this.real_vertices()[0].x) ? -0.5 : 0;
+      };
+    },
+    ["train wall 2"]: (wall) => {
+      wall.shapes[0].tick_fn = function() {
+        this.draw_z_offset = (player.x < this.real_vertices()[0].x) ? -0.5 : 0;
+      };
+    },
+    ["train wall 3"]: (wall) => {
+      wall.shapes[0].tick_fn = function() {
+        this.draw_z_offset = (player.y > this.real_vertices()[0].y) ? -0.5 : 0;
+      };
+    },
+    ["train"]: (wall) => {
+      wall.shapes[0].tick_fn = function() {
+        this.draw_z_offset = (player.y < this.real_vertices()[0].y) ? -0.5 : 0;
+      };
+    },
+  } as { [thing_id: string]: (thing: Thing) => void },
 
 
   tick_fns: {
@@ -762,8 +801,11 @@ export const detector = {
     ["streets room 3 door 1"]: (door) => {
       switch_door(door, Thing.lookup("streets room 3 turret 1 button|0")?.object.dead, "streets room 3 door 1");
     },
+    ["streets room 5 window 2"]: (door) => {
+      switch_door(door, "streets room 5 switch 0", "streets room 5 switch 0 path", 1);
+    },
 
-  } as { [key: string]: (thing: Thing) => void },
+  } as { [thing_id: string]: (thing: Thing) => void },
 
 };
 

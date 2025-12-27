@@ -136,14 +136,14 @@ export class Shoot {
         bullet.parent = this.thing.parent;
         bullet.make(S.make ?? "bullet", true);
         bullet.create_room(this.thing.room_id);
-        if (bullet.team === 0)
+        if (Math.floor(bullet.team) === 0)
             bullet.team = this.thing.team;
         if (bullet.parent.is_player) {
             const player = bullet.parent;
             const str = player.current_gun + "/" + (S.make ?? "bullet");
             player.stats.bullets_shot[str] = (player.stats.bullets_shot[str] ?? 0) + 1;
         }
-        let angle = S.spread_angle === -1 ? math.randangle() : math.randgauss(this.thing.angle + (vector.deg_to_rad(S.angle ?? 0)), S.spread_angle ?? 0);
+        let angle = S.spread_angle === -1 ? math.randangle() : math.randgauss(this.thing.angle + (math.deg_to_rad(S.angle ?? 0)), S.spread_angle ?? 0);
         if (S.random_angle)
             angle += math.rand(-S.random_angle, S.random_angle);
         let speed = math.randgauss(S.speed ?? 0, S.spread_speed ?? 0);

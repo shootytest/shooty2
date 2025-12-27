@@ -7,7 +7,7 @@ import { config } from "../util/config.js";
 import { mouse } from "../util/key.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
-import { clone_object, make_shoot, multiply_and_override_object, override_object } from "./make.js";
+import { clone_object, make_shoot, multiply_and_override_object, override_object, shallow_clone_array } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { Thing } from "./thing.js";
@@ -32,6 +32,8 @@ export class Shape {
         s.seethrough = Boolean(thing.options.seethrough);
         if (thing.options.translucent)
             s.translucent = thing.options.translucent;
+        if (thing.options.translucent_color)
+            s.translucent_color = thing.options.translucent_color;
         // handle vertices
         s.vertices = vector3.create_many(o.vertices, o.z);
         if (o.computed == undefined)
@@ -81,6 +83,8 @@ export class Shape {
         s.seethrough = Boolean(thing.options.seethrough);
         if (thing.options.translucent)
             s.translucent = thing.options.translucent;
+        if (thing.options.translucent_color)
+            s.translucent_color = thing.options.translucent_color;
         if (o.style || thing.options.style) {
             s.style = clone_object(STYLES_[o.style ?? thing.options.style ?? "error"] ?? STYLES.error);
             s.has_style = true;
@@ -193,6 +197,7 @@ export class Shape {
         Shape.draw_shapes = Shape.filter(screen_aabb);
         Shape.floor_shapes = [];
         Shape.map_shapes = [];
+        const enemy_block_vertices = [];
         for (const s of Shape.draw_shapes) {
             if (s.thing.options.floor || s.options.floor)
                 Shape.floor_shapes.push(s);
@@ -201,12 +206,18 @@ export class Shape {
             if (s.computed == undefined) {
                 s.init_computed();
             }
+            if (s.thing.options.wall_team === 1) {
+                const vs = s.computed.vertices;
+                if (s.closed_loop)
+                    vs.push(vs[0]);
+                enemy_block_vertices.push(vs);
+            }
             // compute location on screen using camera transformation
             s.compute_screen();
         }
         if (player.paused && !player.map_mode)
             Shape.draw_shapes.remove(player.shapes[0]);
-        Shape.draw_zs = [...new Set(Shape.draw_shapes.map(s => s.z))];
+        Shape.draw_zs = [...new Set(Shape.draw_shapes.map(s => s.draw_z))];
         // nowhere else to put this... handle particles
         for (const p of Particle.particles) {
             if (p.z !== 0) {
@@ -255,11 +266,12 @@ export class Shape {
         Shape.floor_shapes.sort((s1, s2) => -draw_shapes_sort(s1, s2)); // reverse of draw_shapes
         Shape.see_vertices = Shape.calc_vertices();
         Shape.see_other_vertices = Shape.calc_other_vertices();
+        Shape.enemy_block_vertices = Shape.see_vertices.concat(enemy_block_vertices);
     }
     ;
     static draw(z) {
         for (const s of Shape.draw_shapes) {
-            if (z != undefined && !math.equal(s.z, z))
+            if (z != undefined && !math.equal(s.draw_z, z))
                 continue;
             s.draw_all();
         }
@@ -270,6 +282,7 @@ export class Shape {
     static see_z_range = [0, 0];
     static see_vertices = [];
     static see_other_vertices = {};
+    static enemy_block_vertices = []; // list of walls that block enemies' line of sight
     static calc_vertices() {
         const result = [];
         let min_z = 9999999, max_z = -9999999;
@@ -302,10 +315,12 @@ export class Shape {
                 continue;
             if (s.closed_loop)
                 vs.push(vs[0]);
-            const translucent = s.translucent.toFixed(3) + "|" + s.z.toFixed(3);
-            if (!result[translucent])
-                result[translucent] = [];
-            result[translucent]?.push(vs);
+            let key = s.translucent.toFixed(3) + "|" + s.z.toFixed(3);
+            if (s.translucent_color)
+                key += "|" + s.translucent_color;
+            if (!result[key])
+                result[key] = [];
+            result[key]?.push(vs);
         }
         return result; // stored in see_other_vertices
     }
@@ -323,14 +338,20 @@ export class Shape {
         type: "none",
     };
     translucent = 0;
+    translucent_color = "";
     object = {}; // for any random things
     hovering = false;
     hover_start_fn;
     hover_fn;
     hover_end_fn;
     // click_fn?: () => void; // todo maybe
+    tick_fn;
     get z() {
         return this.offset.z + this.thing.z;
+    }
+    draw_z_offset = 0;
+    get draw_z() {
+        return this.z + this.draw_z_offset;
     }
     get avg_z() {
         if (!this.thing.options.force_max_z)
@@ -488,6 +509,8 @@ export class Shape {
     draw_all() {
         if (ui.map.hide_map && this.is_map)
             return;
+        if (this.tick_fn)
+            this.tick_fn();
         if (this.options.clip)
             this.draw_clip();
         else
@@ -567,7 +590,7 @@ export class Shape {
         ctx.beginPath();
         ctx.moveTo(c.x, c.y);
         const angle = (this.thing.is_player ? 0 : this.thing.angle) - (Thing.time / config.seconds * config.graphics.health_rotate_speed);
-        ctx.arc_v(c, 123456, angle % math.two_pi, (angle + math.two_pi * ratio) % math.two_pi);
+        ctx.arc_v(c, 123456, math.mod_angle(angle), math.mod_angle(angle + math.two_pi * ratio));
         ctx.lineTo(c.x, c.y);
         ctx.clip();
         const health_color = this.style.health ?? color.red;
@@ -651,7 +674,7 @@ export class Shape {
         const c = this.is_circle ? this.computed.screen_vertices[0] : vector.aabb_centre(vector.make_aabb(this.computed.screen_vertices));
         ctx.beginPath();
         ctx.moveTo(c.x, c.y);
-        ctx.arc_v(c, 123456, angle % math.two_pi, (angle + math.two_pi * ratio) % math.two_pi);
+        ctx.arc_v(c, 123456, math.mod_angle(angle), math.mod_angle(angle + math.two_pi * ratio));
         ctx.lineTo(c.x, c.y);
         ctx.clip();
         this.draw();
@@ -660,23 +683,49 @@ export class Shape {
     draw_repel() {
         if (!this.thing.options.repel_range || this.computed?.screen_vertices == undefined || !this.computed?.on_screen)
             return;
-        const c = camera.world3screen(this.thing.position); // this.is_circle ? this.computed.screen_vertices[0] : vector.aabb_centre(vector.make_aabb(this.computed.screen_vertices));
+        const c = camera.world3screen(this.thing.position, player); // this.is_circle ? this.computed.screen_vertices[0] : vector.aabb_centre(vector.make_aabb(this.computed.screen_vertices));
         const r = this.thing.options.repel_range * camera.scale * camera.zscale(this.thing.z);
-        ctx.beginPath();
-        ctx.circle_v(c, r);
+        let angles = this.thing.options.repel_angles;
         ctx.globalAlpha = 1;
         ctx.lineWidth = (this.style.width ?? 1) * camera.scale * camera.zscale(this.z, true) * config.graphics.linewidth_mult;
-        ctx.strokeStyle = color.white + "88";
         ctx.fillStyle = color.white + "22";
-        ctx.fill();
-        ctx.stroke();
-        if (this.thing.shield) {
+        ctx.strokeStyle = color.white + "88";
+        if (angles) {
+            const thing_angle = this.thing.angle;
+            angles = shallow_clone_array(angles);
+            for (const [i, a] of angles.entries()) {
+                const one = math.mod_angle(thing_angle + math.deg_to_rad(a[0]));
+                const two = math.mod_angle(thing_angle + math.deg_to_rad(a[1]));
+                angles[i] = [one, two];
+                ctx.beginPath();
+                ctx.moveTo_v(c);
+                if (math.equal(one, two))
+                    ctx.circle_v(c, r);
+                else
+                    ctx.arc_v(c, r, one, two, true);
+                ctx.fill();
+            }
+            for (const [one, two] of angles) {
+                if (math.equal(one, two))
+                    continue;
+                ctx.beginPath();
+                ctx.arc_v(c, r, one, two, true);
+                ctx.stroke();
+            }
+        }
+        else {
+            ctx.beginPath();
+            ctx.circle_v(c, r);
+            ctx.fill();
+            ctx.stroke();
+        }
+        if (this.thing.shield && !this.thing.options.hide_shield) {
             const ratio = this.thing.shield.display_ratio;
             if (math.equal(ratio, 1))
                 return;
             const angle = (Thing.time / config.seconds * config.graphics.health_rotate_speed);
             ctx.beginPath();
-            ctx.arc_v(c, r, angle % math.two_pi, (angle + math.two_pi * ratio) % math.two_pi);
+            ctx.arc_v(c, r, math.mod_angle(angle), math.mod_angle(angle + math.two_pi * ratio));
             ctx.strokeStyle = color.red + "55";
             ctx.stroke();
         }
@@ -686,6 +735,7 @@ export class Shape {
             // remove this from array
             array?.remove(this);
         }
+        this.hover_end_fn?.();
     }
     scale_size(scale) {
         this.offset = vector3.mult(this.offset, scale);

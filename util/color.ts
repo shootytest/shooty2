@@ -313,9 +313,9 @@ export const STYLES/*: { [key: string]: style_type }*/ = {
 
   // the one
   player: {
-    stroke: color.white,
+    stroke: color.player,
     stroke_opacity: 1,
-    fill: color.white,
+    fill: color.player,
     fill_opacity: 0.4,
   },
 
@@ -361,6 +361,21 @@ export const STYLES/*: { [key: string]: style_type }*/ = {
   wall_window: {
     stroke: "alt",
     fill: "alt",
+    fill_opacity: 0.2,
+  },
+  wall_secret_window: {
+    stroke: "coin",
+    fill: "coin",
+    fill_opacity: 0.2,
+  },
+  wall_player_window: {
+    stroke: color.player,
+    fill: color.player,
+    fill_opacity: 0.2,
+  },
+  wall_enemy_window: {
+    stroke: "enemy",
+    fill: "enemy",
     fill_opacity: 0.2,
   },
   tutorial_curtain: {

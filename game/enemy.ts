@@ -43,10 +43,10 @@ export class Enemy extends Thing {
     this.position = position;
     this.original_position = vector3.clone(position);
     if (!this.options.angle) this.angle = angle;
-    else this.angle = vector.deg_to_rad(this.options.angle);
+    else this.angle = math.deg_to_rad(this.options.angle);
     if (!this.options.decoration) this.create_body(this.create_body_options(filters.thing(this.team)));
     if (this.body) this.body.label = id;
-    if (this.options.switch && save.check_switch(this.spawner.id)) {
+    if ((this.options.switch || this.options.switch_enemy) && save.check_switch(this.spawner.id)) {
       this.shapes[0].options.glowing = 1;
     }
   }
@@ -198,7 +198,7 @@ export class Spawner {
     } else if (o.options.spawn_enemy) {
       this.spawn = {
         type: o.options.spawn_enemy ?? "enemy",
-        angle: (o.options.spawn_angle != undefined) ? vector.deg_to_rad(o.options.spawn_angle) : undefined,
+        angle: (o.options.spawn_angle != undefined) ? math.deg_to_rad(o.options.spawn_angle) : undefined,
         delay: o.options.spawn_delay,
         repeat: o.options.spawn_repeat,
         repeat_delay: o.options.spawn_repeat_delay,
@@ -347,13 +347,6 @@ export class Spawner {
 
   check_progress(spawner_id: string): number {
     return Spawner.check_progress(spawner_id);
-  }
-
-  // useful
-  thing_lookup(thing_id: string) {
-    return Thing.things_lookup[thing_id];
-    // if (!thing) console.error("[enemy/thing_lookup] thing id not found: " + thing_id);
-    // return thing;
   }
 
   spawner_lookup(spawner_id: string) {

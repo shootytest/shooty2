@@ -36,9 +36,11 @@ export interface maketype {
   seethrough?: boolean; // visibility
   keep_bullets?: boolean; // don't delete bullets if they collide
   switch?: boolean;
+  switch_enemy?: boolean; // switches that enemies can also hit
   checkpoint?: boolean;
   cover_z?: boolean; // override cover z
   wall_filter?: wall_filter_type; // none (not a wall) / normal wall (nothing can pass) / window (players can't pass but bullets can) / curtain (bullets can't pass but players can)
+  wall_team?: number; // team the wall lets through
 
   shoots?: string[];
 
@@ -47,8 +49,11 @@ export interface maketype {
   health?: maketype_health;
   ability?: maketype_health;
   hide_health?: boolean;
-  hide_health_until?: number;
+  hide_health_until?: number; // use with hide_health for fake walls
+  shield?: maketype_health;
+  hide_shield?: boolean;
   translucent?: number;
+  translucent_color?: string;
 
   // physics stuff
   angle?: number;
@@ -66,9 +71,9 @@ export interface maketype {
   enemy_safe?: boolean;
   focus_camera?: boolean;
   zzz_sleeping?: boolean;
-  repel_range?: number;
   repel_force?: number;
-  shield?: maketype_health;
+  repel_range?: number;
+  repel_angles?: [number, number][];
 
   // special drops
   xp?: number;
@@ -304,7 +309,7 @@ export const clone_object = function(obj: dictionary) {
   for (const [k, v] of Object.entries(obj)) {
     if (Array.isArray(v)) {
       result[k] = [];
-      for (const a of v) result[k].push(typeof a === "object" ? clone_object(a) : a);
+      for (const a of v) result[k].push(typeof a === "object" && !Array.isArray(a) ? clone_object(a) : a);
     } else if (typeof v === "object") {
       result[k] = clone_object(v);
     } else {
@@ -320,8 +325,9 @@ export const override_object = function(m_target: dictionary, m_override: dictio
     if (Array.isArray(v)) {
       if (m_target[k] == undefined) m_target[k] = [];
       for (const [i, a] of v.entries()) {
-        if (i >= m_target[k].length) m_target[k].push(typeof a === "object" ? clone_object(a) : a);
-        else if (typeof a === "object") override_object(m_target[k][i], a);
+        const is_object = typeof a === "object" && !Array.isArray(a);
+        if (i >= m_target[k].length) m_target[k].push(is_object ? clone_object(a) : a);
+        else if (is_object) override_object(m_target[k][i], a);
         else m_target[k][i] = a;
       }
     } else if (typeof v === "object") {
@@ -349,7 +355,7 @@ export const multiply_and_override_object = function(m_target: dictionary, m_ove
       if (m_target[k] == undefined) m_target[k] = [];
       for (const [i, a] of v.entries()) {
         if (i >= m_target[k].length) m_target[k].push(typeof a === "object" ? clone_object(a) : a);
-        else if (typeof a === "object") override_object(m_target[k][i], a);
+        else if (typeof a === "object" && !Array.isArray(a)) override_object(m_target[k][i], a);
         else m_target[k][i] = a;
       }
     } else if (typeof v === "object") {

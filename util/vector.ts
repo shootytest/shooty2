@@ -131,14 +131,23 @@ export const vector = {
       math.round_to(v.y, n),
     );
   },
+  angle: (v: vector) => {
+    return Math.atan2(v.y, v.x);
+  },
+  angle_deg: (v: vector) => {
+    return math.rad_to_deg(Math.atan2(v.y, v.x));
+  },
   direction: (v: vector) => {
     return Math.atan2(v.y, v.x);
+  },
+  direction_deg: (v: vector) => {
+    return math.rad_to_deg(Math.atan2(v.y, v.x));
   },
   createpolar: (theta: number, r = 1) => {
     return vector.create(r * Math.cos(theta), r * Math.sin(theta));
   },
   createpolar_deg: (theta: number, r = 1) => {
-    return vector.createpolar(vector.deg_to_rad(theta), r);
+    return vector.createpolar(math.deg_to_rad(theta), r);
   },
   lerp: (v1: vector, v2: vector, t: number): vector => {
     return vector.add(vector.mult(v1, 1 - t), vector.mult(v2, t));
