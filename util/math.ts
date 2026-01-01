@@ -28,6 +28,9 @@ export const math = {
   halfsqrt2: Math.sqrt(2) / 2,
   halfsqrt3: Math.sqrt(3) / 2,
 
+  pixel_roughly_equal: (a: number, b: number): boolean => {
+    return Math.abs(a - b) < 1;
+  },
   a_bit_equal: (a: number, b: number): boolean => {
     return Math.abs(a - b) < math.epsilon_bigger;
   },
@@ -186,6 +189,12 @@ export const math = {
   },
   round_z: (z: number): number => {
     return Math.round(z * 1000) / 1000;
+  },
+  round_rand: (value: number): number => {
+    const i = Math.floor(value), f = value - i;
+    if (math.equal(value, i)) return i;
+    else if (math.rand() < f) return i + 1;
+    else return i;
   },
 
   point_in_rect: (px: number, py: number, x: number, y: number, w: number, h: number): boolean => {
@@ -418,7 +427,7 @@ export const math = {
     // }
     const { x, y } = point;
     let c = false;
-    for (let l = polygon.length, i = 0, j = l-1; i < l; j = i++) {
+    for (let l = polygon.length - (vector.equal(polygon[0], polygon[polygon.length - 1]) ? 1 : 0), i = 0, j = l-1; i < l; j = i++) {
       const xj = polygon[j].x, yj = polygon[j].y, xi = polygon[i].x, yi = polygon[i].y;
       const where = (yi - yj) * (x - xi) - (xi - xj) * (y - yi);
       if (yj < yi) {

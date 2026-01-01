@@ -4,7 +4,7 @@ import { config } from "../util/config.js";
 import { math } from "../util/math.js";
 import { vector, vector3 } from "../util/vector.js";
 import { detector, filters } from "./detector.js";
-import { clone_object, make, make_shapes, shallow_clone_array } from "./make.js";
+import { clone_object, make, make_shapes, override_object, shallow_clone_array } from "./make.js";
 import { Particle } from "./particle.js";
 import { player } from "./player.js";
 import { save } from "./save.js";
@@ -21,11 +21,10 @@ export class Enemy extends Thing {
         this.spawner = spawner;
         this.is_enemy = true;
     }
-    make_enemy(key, position, angle, room_id, id) {
+    make_enemy(key, position, angle, id) {
         if (make[key] == undefined)
             return console.error(`[enemy/make_enemy] no such enemy: '${key}'`);
         this.make(key);
-        this.create_room(room_id);
         if (id)
             this.create_id(id);
         else {
@@ -50,6 +49,18 @@ export class Enemy extends Thing {
         if ((this.options.switch || this.options.switch_enemy) && save.check_switch(this.spawner.id)) {
             this.shapes[0].options.glowing = 1;
         }
+    }
+    set_room(room_id) {
+        if (this.spawner.waves.length > 0)
+            return false;
+        if (!super.set_room(room_id))
+            return false;
+        Spawner.spawners_rooms[this.spawner.room_id].remove(this.spawner);
+        this.spawner.room_id = room_id;
+        if (Spawner.spawners_rooms[room_id] == undefined)
+            Spawner.spawners_rooms[room_id] = [];
+        Spawner.spawners_rooms[room_id].push(this.spawner);
+        return true;
     }
     die() {
         const id = this.spawner.id;
@@ -126,12 +137,14 @@ export class Spawner {
     uid = ++Spawner.cumulative_id;
     id = "generic spawner #" + this.uid;
     room_id = "";
+    original_room_id = "";
     z = 0;
     vertices = [];
     options;
     spawn;
     wave;
     waves = [];
+    wave_started = false;
     wave_progress = 0;
     enemies = [];
     total_enemies = -1;
@@ -161,6 +174,7 @@ export class Spawner {
         this.create_id(o.id);
         if (o.options.room_id) {
             this.room_id = o.options.room_id;
+            this.original_room_id = this.room_id;
             if (Spawner.spawners_rooms[this.room_id] == undefined)
                 Spawner.spawners_rooms[this.room_id] = [];
             Spawner.spawners_rooms[this.room_id].push(this);
@@ -190,7 +204,7 @@ export class Spawner {
             if (this.spawn) {
                 this.wave_progress = stored;
             }
-            else if (this.wave && this.wave_progress >= this.waves.length) {
+            else if (this.wave && stored >= this.waves.length) {
                 this.wave_progress = stored;
             }
         }
@@ -217,7 +231,9 @@ export class Spawner {
         this.delays = this.delays.filter((d) => {
             if (Thing.time < d.time)
                 return true;
-            this.spawn_enemy(d.type, d.position, d.angle);
+            const e = this.spawn_enemy(d.type, d.position, d.angle);
+            if (d.make)
+                e.make_object(d.make);
             return false;
         });
     }
@@ -231,6 +247,8 @@ export class Spawner {
                 position: vector3.create2(this.random_position(), this.z),
                 angle: spawn.angle ?? math.randangle(),
             };
+            if (spawn.make)
+                delay.make = spawn.make;
             if (seconds > 0) {
                 const p = Particle.make_icon("spawn", (make_shapes[spawn.type]?.[0]?.radius ?? 30) * 2, delay.position);
                 p.time = delay.time;
@@ -250,27 +268,55 @@ export class Spawner {
         return repeat;
     }
     do_waves(wave) {
+        if (!this.wave_started)
+            return;
         let total = 0;
-        for (const e of wave.enemies) {
-            let spawner = this;
-            if (typeof e.spawner === "number") {
-                spawner = this.spawner_lookup(this.contains[e.spawner]);
+        if (this.wave?.global_make) {
+            if (!wave.make)
+                wave.make = this.wave.global_make;
+            else {
+                const m = clone_object(this.wave.global_make);
+                override_object(m, wave.make);
+                wave.make = m;
             }
-            else if (typeof e.spawner === "string") {
-                spawner = this.spawner_lookup(e.spawner);
+        }
+        for (const e of wave.enemies) {
+            let o = clone_object(e);
+            o.delay = (o.delay ?? 0) + (wave.delay ?? 0) + (this.wave?.global_delay ?? 0);
+            if (wave.make) {
+                if (!o.make)
+                    o.make = wave.make;
+                else {
+                    const m = clone_object(wave.make);
+                    override_object(m, o.make);
+                    o.make = m;
+                }
+            }
+            let spawner = this;
+            let sid = this.id;
+            if (Array.isArray(o.spawner)) {
+                sid = math.randpick(o.spawner);
+            }
+            else if (o.spawner != undefined)
+                sid = o.spawner;
+            if (typeof sid === "number") {
+                spawner = this.spawner_lookup(this.contains[sid]);
+            }
+            else if (typeof sid === "string") {
+                spawner = this.spawner_lookup(sid);
             }
             if (spawner == undefined)
-                return;
+                continue;
             spawner.parent = this;
             if (!this.children.includes(spawner))
                 this.children.push(spawner);
-            total += spawner.do_spawn(e);
+            total += spawner.do_spawn(o);
         }
         this.total_enemies = total;
     }
     spawn_enemy(type, position, angle) {
         const e = new Enemy(this);
-        e.make_enemy(type, position ?? vector3.create2(this.random_position(), this.z), angle ?? math.randangle(), this.room_id);
+        e.make_enemy(type, position ?? vector3.create2(this.random_position(), this.z), angle ?? math.randangle());
         if (this.options?.is_map)
             e.options.is_map = true;
         e.wave_number = this.wave_progress + 1;
@@ -278,7 +324,7 @@ export class Spawner {
         this.enemies.push(e);
         if (this.parent !== this)
             this.parent.enemies.push(e);
-        detector.before_spawn_fns[this.id]?.(e);
+        // detector.before_spawn_fns[this.id]?.(e); // unused for now
         detector.before_spawn_fns[type]?.(e);
         return e;
     }
@@ -301,7 +347,8 @@ export class Spawner {
         else {
             // ???
         }
-        if (this.permanent && this.wave_progress > -1) {
+        if (this.permanent && this.wave_progress >= 0) {
+            console.log(this.id, this.wave_progress);
             save.set_switch(this.id, this.wave_progress);
         }
         detector.spawner_calc_fns[this.id]?.(this);

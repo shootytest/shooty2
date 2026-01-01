@@ -9,6 +9,8 @@ export const config = {
         autosave_interval: 1 * SECONDS,
         level_1_xp: 1000,
         fall_damage: 100,
+        coin_drop_mult: 1,
+        coin_attractor_mult: 1,
     },
     physics: {
         wall_width: 8,
@@ -26,7 +28,7 @@ export const config = {
     graphics: {
         fps: 60,
         resolution_mult: 1,
-        particle_setting: 2,
+        particle_setting: 0,
         debug_display: false,
         fullscreen: false,
         shape_cull_padding: 50,

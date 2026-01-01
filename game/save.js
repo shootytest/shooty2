@@ -29,6 +29,9 @@ export const save = {
     check_switch: (id) => {
         return save.get_switch(id) > 0;
     },
+    delete_switch: (id) => {
+        delete save.save.switches[id];
+    },
     set_switch: (id, number = 1) => {
         save.save.switches[id] = number;
         save.changed(true);
@@ -205,6 +208,6 @@ export const save = {
         config.graphics.resolution_mult = o.graphics[1];
         config.graphics.debug_display = o.graphics[2] ?? false;
         config.graphics.fullscreen = o.graphics[3] ?? false;
-        config.graphics.particle_setting = o.graphics[4] ?? 2;
+        config.graphics.particle_setting = o.graphics[4] ?? 0;
     },
 };

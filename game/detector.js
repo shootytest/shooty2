@@ -242,6 +242,10 @@ export const detector = {
         }
         if (!hittingz)
             return;
+        if (a.options.floor || b.options.floor) {
+            pair.isSensor = true;
+            return;
+        }
         if (a.is_wall && a.options.wall_team
             && (Math.floor(b.team) < 0 || math.equal(Math.floor(b.team), a.options.wall_team))
             && !(a.options.wall_team === 1 && b.is_bullet && !b.options.collectible)) {
@@ -290,7 +294,12 @@ export const detector = {
                 player.object.checkpoint_pair = pair;
                 player.set_checkpoint_here();
                 player.change_room(player.checkpoint_room, true);
-                player.reload_all_rooms([player.checkpoint_room]); // reload everything except current room
+                if (Thing.time - (player.object.checkpoint_last_reloaded ?? -9999999) > 0.4 * config.seconds) {
+                    player.object.checkpoint_last_reloaded = Thing.time;
+                    // reload everything except the current checkpoint room (fixed: can reload checkpoint room now without the infinite loop!)
+                    player.reload_all_rooms([player.checkpoint_room]);
+                    player.unload_room_visitors(player.checkpoint_room);
+                }
                 // activate lol
                 // pair.isSensor = true;
                 // player.teleport_to(b.position);
@@ -430,7 +439,12 @@ export const detector = {
             detector.sensor_during_fns.set_train(thing, dt); },
         ["station streets floor 5"]: (thing, dt) => { if (player.is_safe)
             detector.sensor_during_fns.set_train(thing, dt); },
-        ["train sensor"]: (thing, dt) => {
+        ["streets room 7 sensor 1"]: (_thing, _dt) => {
+            const s = Spawner.spawners_lookup["streets room 7 waves"];
+            if (!s.is_done)
+                player.camera_target_target = s.vertices[0];
+        },
+        ["train sensor"]: (_thing, dt) => {
             if (player.z >= 0)
                 player.fov_mult = 0.6;
             if (player.z >= 0.5 || player.z < 0)
@@ -539,6 +553,11 @@ export const detector = {
                     }
                 }
             }
+        },
+        ["streets room 7 sensor 1"]: (_thing) => {
+            const s = Spawner.spawners_lookup["streets room 7 waves"];
+            if (s)
+                s.wave_started = true;
         },
     },
     sensor_end_fns: {
@@ -724,10 +743,10 @@ export const detector = {
         },
         // tutorial boss doors
         ["tutorial room 5 door start"]: (door) => {
-            switch_door(door, Spawner.get_enemy("tutorial room 5 boss")?.object?.start_activated, "tutorial room 5 door start path", 6);
+            switch_door(door, Spawner.get_enemy("tutorial room 5 boss")?.object.start_activated, "tutorial room 5 door start path", 6);
         },
         ["tutorial room 5 door end"]: (door) => {
-            switch_door(door, Spawner.get_enemy("tutorial room 5 boss")?.object?.end_activated, "tutorial room 5 door end path", 6);
+            switch_door(door, Spawner.get_enemy("tutorial room 5 boss")?.object.end_activated, "tutorial room 5 door end path", 6);
         },
         // station stuff
         ["train door left"]: (door) => {
@@ -821,23 +840,96 @@ export const detector = {
         ["streets room 3 door 1"]: (door) => {
             switch_door(door, Thing.lookup("streets room 3 turret 1 button|0")?.object.dead, "streets room 3 door 1");
         },
-        ["streets room 5 window 2"]: (door) => {
+        ["streets room 5 window 1"]: (door) => {
             switch_door(door, "streets room 5 switch 0", "streets room 5 switch 0 path", 1);
+        },
+        ["streets room 7 door"]: (door) => {
+            const s = Spawner.spawners_lookup["streets room 7 waves"];
+            if (s)
+                do_door(door, !s.is_done && s.wave_started);
+        },
+        ["streets room 7 door up"]: (door) => {
+            const s = Spawner.spawners_lookup["streets room 7 waves"];
+            if (!s.is_done)
+                return;
+            do_door(door, Math.abs(door.original_position.x - player.position.x) < 200 && Math.abs(door.original_position.y - player.position.y) < 130, 9);
+        },
+        ["streets room 7 door down"]: (door) => {
+            const s = Spawner.spawners_lookup["streets room 7 waves"];
+            if (!s.is_done)
+                return;
+            do_door(door, Math.abs(door.original_position.x - player.position.x) < 200 && Math.abs(door.original_position.y - player.position.y) < 130, 9);
+        },
+        ["streets room 7 floor moving up"]: (floor) => {
+            const s = Spawner.spawners_lookup["streets room 7 waves"];
+            if (!s.is_done)
+                return;
+            if (floor.object.down == undefined) {
+                floor.object.down = -(Thing.time + config.seconds * 0.5);
+            }
+            if (floor.object.down > 0) {
+                if (floor.object.down > Thing.time)
+                    return;
+                if (floor.position.y > floor.original_position.y) {
+                    floor.object.down = -(Thing.time + config.seconds * 0.5);
+                    floor.set_velocity(vector.create());
+                }
+                else
+                    floor.set_velocity(vector.create(-1, 3));
+            }
+            else if (floor.object.down < 0) {
+                if (-floor.object.down > Thing.time)
+                    return;
+                if (floor.position.y < floor.original_position.y - 500) {
+                    floor.object.down = Thing.time + config.seconds * 0.5;
+                    floor.set_velocity(vector.create());
+                }
+                else
+                    floor.set_velocity(vector.create(1, -3));
+            }
+        },
+        ["streets room 7 floor moving down"]: (floor) => {
+            const s = Spawner.spawners_lookup["streets room 7 waves"];
+            if (!s.is_done)
+                return;
+            if (floor.object.down == undefined) {
+                floor.object.down = Thing.time + config.seconds * 0.5;
+            }
+            if (floor.object.down > 0) {
+                if (floor.object.down > Thing.time)
+                    return;
+                if (floor.position.y > floor.original_position.y + 875) {
+                    floor.object.down = -(Thing.time + config.seconds * 0.5);
+                    floor.set_velocity(vector.create());
+                }
+                else
+                    floor.set_velocity(vector.create(-1.5, 4.5));
+            }
+            else if (floor.object.down < 0) {
+                if (-floor.object.down > Thing.time)
+                    return;
+                if (floor.position.y < floor.original_position.y) {
+                    floor.object.down = Thing.time + config.seconds * 0.5;
+                    floor.set_velocity(vector.create());
+                }
+                else
+                    floor.set_velocity(vector.create(1.5, -4.5));
+            }
         },
     },
 };
 const do_door = (door, sensor_id, speed = 5, invert = false) => {
     const vs = door.shapes[0].vertices;
     const dir = vector.sub(vs[1], vs[0]);
-    const offset = vector.sub(door.position, door.target.position);
-    let triggered = Boolean(door.lookup(sensor_id)?.is_touching_player);
+    const offset = vector.sub(door.position, door.original_position);
+    let triggered = typeof sensor_id === "boolean" ? sensor_id : Boolean(door.lookup(sensor_id)?.is_touching_player);
     if (invert)
         triggered = !triggered;
     let exceeded = true;
     if (triggered)
-        exceeded = vector.length2(offset) > vector.length2(dir);
+        exceeded = vector.length2(offset) >= vector.length2(dir);
     else
-        exceeded = vector.dot(offset, dir) < 0;
+        exceeded = vector.dot(offset, dir) <= 0;
     if (!exceeded)
         door.translate(vector.normalise(dir, triggered ? speed : -speed));
 };

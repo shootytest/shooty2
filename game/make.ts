@@ -245,10 +245,14 @@ export interface bullet_mod {
 // waves
 
 export interface maketype_wave {
+  global_delay?: number;
+  global_make?: maketype;
   rounds: maketype_wave_round[];
 };
 
 export interface maketype_wave_round {
+  delay?: number;
+  make?: maketype;
   enemies: maketype_wave_enemy[];
 };
 
@@ -258,7 +262,8 @@ export interface maketype_wave_enemy extends enemy_spawn {
   // delay?: number;
   // repeat?: number;
   // repeat_delay?: number;
-  spawner?: number | string; // index or id both accepted
+  make?: maketype;
+  spawner?: number | string | (number | string)[]; // index or id both accepted, arrays are for random choice
 };
 
 

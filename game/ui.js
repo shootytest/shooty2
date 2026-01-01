@@ -377,7 +377,7 @@ export const ui = {
         if (last_save_position) {
             const p = camera.world3screen(last_save_position, player);
             ctx.fillStyle = color.green + "33";
-            ctx.svg_v("x", p, player.radius * 3 * camera.zscale(last_save_position.z));
+            ctx.svg_v("x", p, player.radius * 2 * camera.scale * camera.zscale(last_save_position.z));
         }
     },
     draw_health: function () {
@@ -896,11 +896,13 @@ export const ui = {
                 x -= size * 6 * (1 + on_ratio);
             }
             ctx.ctx.restore();
-            // size
+            // size and level
             y += size * 3;
             ctx.text("size", x, y);
+            ctx.text("level", x, y + size * 3);
             ctx.set_font_mono(size * 1.5, "bold");
             ctx.text(`${Math.round(o.area?.[saved.n - 1] ?? -1)}`, x + size * 5, y);
+            ctx.text(`${Math.round(saved.n)}`, x + size * 5, y + size * 3);
         }
     },
     items: {
@@ -939,7 +941,7 @@ export const ui = {
             description: [
                 "disable shooting",
             ],
-            on_fn: () => {
+            on_fn: (_n) => {
                 player.object.old_shape_opacity = player.shapes.map((s, i) => {
                     const o = s.opacity;
                     if (i > 0)
@@ -948,7 +950,7 @@ export const ui = {
                 });
                 player.object.friendly_shapes = player.make_shape_key("player_friendly");
             },
-            off_fn: () => {
+            off_fn: (_n) => {
                 for (const s of (player.object.friendly_shapes ?? [])) {
                     s.remove();
                 }
@@ -959,13 +961,32 @@ export const ui = {
             },
         },
         triangle_speed: {
-            title: "speedy",
+            title: "speedy [draft]",
             description: [
                 "fire a speedy shot every 6 bullets (+50% speed)",
                 "fire a speedy shot every 5 bullets (+60% speed)",
                 "fire a speedy shot every 4 bullets (+70% speed)",
                 "fire a speedy shot every 3 bullets (+80% speed)",
             ],
+        },
+        coin_attractor: {
+            title: "coin attractor [draft]",
+            description: [
+                "+50% coin pickup radius!",
+                "+100% coin pickup radius and +10% coin drop rate!",
+                "+150% coin pickup radius and +20% coin drop rate!",
+                "+300% coin pickup radius and +40% coin drop rate!",
+            ],
+            on_fn: (n) => {
+                config.game.coin_attractor_mult = [1, 1.5, 2, 2.5, 4][n];
+                if (n >= 2)
+                    config.game.coin_drop_mult *= [1, 1, 1.1, 1.2, 1.4][n];
+            },
+            off_fn: (n) => {
+                config.game.coin_attractor_mult = 1;
+                if (n >= 2)
+                    config.game.coin_drop_mult /= [1, 1, 1.1, 1.2, 1.4][n];
+            },
         },
         area_base: {
             title: "base",
@@ -979,8 +1000,8 @@ export const ui = {
         const o = ui.shapey[id];
         if (!o)
             return;
-        o.on_fn?.();
         const n = save.get_shapey(id);
+        o.on_fn?.(n);
         const string = "shapey_" + id + "_" + n;
         if (make_shoot_mods[string]) {
             for (const s of player.shoots) {
@@ -992,8 +1013,8 @@ export const ui = {
         const o = ui.shapey[id];
         if (!o)
             return;
-        o.off_fn?.();
         const n = save.get_shapey(id);
+        o.off_fn?.(n);
         const string = "shapey_" + id + "_" + n;
         if (make_shoot_mods[string]) {
             for (const s of player.shoots) {
@@ -1016,6 +1037,11 @@ export const ui = {
             for (let n = 1; n <= o.description.length; n++) {
                 const string = ui.get_shapey_key(k, n);
                 const ss = make_shapes[string];
+                if (!ss) {
+                    console.error("no make_shapes found for make id '" + string + "'!");
+                    areas.push(0);
+                    continue;
+                }
                 let area = 0;
                 for (const s of ss) {
                     const mult = (o.base && !s.shapey_area) ? -1 : 1;
@@ -1030,7 +1056,6 @@ export const ui = {
                         break;
                 }
                 areas.push(area);
-                n++;
             }
             o.area = areas;
         }
@@ -1146,7 +1171,7 @@ export const ui = {
         theme: "",
         themes: {
             tutorial: {
-                n: [0, 5, 12, 25],
+                n: [0, 2, 12, 25],
                 fn: () => {
                     const p = Particle.make(math.polygon(7, 300, math.randangle()), math.randvector(20));
                     p.object.theme = "tutorial";
@@ -1163,7 +1188,7 @@ export const ui = {
                 },
             },
             streets: {
-                n: [0, 20, 50, 100],
+                n: [0, 10, 50, 100],
                 fn: () => {
                     const p = Particle.make(math.polygon(3, math.rand(10, 14))); // Particle.make_circle(math.rand(10, 14));
                     p.velocity = math.randvector(20);

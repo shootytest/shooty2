@@ -133,6 +133,7 @@ export class Player extends Thing {
       let checkpoint_floor = false;
       let floor_z = (save.save.player.position?.z ?? 0) - 2;
       let on_floor_z = floor_z;
+      let touching_floors: Thing[] = [];
       let z = this.target.position.z;
       for (const s of Shape.floor_shapes) {
         if (s.computed && math.is_circle_in_polygon(this.position, this.radius, s.computed.vertices)) {
@@ -142,9 +143,17 @@ export class Player extends Thing {
           if (on_floor) {
             on_floor_z = s.z;
             s.thing.is_touching_player = true;
+            if (!touching_floors.includes(s.thing)) touching_floors.push(s.thing);
             safe_floor = safe_floor && (s.options.safe_floor ?? s.thing.options.safe_floor ?? false);
             if (!checkpoint_floor) checkpoint_floor = Boolean(s.thing.options.checkpoint);
           }
+        }
+      }
+      // if floor is moving :O
+      if (touching_floors.length >= 1 && touching_floors[0]?.body) {
+        const tv = touching_floors[0].velocity;
+        if (!math.a_bit_equal(tv.x, 0) || !math.a_bit_equal(tv.y, 0)) {
+          this.push_by(vector.mult(tv, 1.45)); // / touching_floors.length
         }
       }
       // jumping
@@ -262,10 +271,10 @@ export class Player extends Thing {
           if (inside && !was_inside) ui.shapey_on(id);
           else if (!inside && was_inside) ui.shapey_off(id);
           t.object.inside = inside;
-          t.shapes[0].options.glowing = inside ? 0.5 : 0;
+          t.shapes[0].options.glowing = inside ? 0.1 : 0;
         }
-        // todo remove debug draw
-        // ctx.fillStyle = "white";
+        // todo remove debug draws
+        // ctx.fillStyle = "#ffffff88";
         // ctx.beginPath();
         // for (const u of union) {
         //   const us = u.map((v) => { return camera.world2screen(v) });
@@ -274,6 +283,13 @@ export class Player extends Thing {
         // ctx.fill();
         save.save_all_shapey();
       }
+      // ctx.strokeStyle = "#ffffff";
+      // ctx.beginPath();
+      // for (const t of this.temp_things) {
+      //   const us = t.shapes[0].real_vertices().map((v) => { return camera.world2screen(v) });
+      //   ctx.lines_v(us);
+      // }
+      // ctx.stroke();
     }
 
   }
@@ -421,6 +437,7 @@ export class Player extends Thing {
     for (const [id, n] of Object.entries(save.check_all_shapey())) {
       if (!ui.shapey[id]?.base && n > 0 && save.is_shapey_on(id) > 0) ui.shapey_on(id);
     }
+    save.delete_switch("streets room 6 reward 1");
   }
 
   add_xp(xp: number) {
@@ -477,13 +494,13 @@ export class Player extends Thing {
 
   change_room(room_id: string, force: boolean = false) {
     if (!room_id || (!force && this.room_id === room_id)) return;
-    const old_room_id = this.room_id;
+    // const old_room_id = this.room_id;
     this.room_id = room_id;
     this.set_rooms(this.connected_rooms(1), this.connected_rooms(2).concat(always_loaded_rooms));
-    if (old_room_id !== (MAP.computed?.shape_map.start.options.room_connections?.[0] ?? "") && !this.room_list.includes(old_room_id)) {
-      console.log(this.room_list);
-      console.warn("[player/change_room] warning! player room list doesn't include the previous room id: " + old_room_id);
-    }
+    // if (old_room_id !== (MAP.computed?.shape_map.start.options.room_connections?.[0] ?? "") && !this.room_list.includes(old_room_id)) {
+    //   console.log(this.room_list);
+    //   console.warn("[player/change_room] warning! player room list doesn't include the previous room id: " + old_room_id);
+    // }
   }
 
   connected_rooms(depth: number = 1, room_id?: string): string[] {
@@ -528,6 +545,15 @@ export class Player extends Thing {
       thing.remove();
     }
     this.room_list.remove(room_id);
+  }
+
+  unload_room_visitors(room_id: string) {
+    for (const spawner of shallow_clone_array(Spawner.spawners_rooms[room_id] ?? [])) {
+      if (spawner.original_room_id !== room_id) spawner.remove();
+    }
+    for (const thing of shallow_clone_array(Thing.things_rooms[room_id] ?? [])) {
+      if (thing.original_room_id !== room_id) thing.remove();
+    }
   }
 
   reload_room(room_id: string) {

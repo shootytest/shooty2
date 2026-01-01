@@ -119,6 +119,7 @@ export default function () {
             type: "polygon",
             sides: 3,
             radius: 35,
+            glowing: 0.1,
         }, {
             type: "polygon",
             sides: 3,
@@ -141,5 +142,78 @@ export default function () {
             v2: vector.create(-9, -4),
             style_: { width: 0.5, },
         }];
+    make.collect_shapey_friendly = {
+        make_parent: ["collect_shapey"],
+        collectible: {
+            shapey: "friendly",
+        },
+        style: "collect_home",
+    };
+    make_shapes.collect_shapey_friendly = [{
+            type: "circle",
+            radius: 15,
+            style_: {
+                width: 0.6,
+            },
+            glowing: 0.1,
+        }, {
+            type: "arc",
+            radius: 7,
+            arc_start: -1,
+            arc_end: 1,
+            style_: {
+                fill_opacity: 0,
+                width: 0.6,
+            },
+        }, {
+            type: "circle",
+            radius: 1,
+            offset: vector.createpolar_deg(135, 6),
+            style_: {
+                width: 0.5,
+            },
+        }, {
+            type: "circle",
+            radius: 1,
+            offset: vector.createpolar_deg(225, 6),
+            style_: {
+                width: 0.5,
+            },
+        }];
+    make.collect_shapey_coin_attractor = {
+        make_parent: ["collect_shapey"],
+        behaviour: {
+            idle: {
+                face_mode: "spin",
+                spin_speed: 3,
+            }
+        },
+        collectible: {
+            shapey: "coin_attractor",
+        },
+        style: "collect_coin_shapey",
+    };
+    make_shapes.collect_shapey_coin_attractor = [{
+            type: "circle",
+            radius: 28,
+            glowing: 0.1,
+        }, {
+            type: "circle",
+            radius: 8,
+            style_: {
+                fill_opacity: 0,
+                width: 0.5,
+            },
+        }];
+    for (let i = 0; i < 3; i++) {
+        make_shapes.collect_shapey_coin_attractor.push({
+            type: "line",
+            v1: vector.createpolar_deg(120 * i, 13),
+            v2: vector.createpolar_deg(120 * i, 23),
+            style_: {
+                width: 0.5,
+            },
+        });
+    }
 }
 ;

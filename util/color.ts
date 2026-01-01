@@ -304,11 +304,29 @@ export const STYLES/*: { [key: string]: style_type }*/ = {
     fill: "#a6ff00",
     fill_opacity: 0.2,
   },
+  collect_coin_shapey: {
+    stroke: "coin",
+    stroke_opacity: 1,
+    fill: "coin",
+    fill_opacity: 0.2,
+  },
+  collect_tutorial: {
+    stroke: THEMES.tutorial.main,
+    stroke_opacity: 1,
+    fill: THEMES.tutorial.main,
+    fill_opacity: 0.2,
+  },
   collect_streets: {
     stroke: THEMES.streets.main,
     stroke_opacity: 1,
     fill: THEMES.streets.main,
-    fill_opacity: 0.3,
+    fill_opacity: 0.2,
+  },
+  collect_home: {
+    stroke: THEMES.home.main,
+    stroke_opacity: 1,
+    fill: THEMES.home.main,
+    fill_opacity: 0.2,
   },
 
   // the one

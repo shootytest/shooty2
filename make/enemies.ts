@@ -538,6 +538,59 @@ make_shapes.enemy_streets_easy_2 = [{
   v2: vector.createpolar_deg(0, -9),
 }];
 
+make.enemy_streets_ram_1 = {
+  make_parent: ["enemy_streets"],
+  behaviour: {
+    normal: {
+      shoot_mode: "normal",
+      move_mode: "direct",
+      face_mode: "direct",
+      move_speed: 4,
+    },
+    idle: {
+      shoot_mode: "normal",
+      face_mode: "wander",
+      move_mode: "wander",
+      move_speed: 0.5,
+      wander_time: 1.5,
+      wander_distance: 100,
+      wander_cooldown: 0.6,
+      face_smoothness: 0.05,
+    },
+  },
+  enemy_detect_range: 300,
+  health: {
+    capacity: 250,
+  },
+  damage: 100,
+  death: [
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.6, spread_angle: -1 }, repeat: 2 },
+  ],
+  xp: 40,
+};
+make_shapes.enemy_streets_ram_1 = [{
+  type: "polygon",
+  sides: 3,
+  radius: 25,
+}, {
+  type: "line",
+  v2: vector.create(-12, 0),
+  shoot: "enemy_streets_ram_1",
+  shoot_: { angle: 180, },
+}, {
+  type: "line",
+  v1: vector.create(0, 7),
+  v2: vector.create(-12, 10),
+  shoot: "enemy_streets_ram_1",
+  shoot_: { angle: 165, },
+}, {
+  type: "line",
+  v1: vector.create(0, -7),
+  v2: vector.create(-12, -10),
+  shoot: "enemy_streets_ram_1",
+  shoot_: { angle: 195, },
+}];
+
 make.enemy_streets_turret_1 = {
   make_parent: ["enemy_streets"],
   movable: false,
@@ -597,13 +650,13 @@ make.enemy_streets_turret_spam = {
   },
   enemy_detect_range: 400,
   health: {
-    capacity: 50,
+    capacity: 200,
   },
   repel_force: 1,
   repel_range: 50,
-  repel_angles: [[-150, 150]],
+  repel_angles: [[-120, 120]],
   death: [
-    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.6, spread_angle: -1 }, repeat: 6 },
+    { type: "collect_coin", stats: { make: "collect_coin_1", speed: 0.6, spread_angle: -1 }, repeat: 3 },
   ],
   xp: 100,
 };
@@ -617,6 +670,14 @@ make_shapes.enemy_streets_turret_spam = [{
   v2: vector.createpolar_deg(0, 36),
   shoot: "enemy_streets_turret_spam",
 }];
+
+make.enemy_streets_turret_reward = {
+  make_parent: ["enemy_streets_turret_spam"],
+  death: [
+    { type: "collect_egg", stats: { make: "collect_egg_1" }, repeat: 1 },
+  ],
+};
+make_shapes.enemy_streets_turret_reward = make_shapes.enemy_streets_turret_spam;
 
 // scattered cameras in streets
 make.enemy_streets_camera_small = {

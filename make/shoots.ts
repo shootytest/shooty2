@@ -208,6 +208,17 @@ make_shoot.enemy_streets_easy_2 = {
   time: 2,
 };
 
+make_shoot.enemy_streets_ram_1 = {
+  parent: ["enemy"],
+  damage: 0,
+  size: 5,
+  spread_angle: 0.01,
+  reload: 0.3,
+  speed: 5,
+  spread_speed: 0.05,
+  time: 0.3,
+};
+
 make_shoot.enemy_streets_turret_1 = {
   parent: ["enemy"],
   make: "bullet_triangle",

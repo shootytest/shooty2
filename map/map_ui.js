@@ -1036,7 +1036,7 @@ export const m_ui = {
                 type: "checkbox",
             },
             force_layer: {
-                show: "is_map",
+                show: ["is_map", "floor"],
                 name: "force layer",
                 type: "number",
                 min: -10,
@@ -1052,10 +1052,10 @@ export const m_ui = {
                 name: "movable object",
                 type: "checkbox",
             },
-            draggable: {
-                name: "draggable object",
-                type: "checkbox",
-            },
+            // draggable: {
+            //   name: "draggable object",
+            //   type: "checkbox",
+            // },
         },
     },
     properties_options_metadata: {

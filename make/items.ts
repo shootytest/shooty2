@@ -209,4 +209,44 @@ make_shapes.shapey_triangle_speed_1 = [{
   style_: { width: 0.5, },
 }];
 
+make.shapey_coin_attractor_1 = {
+  make_parent: ["shapey"],
+  behaviour: {
+    idle: {
+      face_mode: "spin",
+      spin_speed: 3,
+    }
+  },
+  collectible: {
+    shapey: "coin_attractor",
+  },
+  style: "collect_coin_shapey",
+};
+for (let n = 1; n <= 4; n++) {
+  const k = "shapey_coin_attractor_" + n;
+  const r = [99, 1, 0.9, 0.8, 0.6][n];
+  if (n >= 2) make[k] = { make_parent: ["shapey_coin_attractor_1"] };
+  make_shapes[k] = [{
+    type: "circle",
+    radius: Math.round(30 * r),
+  }, {
+    type: "circle",
+    radius: Math.round(9 * r),
+    style_: {
+      fill_opacity: 0,
+      width: 0.5,
+    },
+  }];
+  for (let i = 0; i < n + 2; i++) {
+    make_shapes[k].push({
+      type: "line",
+      v1: vector.createpolar_deg(360 / (n + 2) * i, Math.round(14 * r)),
+      v2: vector.createpolar_deg(360 / (n + 2) * i, Math.round(25 * r)),
+      style_: {
+        width: 0.5,
+      },
+    });
+  }
+}
+
 };

@@ -1,6 +1,7 @@
 import { clone_object, make, make_shapes, override_object } from "../game/make.js";
 import { m_ui } from "../map/map_ui.js";
 import { camera } from "./camera.js";
+import { canvas } from "./canvas.js";
 import { color, color2hex_map, STYLES, STYLES_ } from "./color.js";
 import { key, mouse } from "./key.js";
 import { map_serialiser } from "./map_type.js";
@@ -394,6 +395,17 @@ export const map_draw = {
                 ctx.stroke();
                 const o = m_ui.mouse.drag_target[0];
                 const ov = o.shape.vertices[o.index];
+                const centre = vector.aabb_centre(m_ui.viewport);
+                ctx.begin();
+                const size = math.min(canvas.height * 0.022, 22);
+                ctx.set_font_mono(size);
+                ctx.roundrectangle(centre.x, m_ui.viewport.max_y - size * 2, size * 10, size * 2, size);
+                ctx.fillStyle = color.blackground;
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = color.white;
+                ctx.textAlign = "center";
+                ctx.text(ov.x.toFixed(0) + " , " + ov.y.toFixed(0), centre.x, m_ui.viewport.max_y - size * 2);
                 if (mouse.drag_vector_old[0] !== false && !m_ui.circle_menu.active) { // if the user is actually dragging the mouse
                     if (o.new) {
                         if (mouse.buttons[0]) {

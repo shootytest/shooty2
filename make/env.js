@@ -185,6 +185,11 @@ export default function () {
         make_parent: ["floor"],
         style: "train_track",
     };
+    make.floor_moving = {
+        make_parent: ["floor"],
+        decoration: false,
+        movable: true,
+    };
     // @sensors
     make.sensor = {
         style: "sensor",

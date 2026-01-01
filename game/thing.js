@@ -153,6 +153,7 @@ export class Thing {
     get thing_time() {
         return Thing.time;
     }
+    original_room_id = "";
     get room_id() {
         return this.options.room_id ?? "";
     }
@@ -202,6 +203,15 @@ export class Thing {
                 this.object.run_start = true;
             }
         }
+    }
+    make_object(o, reset = false) {
+        if (reset)
+            this.options = {};
+        override_object(this.options, o);
+        if (this.options.shoots?.length ?? 0)
+            this.make_shoot(this.options.shoots, true);
+        this.make_the_rest();
+        return this.options;
     }
     make(key, reset = false) {
         const o = make[key];
@@ -269,6 +279,10 @@ export class Thing {
                 this.shield = new Health(this, "shield");
             this.shield.make(this.options.shield);
         }
+        // do coin attractor (for coins)
+        if (this.options.collectible?.currency_name === "coin" && this.options.enemy_detect_range) {
+            this.options.enemy_detect_range *= config.game.coin_attractor_mult;
+        }
     }
     create_id(id) {
         this.id = id;
@@ -283,10 +297,23 @@ export class Thing {
             this.room_id = room_id;
         else
             room_id = this.room_id;
+        this.original_room_id = room_id;
         if (Thing.things_rooms[room_id] == undefined)
             Thing.things_rooms[room_id] = [];
         Thing.things_rooms[room_id].push(this);
         return;
+    }
+    set_room(room_id) {
+        if (this.body?.isStatic)
+            return false;
+        if (room_id === this.room_id)
+            return false;
+        Thing.things_rooms[this.room_id].remove(this);
+        this.room_id = room_id;
+        if (Thing.things_rooms[room_id] == undefined)
+            Thing.things_rooms[room_id] = [];
+        Thing.things_rooms[room_id].push(this);
+        return true;
     }
     create_body_options(filter) {
         const result = {
@@ -421,6 +448,13 @@ export class Thing {
             for (const d of this.options.death) {
                 if (d.type === "none")
                     continue;
+                // do coin drop rate multiplier
+                if (d.type === "collect_coin") {
+                    if (!d.repeat)
+                        d.repeat = 1;
+                    d.repeat *= config.game.coin_drop_mult;
+                    d.repeat = math.round_rand(d.repeat);
+                }
                 let S = make_shoot[d.type] ?? {};
                 if (d.stats) {
                     S = clone_object(S);
@@ -617,6 +651,7 @@ export class Thing {
         const player = Thing.things_lookup.player;
         this.can_see_player();
         if (this.is_seeing_player) {
+            this.set_room(player.room_id);
             if (this.behaviour.type !== "normal") {
                 this.behaviour.time = 0;
                 this.behaviour.type = "normal";
@@ -648,7 +683,7 @@ export class Thing {
     }
     can_see_player() {
         const player = Thing.things_lookup["player"];
-        if (this.options.enemy_detect_range === 0 || vector.length2(vector.sub(this.position, player.position)) > (this.options.enemy_detect_range ?? 500) ** 2) {
+        if (!this.options.enemy_detect_range || vector.length2(vector.sub(this.position, player.position)) > this.options.enemy_detect_range ** 2) {
             this.is_seeing_player = false;
             return false;
         }
