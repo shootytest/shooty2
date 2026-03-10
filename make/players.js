@@ -43,5 +43,28 @@ export default function () {
             radius: 1,
             offset: vector.createpolar_deg(225, 14),
         }];
+    make.npc_test = {
+        style: "player",
+        behaviour: {
+            idle: {
+                fn_start: "npc_test idle start",
+                fn_during: "npc_test idle",
+            },
+            normal: {
+                fn_start: "npc_test normal",
+                fn_end: "npc_test normal end",
+            },
+        },
+        seethrough: true,
+        team: -1,
+        friction: 0.2,
+        detect_range: 150,
+        enemy_safe: true,
+    };
+    make_shapes.npc_test = [{
+            type: "polygon",
+            sides: 3,
+            radius: 40,
+        }];
 }
 ;

@@ -20,7 +20,7 @@ make.bullet_homing_5 = {
       move_speed: 5,
     }
   },
-  enemy_detect_range: 1000,
+  detect_range: 1000,
 };
 
 make.bullet_triangle = {

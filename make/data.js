@@ -12,3 +12,12 @@ export const make_data = {
         },
     },
 };
+export const make_texts = {
+    npc_test: {
+        idle: "ow",
+        active: {
+            sequence: [],
+        },
+        hit: "ow",
+    },
+};

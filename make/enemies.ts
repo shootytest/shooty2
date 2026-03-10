@@ -138,7 +138,7 @@ make.enemy_tutorial_4way = {
     },
   },
   angle: -360 / 14,
-  enemy_detect_range: 360,
+  detect_range: 360,
   focus_camera: true,
   health: {
     capacity: 750,
@@ -190,7 +190,7 @@ make.enemy_tutorial_easy = {
       face_smoothness: 0.05,
     },
   },
-  enemy_detect_range: 500,
+  detect_range: 500,
   health: {
     capacity: 250,
   },
@@ -227,7 +227,7 @@ make.enemy_tutorial_easy_static = {
       face_smoothness: 0.05,
     },
   },
-  enemy_detect_range: 500,
+  detect_range: 500,
   health: {
     capacity: 450,
   },
@@ -255,7 +255,7 @@ make.enemy_tutorial_bit = {
       move_mode: "direct",
     }
   },
-  enemy_detect_range: 0,
+  detect_range: 0,
   style_: {
     opacity: 0.6,
   },
@@ -277,7 +277,7 @@ make.enemy_tutorial_big = {
       move_speed: 0.5,
     }
   },
-  enemy_detect_range: 0,
+  detect_range: 0,
   style: "breakable",
 };
 make_shapes.enemy_tutorial_big = [{
@@ -296,7 +296,7 @@ make.enemy_tutorial_down = {
       shoot_mode: "normal",
     }
   },
-  enemy_detect_range: 350,
+  detect_range: 350,
 };
 make_shapes.enemy_tutorial_down = [{
   type: "polygon",
@@ -331,7 +331,7 @@ make.enemy_tutorial_boss = {
     }],
   },
   movable: false,
-  enemy_detect_range: 0, // at first, then it changes to 2000 (range of arena)
+  detect_range: 0, // at first, then it changes to 2000 (range of arena)
   focus_camera: true,
   zzz_sleeping: true,
   repel_range: 200,
@@ -436,7 +436,7 @@ make.enemy_streets_bit = {
       move_mode: "direct",
     }
   },
-  enemy_detect_range: 0,
+  detect_range: 0,
   style_: {
     opacity: 0.6,
   },
@@ -457,6 +457,7 @@ make.enemy_streets_easy_1 = {
       move_mode: "direct",
       face_mode: "direct",
       move_speed: 2.5,
+      face_smoothness: 0.3,
     },
     idle: {
       face_mode: "spin",
@@ -465,7 +466,7 @@ make.enemy_streets_easy_1 = {
       face_smoothness: 0.05,
     },
   },
-  enemy_detect_range: 400,
+  detect_range: 400,
   health: {
     capacity: 360,
   },
@@ -504,6 +505,7 @@ make.enemy_streets_easy_2 = {
       move_mode: "direct",
       face_mode: "direct",
       move_speed: 3,
+      face_smoothness: 0.2,
     },
     idle: {
       face_mode: "wander",
@@ -515,7 +517,7 @@ make.enemy_streets_easy_2 = {
       face_smoothness: 0.05,
     },
   },
-  enemy_detect_range: 400,
+  detect_range: 400,
   health: {
     capacity: 480,
   },
@@ -558,7 +560,7 @@ make.enemy_streets_ram_1 = {
       face_smoothness: 0.05,
     },
   },
-  enemy_detect_range: 300,
+  detect_range: 300,
   health: {
     capacity: 250,
   },
@@ -610,7 +612,7 @@ make.enemy_streets_turret_1 = {
       face_smoothness: 0.04,
     },
   },
-  enemy_detect_range: 500,
+  detect_range: 500,
   health: {
     capacity: 650,
   },
@@ -648,7 +650,7 @@ make.enemy_streets_turret_spam = {
       shoot_mode: "normal",
     },
   },
-  enemy_detect_range: 400,
+  detect_range: 400,
   health: {
     capacity: 200,
   },
@@ -701,7 +703,7 @@ make.enemy_streets_camera_small = {
       face_smoothness: 0.05,
     },
   },
-  enemy_detect_range: 400,
+  detect_range: 400,
   enemy_safe: true,
   health: {
     capacity: 250,

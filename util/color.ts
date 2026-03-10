@@ -376,6 +376,12 @@ export const STYLES/*: { [key: string]: style_type }*/ = {
     fill: "floor",
     fill_opacity: 1,
   },
+  block: {
+    stroke: "dark",
+    stroke_opacity: 0.7,
+    fill: "dark",
+    fill_opacity: 1,
+  },
   wall_window: {
     stroke: "alt",
     fill: "alt",
@@ -415,6 +421,11 @@ export const STYLES/*: { [key: string]: style_type }*/ = {
     stroke_opacity: 0,
     fill: "floor",
     fill_opacity: 1,
+  },
+  floor_seethrough: {
+    stroke_opacity: 0,
+    fill: "floor",
+    fill_opacity: 0.6,
   },
   breakable: {
     stroke: "alt",

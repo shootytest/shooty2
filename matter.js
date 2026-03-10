@@ -20,6 +20,9 @@ export const Heap = heap;
 import { chroma } from './chroma.js';
 window.chroma = chroma;
 
+import { drawText, getTextHeight, splitText } from 'https://cdn.jsdelivr.net/npm/canvas-txt@4.1.1/+esm';
+window.canvas_text = { drawText, getTextHeight, splitText };
+
 import clipper2Wasm from 'https://cdn.jsdelivr.net/npm/clipper2-wasm@0.2.1/dist/es/clipper2z.js';
 clipper2Wasm().then((clipper2z) => {
   const { MakePath64, Path64, Paths64, Point64, PointInPolygon64, InflatePaths64, Union64, JoinType, EndType, FillRule } = clipper2z;

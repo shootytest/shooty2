@@ -98,6 +98,12 @@ export const make_rooms = {
   ["streets room 7"]: {
     theme: "streets",
   },
+  ["streets room 8"]: {
+    theme: "streets",
+  },
+  ["streets room 9"]: {
+    theme: "streets",
+  },
   ["streets side room 1"]: {
     theme: "streets",
     theme_mix: "tutorial",

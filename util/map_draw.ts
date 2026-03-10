@@ -188,7 +188,7 @@ export const map_draw = {
       ctx.ctx.save();
       const options: maketype = make[shape.computed.options.spawn_enemy];
       const shapes: maketype_shape[] = make_shapes[shape.computed.options.spawn_enemy] ?? [];
-      for (const o of shapes) {
+      if (options) for (const o of shapes) {
         map_draw.draw_spawned_shape(ctx, shape, style, o, options, shadow);
       }
       ctx.ctx.restore();
@@ -271,9 +271,9 @@ export const map_draw = {
       ctx.globalAlpha = (style.opacity ?? 1) * (style.stroke_opacity ?? 1) * (shadow ? 0.5 : 1);
       ctx.stroke();
     }
-    if (options.enemy_detect_range) {
+    if (options.detect_range) {
       ctx.beginPath();
-      ctx.circle_v(centre, options.enemy_detect_range * mult);
+      ctx.circle_v(centre, options.detect_range * mult);
       if (!style.stroke) ctx.strokeStyle = color.enemy_main;
       ctx.lineWidth = (style.width ?? 1) * camera.sqrtscale * 2;
       ctx.globalAlpha = 0.1;

@@ -3,7 +3,7 @@ declare namespace zipson {
   function parse(s: string): any;
   function stringify(o: any): string;
 
-}
+};
 
 declare class alea extends Function {
 
@@ -11,7 +11,39 @@ declare class alea extends Function {
   double(): number;
   int32(): number;
 
-}
+};
+
+declare namespace canvas_text {
+
+  interface CanvasTextConfig {
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+    debug?: boolean;
+    align?: "center" | "left" | "right"; // CanvasTextAlign
+    vAlign?: "middle" | "top" | "bottom"; // CanvasTextBaseline;
+    font?: string;
+    fontSize?: number;
+    fontStyle?: string;
+    fontVariant?: string;
+    fontWeight?: string;
+    lineHeight?: number | null;
+    justify?: boolean;
+  };
+
+  type align = "center" | "left" | "right";
+  type baseline = "middle" | "top" | "bottom";
+
+  interface the_height {
+    height: number;
+  };
+
+  function drawText(ctx: CanvasRenderingContext2D, text: string, config: CanvasTextConfig): the_height;
+  function getTextHeight(what: { ctx: CanvasRenderingContext2D, text: string, style: string }): number;
+  function splitText(ctx: CanvasRenderingContext2D, text: string, justify?: boolean, width?: number): string[];
+
+};
 
 /**
  * @license

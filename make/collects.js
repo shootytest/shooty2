@@ -18,7 +18,7 @@ export default function () {
                 move_speed: 4.5,
             }
         },
-        enemy_detect_range: 250,
+        detect_range: 250,
     };
     make.collect_coin_1 = {
         make_parent: ["collect_coin"],
@@ -88,7 +88,7 @@ export default function () {
                 spin_speed: 2,
             }
         },
-        enemy_detect_range: 0,
+        detect_range: 0,
         collectible: {
             gun: "basic",
             restore_all_health: true,

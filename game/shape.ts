@@ -25,6 +25,7 @@ export class Shape {
   static floor_shapes: Shape[] = [];
   static map_shapes: Shape[] = [];
   static draw_zs: number[] = [];
+  static draw_things: Thing[] = [];
   static memo_aabb3: { [key: string]: AABB3 } = {};
 
   static cumulative_id = 0;
@@ -210,6 +211,7 @@ export class Shape {
     if (player.paused && !player.map_mode) Shape.draw_shapes.remove(player.shapes[0]);
 
     Shape.draw_zs = [...new Set(Shape.draw_shapes.map(s => s.draw_z))];
+    Shape.draw_things = [...new Set(Shape.draw_shapes.map(s => s.thing))];
 
     // nowhere else to put this... handle particles
     for (const p of Particle.particles) {
@@ -347,7 +349,10 @@ export class Shape {
   }
 
   get r(): number {
-    return 0;
+    const aabb = this.computed?.aabb;
+    if (!aabb) return 0;
+    const v = vector.aabb2v(aabb);
+    return Math.max(v.x, v.y) / 2; // rough "radius"
   }
 
   get seethrough(): boolean {

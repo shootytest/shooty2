@@ -94,11 +94,21 @@ export class Thing {
     is_removed = false;
     behaviour = {
         type: "",
+        current: {},
         map: {},
         time: 0,
         shoot_count: 0,
         wander_reached: true,
         wander_time: -1,
+    };
+    speech = {
+        active: -1,
+        text: "",
+        display: {
+            length: 0,
+            width: 0,
+            height: 0,
+        },
     };
     random_number = math.rand();
     original_position = vector3.create(); // for behaviour
@@ -162,6 +172,9 @@ export class Thing {
     }
     get is_wall() {
         return (this.options.wall_filter != undefined && this.options.wall_filter !== "none");
+    }
+    get is_speech_active() {
+        return this.speech.active >= Thing.time;
     }
     get cover_z() {
         return (this.options.cover_z == undefined)
@@ -280,8 +293,8 @@ export class Thing {
             this.shield.make(this.options.shield);
         }
         // do coin attractor (for coins)
-        if (this.options.collectible?.currency_name === "coin" && this.options.enemy_detect_range) {
-            this.options.enemy_detect_range *= config.game.coin_attractor_mult;
+        if (this.options.collectible?.currency_name === "coin" && this.options.detect_range) {
+            this.options.detect_range *= config.game.coin_attractor_mult;
         }
     }
     create_id(id) {
@@ -629,6 +642,7 @@ export class Thing {
     }
     hit(_type, _damage) {
         // do nothing when hit (for now)
+        // this.say("ow ouch ow ow ow ouch ow ow ouch ow ouch ouch ow");
     }
     update_angle(smoothness = 1) {
         if (this.body == undefined)
@@ -666,9 +680,14 @@ export class Thing {
                 this.behaviour.type = "idle";
             }
         }
-        if (this.behaviour.time >= 0 && this.behaviour.time < Thing.time)
+        if (this.behaviour.time >= 0 && this.behaviour.time < Thing.time) {
+            if (this.behaviour.current.fn_end)
+                detector.behaviour_fns[this.behaviour.current.fn_end]?.(this);
             this.switch_behaviour();
-        let b = this.behaviour.map[this.behaviour.type];
+            if (this.behaviour.current.fn_start)
+                detector.behaviour_fns[this.behaviour.current.fn_start]?.(this);
+        }
+        let b = this.behaviour.map[this.behaviour.type] ?? this.behaviour.current;
         if (!b)
             return;
         if (b.shoot_mode)
@@ -677,13 +696,15 @@ export class Thing {
             this.do_face(b);
         if (b.move_mode)
             this.do_move(b);
+        if (b.fn_during)
+            detector.behaviour_fns[b.fn_during]?.(this);
         // this.do_shoot(this.is_seeing_player ? (this.options.shoot_mode ?? "none") : (this.options.shoot_mode_idle ?? "none"));
         // this.do_face(this.is_seeing_player ? (this.options.face_mode ?? "none") : (this.options.face_mode_idle ?? "none"));
         // this.do_move(this.is_seeing_player ? (this.options.move_mode ?? "none") : (this.options.move_mode_idle ?? "none"));
     }
     can_see_player() {
         const player = Thing.things_lookup["player"];
-        if (!this.options.enemy_detect_range || vector.length2(vector.sub(this.position, player.position)) > this.options.enemy_detect_range ** 2) {
+        if (!this.options.detect_range || vector.length2(vector.sub(this.position, player.position)) > this.options.detect_range ** 2) {
             this.is_seeing_player = false;
             return false;
         }
@@ -712,7 +733,7 @@ export class Thing {
         let result = this.options.behaviour[this.behaviour.type];
         if (Array.isArray(result)) {
             if (result[0].chance) {
-                const chances = result.map(a => a.chance);
+                const chances = result.map(a => a.chance ?? 1);
                 result = math.randpick_weighted(result, chances);
             }
             else {
@@ -722,6 +743,7 @@ export class Thing {
         else if (!result)
             return;
         this.behaviour.map[this.behaviour.type] = result;
+        this.behaviour.current = result;
         if (result.time == undefined || result.time < 0)
             this.behaviour.time = -1;
         else
@@ -823,6 +845,11 @@ export class Thing {
                 this.push_to(this.target.facing, (b.move_speed ?? 1));
             }
         }
+    }
+    say(text, time = 2) {
+        this.speech.active = Thing.time + text.length * config.seconds / 60 + time * config.seconds;
+        this.speech.text = text;
+        this.speech.display.length = 0;
     }
     // physics body functions
     translate(v) {

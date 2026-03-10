@@ -3,7 +3,7 @@ import { make_shoot_mods } from "../make/shoots.js";
 import { Events, Mouse, MouseConstraint } from "../matter.js";
 import { camera } from "../util/camera.js";
 import { canvas, canvas_, ctx, resize_canvas } from "../util/canvas.js";
-import { color, color_mix, current_theme, STYLES } from "../util/color.js";
+import { color, color2hex, color_mix, current_theme, STYLES } from "../util/color.js";
 import { config } from "../util/config.js";
 import { key, keys, mouse } from "../util/key.js";
 import { math } from "../util/math.js";
@@ -284,6 +284,7 @@ export const ui = {
     draw: function () {
         ui.draw_debug();
         ui.draw_health();
+        ui.draw_speech();
         if (player.paused) {
             ui.draw_pause_menu();
             ui.draw_inventory();
@@ -870,7 +871,7 @@ export const ui = {
             ctx.set_font_mono(size * 1.7, "bold");
             ctx.text(o.title, x, y + size * 0.3);
             ctx.set_font_mono(size * 1.2, "bold");
-            ctx.text(o.description[saved.n - 1], x, y + size * 3, w * 2 - left_w - size * 4);
+            ctx.text_lines(o.description[saved.n - 1], x, y + size * 3, w * 2 - left_w - size * 4, h - size * 6, "top");
             // left part
             x -= left_w;
             // mode toggle
@@ -939,7 +940,8 @@ export const ui = {
         friendly: {
             title: "friendly mode :)",
             description: [
-                "disable shooting",
+                "disable shooting :)",
+                "disable shooting :)\nand jump cooldowns! :D",
             ],
             on_fn: (_n) => {
                 player.object.old_shape_opacity = player.shapes.map((s, i) => {
@@ -1165,6 +1167,54 @@ export const ui = {
                 ctx.fill();
             },
         }
+    },
+    draw_speech: function () {
+        if (player.paused)
+            return;
+        for (const t of Shape.draw_things) {
+            if (!t.is_speech_active)
+                continue;
+            if (t.speech.text.length > t.speech.display.length)
+                t.speech.display.length += 1;
+            this.draw_speech_bubble(t, t.speech);
+        }
+    },
+    draw_speech_bubble: function (shape, speech) {
+        if (shape instanceof Thing)
+            shape = shape.shapes[0];
+        const text = speech.text.substring(0, speech.display.length + 1);
+        const time_left = speech.active - Thing.time;
+        const scale = camera.scale; // * camera.zscale(shape.z);
+        const size = shape.r / 8 * scale;
+        const aabb = shape.computed?.aabb;
+        if (!aabb)
+            return;
+        const c = color2hex(shape.style.stroke ?? current_theme.main);
+        const start_v = camera.world3screen(vector3.create(aabb.max_x + shape.thing.x, aabb.min_y + shape.thing.y, shape.z), player);
+        let x = start_v.x + size * 2;
+        let y = start_v.y - size * 2;
+        ctx.ctx.save();
+        ctx.beginPath();
+        ctx.set_font_mono(size * 3);
+        const w = Math.min(ctx.text_width(speech.text), size * 45) + size * 5;
+        ctx.globalAlpha = 0;
+        const h = ctx.text_lines(speech.text, x, y, w - size * 5 + 1, 999999999, "middle") + size * 2.5;
+        ctx.globalAlpha = 1;
+        ctx.textAlign = "left";
+        ctx.roundrect(x, y - speech.display.height * scale, speech.display.width * scale, speech.display.height * scale, size);
+        ctx.moveTo(x, y);
+        ctx.lineTo_v(start_v);
+        ctx.strokeStyle = c;
+        ctx.lineWidth = size;
+        ctx.fillStyle = color.black + "99";
+        ctx.fill();
+        ctx.stroke();
+        ctx.clip();
+        ctx.fillStyle = color_mix(c, color.white, 0.5);
+        const _h = ctx.text_lines(text, x + size * 2.5, y - h, w - size * 5 + 1, h, "middle");
+        ctx.ctx.restore();
+        speech.display.width = math.lerp(speech.display.width, w / scale, 0.1);
+        speech.display.height = math.lerp(speech.display.height, h / scale, 0.1);
     },
     particles: {
         list: [],

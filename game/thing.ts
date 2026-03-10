@@ -13,6 +13,17 @@ import { save } from "./save.js";
 import { Polygon, Shape } from "./shape.js";
 import { Shoot } from "./shoot.js";
 
+export type thing_speech = {
+  // active until what time (ui time)
+  active: number,
+  text: string,
+  display: {
+    length: number,
+    width: number,
+    height: number,
+  },
+};
+
 /**
  * the thing class... i probably have made like 5 of these (in other projects :)
  * this should cover all "things"
@@ -112,6 +123,7 @@ export class Thing {
 
   behaviour: {
     type: string;
+    current: maketype_behaviour;
     map: { [key: string]: maketype_behaviour };
     time: number;
     shoot_count: number;
@@ -119,11 +131,31 @@ export class Thing {
     wander_time: number;
   } = {
     type: "",
+    current: {},
     map: {},
     time: 0,
     shoot_count: 0,
     wander_reached: true,
     wander_time: -1,
+  };
+
+  speech: {
+    // active until what time (ui time)
+    active: number,
+    text: string,
+    display: {
+      length: number,
+      width: number,
+      height: number,
+    },
+  } = {
+    active: -1,
+    text: "",
+    display: {
+      length: 0,
+      width: 0,
+      height: 0,
+    },
   };
 
   random_number = math.rand();
@@ -199,6 +231,10 @@ export class Thing {
 
   get is_wall(): boolean {
     return (this.options.wall_filter != undefined && this.options.wall_filter !== "none");
+  }
+
+  get is_speech_active(): boolean {
+    return this.speech.active >= Thing.time;
   }
 
   get cover_z(): boolean {
@@ -305,8 +341,8 @@ export class Thing {
       this.shield.make(this.options.shield);
     }
     // do coin attractor (for coins)
-    if (this.options.collectible?.currency_name === "coin" && this.options.enemy_detect_range) {
-      this.options.enemy_detect_range *= config.game.coin_attractor_mult;
+    if (this.options.collectible?.currency_name === "coin" && this.options.detect_range) {
+      this.options.detect_range *= config.game.coin_attractor_mult;
     }
   }
 
@@ -631,6 +667,7 @@ export class Thing {
 
   hit(_type: health_type, _damage: number) {
     // do nothing when hit (for now)
+    // this.say("ow ouch ow ow ow ouch ow ow ouch ow ouch ouch ow");
   }
 
   update_angle(smoothness: number = 1) {
@@ -669,12 +706,17 @@ export class Thing {
         this.behaviour.type = "idle";
       }
     }
-    if (this.behaviour.time >= 0 && this.behaviour.time < Thing.time) this.switch_behaviour();
-    let b = this.behaviour.map[this.behaviour.type];
+    if (this.behaviour.time >= 0 && this.behaviour.time < Thing.time) {
+      if (this.behaviour.current.fn_end) detector.behaviour_fns[this.behaviour.current.fn_end]?.(this);
+      this.switch_behaviour();
+      if (this.behaviour.current.fn_start) detector.behaviour_fns[this.behaviour.current.fn_start]?.(this);
+    }
+    let b = this.behaviour.map[this.behaviour.type] ?? this.behaviour.current;
     if (!b) return;
     if (b.shoot_mode) this.do_shoot(b);
     if (b.face_mode) this.do_face(b);
     if (b.move_mode) this.do_move(b);
+    if (b.fn_during) detector.behaviour_fns[b.fn_during]?.(this);
     // this.do_shoot(this.is_seeing_player ? (this.options.shoot_mode ?? "none") : (this.options.shoot_mode_idle ?? "none"));
     // this.do_face(this.is_seeing_player ? (this.options.face_mode ?? "none") : (this.options.face_mode_idle ?? "none"));
     // this.do_move(this.is_seeing_player ? (this.options.move_mode ?? "none") : (this.options.move_mode_idle ?? "none"));
@@ -682,7 +724,7 @@ export class Thing {
 
   can_see_player(): vector3 | false {
     const player = Thing.things_lookup["player"] as Player;
-    if (!this.options.enemy_detect_range || vector.length2(vector.sub(this.position, player.position)) > this.options.enemy_detect_range ** 2) {
+    if (!this.options.detect_range || vector.length2(vector.sub(this.position, player.position)) > this.options.detect_range ** 2) {
       this.is_seeing_player = false;
       return false;
     }
@@ -711,13 +753,14 @@ export class Thing {
     let result = this.options.behaviour[this.behaviour.type];
     if (Array.isArray(result)) {
       if (result[0].chance) {
-        const chances = result.map(a => a.chance!);
+        const chances = result.map(a => a.chance ?? 1);
         result = math.randpick_weighted(result, chances);
       } else {
         result = math.randpick(result);
       }
     } else if (!result) return;
     this.behaviour.map[this.behaviour.type] = result;
+    this.behaviour.current = result;
     if (result.time == undefined || result.time < 0) this.behaviour.time = -1;
     else this.behaviour.time = Thing.time + Math.round((result.time + (result.shoot_cooldown ?? 0)) * config.seconds);
     this.behaviour.shoot_count = 0;
@@ -801,6 +844,12 @@ export class Thing {
         this.push_to(this.target.facing, (b.move_speed ?? 1));
       }
     }
+  }
+
+  say(text: string, time: number = 2) {
+    this.speech.active = Thing.time + text.length * config.seconds / 60 + time * config.seconds;
+    this.speech.text = text;
+    this.speech.display.length = 0;
   }
 
   // physics body functions

@@ -206,8 +206,8 @@ export class Shoot {
         // other miscellaneous bullet options
         if (S.death != undefined)
             bullet.options.death = (clone_object({ a: S.death }).a);
-        if (S.detect_range_mult != undefined && bullet.options.enemy_detect_range)
-            bullet.options.enemy_detect_range *= S.detect_range_mult;
+        if (S.detect_range_mult != undefined && bullet.options.detect_range)
+            bullet.options.detect_range *= S.detect_range_mult;
         return bullet;
     }
     remove_bullet(bullet) {

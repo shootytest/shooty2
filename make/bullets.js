@@ -14,7 +14,7 @@ export default function () {
                 move_speed: 5,
             }
         },
-        enemy_detect_range: 1000,
+        detect_range: 1000,
     };
     make.bullet_triangle = {
         make_parent: ["bullet"],

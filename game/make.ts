@@ -67,7 +67,7 @@ export interface maketype {
   // enemy stuff
   breakable?: boolean;
   behaviour?: { [key: string]: maketype_behaviour | maketype_behaviour[] };
-  enemy_detect_range?: number;
+  detect_range?: number;
   enemy_safe?: boolean;
   focus_camera?: boolean;
   zzz_sleeping?: boolean;
@@ -112,6 +112,10 @@ export interface maketype_behaviour {
   wander_time?: number;
   wander_distance?: number;
   wander_cooldown?: number;
+
+  fn_start?: string;
+  fn_during?: string;
+  fn_end?: string;
 
 };
 

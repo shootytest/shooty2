@@ -216,6 +216,11 @@ make.floor_moving = {
   movable: true,
 };
 
+make.floor_seethrough = {
+  make_parent: ["floor"],
+  style: "floor_seethrough",
+};
+
 
 
 // @sensors
@@ -262,6 +267,31 @@ make_shapes.switch_enemy = [{
   type: "circle",
   style: "enemy",
   radius: 1,
+}];
+
+make.switch_enemy_large = {
+  make_parent: ["switch_enemy"],
+};
+make_shapes.switch_enemy_large = [{
+  type: "circle",
+  radius: 30,
+}, {
+  type: "circle",
+  style: "enemy",
+  radius: 3,
+}];
+
+make.block_triangle = {
+  movable: true,
+  style: "block",
+  seethrough: true,
+  team: 3,
+  friction: 0.2,
+};
+make_shapes.block_triangle = [{
+  type: "polygon",
+  sides: 3,
+  radius: 33,
 }];
 
 make.button_streets_turret_1 = {

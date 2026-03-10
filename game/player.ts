@@ -150,10 +150,13 @@ export class Player extends Thing {
         }
       }
       // if floor is moving :O
-      if (touching_floors.length >= 1 && touching_floors[0]?.body) {
-        const tv = touching_floors[0].velocity;
+      if (touching_floors.length === 1 && touching_floors[0]?.body) {
+        const tf = touching_floors[0];
+        const tv = tf.velocity;
+        tf.object.player_on_time = Thing.time;
         if (!math.a_bit_equal(tv.x, 0) || !math.a_bit_equal(tv.y, 0)) {
-          this.push_by(vector.mult(tv, 1.45)); // / touching_floors.length
+          this.translate(tv); // yay this does it
+          // this.push_by(vector.mult(tv, 1.45)); // / touching_floors.length
         }
       }
       // jumping
@@ -180,7 +183,7 @@ export class Player extends Thing {
       }
       // falling
       if (z < floor_z - 1.95) z = this.fall_back();
-      else if (!this.map_mode && !this.inventory_mode && Shape.floor_shapes.length) { // todo bug: when (very) far away floor shapes is also 0...
+      else if (!this.map_mode && !this.inventory_mode && Shape.floor_shapes.length) { // todo bug: when (very) far away floor shapes is also 0 so the player doesn't fall...
         const v_mult = math.bound(dt / 167, 0, 3);
         z = math.bound(z + this.target.vz * v_mult, z < floor_z - 0.1 ? floor_z - 2 : floor_z, floor_z + 1000);
         if (Thing.time - this.die_time >= 0.5 * config.seconds) {

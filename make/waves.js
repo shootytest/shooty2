@@ -28,7 +28,7 @@ export const make_waves = {
     },
     ["streets room 7 waves"]: {
         global_delay: 1.2,
-        global_make: { enemy_detect_range: 1000, },
+        global_make: { detect_range: 1000, },
         rounds: [{
                 enemies: [
                     { type: "enemy_streets_easy_1", spawner: [0, 1, 2], },

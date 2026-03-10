@@ -480,7 +480,7 @@ export const detector = {
       if (boss) {
         boss.object.start_activated = true;
         // boss.object.end_activated = true;
-        // boss.options.enemy_detect_range = 2000;
+        // boss.options.detect_range = 2000;
       }
     },
     ["station tutorial sensor start"]: (thing) => {
@@ -672,7 +672,7 @@ export const detector = {
           thing.object.done = true;
           thing.shapes[0].activate_scale = true;
           thing.shapes[0].scale.x = -1;
-          const warning_offset = vector.create(160, 500);
+          const warning_offset = vector.create(160, 750);
           for (let i = 0; i < 3; i++) {
             const shape = Thing.lookup("tutorial room 2 warning" + (i > 0 ? " " + i : "")).shapes[0];
             shape.offset = vector3.create2(warning_offset);
@@ -818,8 +818,42 @@ export const detector = {
     ["streets room 3 door 1"]: (door) => {
       switch_door(door, Thing.lookup("streets room 3 turret 1 button|0")?.object.dead, "streets room 3 door 1");
     },
+    ["streets room 3.1 floor 1"]: (floor) => {
+      floor.target.angle = math.mod_angle(floor.target.angle - 0.03);
+      floor.set_velocity(vector.createpolar(floor.target.angle, 4));
+      floor.set_angular_velocity(0.01);
+    },
+    ["streets room 3.1 floor 2"]: (floor) => {
+      if (floor.object.down && floor.position.y > floor.original_position.y + 450) floor.object.down = false;
+      else if (!floor.object.down && floor.position.y < floor.original_position.y) floor.object.down = true;
+      floor.set_velocity(floor.object.down ? vector.create(1.25, 2.9) : vector.create(-1.25, -2.9));
+    },
+    ["streets room 3.1 floor 3"]: (floor) => {
+      let v = vector.create(0, 0);
+      if (floor.position.x <= floor.original_position.x - 500) {
+        if (Thing.lookup("streets room 3.1 sensor end").is_touching_player) {
+          floor.object.dir = -1; // go back
+        } else floor.object.dir = 0;
+      } else if (floor.position.x >= floor.original_position.x) {
+        if (Math.abs(Thing.time - floor.object.player_on_time) < 1000) {
+          floor.object.dir = 1;
+        } else floor.object.dir = 0;
+      }
+      if (floor.object.dir === -1) {
+        v = vector.create(5.3, 3.5); // go back
+      } else if (floor.object.dir === 1) {
+        v = vector.create(-5.3 * 0.75, -3.5 * 0.75);
+      }
+      floor.set_velocity(v);
+    },
+    ["streets room 3.1 wall 1"]: (wall) => {
+      switch_door(wall, "streets room 3.1 switch", "streets room 3.1 switch path", 1);
+    },
     ["streets room 5 window 1"]: (door) => {
       switch_door(door, "streets room 5 switch 0", "streets room 5 switch 0 path", 1);
+    },
+    ["streets room 6 door"]: (door) => {
+      do_door(door, vector.length2(vector.sub(player.position, door.original_position)) < 10000, 6);
     },
     ["streets room 7 door"]: (door) => {
       const s = Spawner.spawners_lookup["streets room 7 waves"];
@@ -878,13 +912,31 @@ export const detector = {
 
   } as { [thing_id: string]: (thing: Thing) => void },
 
+  behaviour_fns: {
+
+    ["npc_test idle start"]: (thing) => {
+      if (!thing.is_speech_active) thing.say("i'm bored");
+    },
+    ["npc_test idle"]: (thing) => {
+      if (!thing.is_speech_active) thing.say("grrr i'm board");
+    },
+    ["npc_test normal"]: (thing) => {
+      thing.say("omg hi!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!!!!!!!");
+    },
+    ["npc_test normal end"]: (thing) => {
+      thing.say("bye :( :( :( :( :( :( :(");
+    },
+
+  } as { [thing_id: string]: (thing: Thing) => void },
+
 };
 
+// move door automatically based on a sensor/switch (the path is just the door itself)
 const do_door = (door: Thing, sensor_id: string | boolean, speed = 5, invert = false) => {
   const vs = door.shapes[0].vertices;
   const dir = vector.sub(vs[1], vs[0]);
   const offset = vector.sub(door.position, door.original_position);
-  let triggered = typeof sensor_id === "boolean" ? sensor_id : Boolean(door.lookup(sensor_id)?.is_touching_player);
+  let triggered = typeof sensor_id === "boolean" ? sensor_id : Boolean(Thing.lookup(sensor_id)?.is_touching_player);
   if (invert) triggered = !triggered;
   let exceeded = true;
   if (triggered) exceeded = vector.length2(offset) >= vector.length2(dir);
@@ -892,8 +944,19 @@ const do_door = (door: Thing, sensor_id: string | boolean, speed = 5, invert = f
   if (!exceeded) door.translate(vector.normalise(dir, triggered ? speed : -speed));
 };
 
+// todo function to move floors according to a path
+const do_floor = (floor: Thing, conditions: boolean[], path_id: string) => {
+  const path = Thing.lookup(path_id);
+  if (path == undefined) {
+    console.error(`[detector/do_floor] path "${path_id}" not found!`);
+    return;
+  }
+  const vs = path.shapes[0].vertices;
+  const pos = floor.position;
+};
+
 const switch_door = (door: Thing, switch_ids: string | boolean | (string | boolean)[], path_id: string, speed: number | number[] = [5], reversible: boolean = false, invert: boolean[] = [false]) => {
-  const path = door.lookup(path_id);
+  const path = Thing.lookup(path_id);
   if (path == undefined) {
     console.error(`[detector/switch_door] path "${path_id}" not found!`);
     return;

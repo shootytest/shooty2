@@ -30,6 +30,7 @@ const images: { [key: string]: HTMLImageElement } = {};
 export class Context {
 
   ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D;
+  font_size: number = 0;
   saves: { [key: string]: ctx_save };
 
   // ready
@@ -407,43 +408,67 @@ export class Context {
     return this.ctx.measureText(s).width;
   }
 
+  text_height(s: string) {
+    return canvas_text.getTextHeight({
+      ctx: this.ctx as CanvasRenderingContext2D,
+      text: s,
+      style: this.ctx.font
+    });
+  }
+
   fill_screen(color: string) {
     this.fillStyle = color;
     this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
   }
 
   fillText(s: string, x: number, y: number, maxWidth?: number) {
-    let { actualBoundingBoxAscent, actualBoundingBoxDescent } = this.measureText(s);
+    let { actualBoundingBoxAscent, actualBoundingBoxDescent, width } = this.measureText(s);
     this.ctx.fillText(s, Math.round(x), Math.round(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
+    return width;
   }
 
   fillText_v(s: string, v: vector, maxWidth?: number) {
-    this.fillText(s, v.x, v.y, maxWidth);
+    return this.fillText(s, v.x, v.y, maxWidth);
   }
 
   strokeText(s: string, x: number, y: number, maxWidth?: number) {
-    let { actualBoundingBoxAscent, actualBoundingBoxDescent } = this.measureText(s);
+    let { actualBoundingBoxAscent, actualBoundingBoxDescent, width } = this.measureText(s);
     this.ctx.strokeText(s, Math.round(x), Math.round(y + (actualBoundingBoxAscent - actualBoundingBoxDescent) / 2), maxWidth);
+    return width;
   }
 
   strokeText_v(s: string, v: vector, maxWidth?: number) {
-    this.strokeText(s, v.x, v.y, maxWidth);
+    return this.strokeText(s, v.x, v.y, maxWidth);
   }
 
   text(s: string, x: number, y: number, maxWidth?: number) {
-    this.fillText(s, x, y, maxWidth);
+    return this.fillText(s, x, y, maxWidth);
   }
 
   text_v(s: string, v: vector, maxWidth?: number) {
-    this.fillText(s, v.x, v.y, maxWidth);
+    return this.fillText(s, v.x, v.y, maxWidth);
+  }
+
+  text_lines(s: string, x: number, y: number, w: number, h: number, align?: canvas_text.baseline, line_height?: number) {
+    const { height } = canvas_text.drawText(this.ctx as CanvasRenderingContext2D, s, {
+      x, y, width: w, height: h,
+      font: this.ctx.font,
+      fontSize: this.font_size,
+      align: this.ctx.textAlign as canvas_text.align,
+      vAlign: align ?? this.ctx.textBaseline as canvas_text.baseline,
+      lineHeight: (line_height ?? 1.5) * this.font_size,
+    });
+    return height;
   }
 
   set_font_mono(size: number, prefix: string = "") {
-    this.ctx.font = `${prefix} ${Math.floor(size)}px roboto mono`.trim();
+    this.ctx.font = `${prefix} ${Math.round(size)}px roboto mono`.trim();
+    this.font_size = size;
   }
 
   set_font_condensed(size: number, prefix: string = "") {
-    this.ctx.font = `${prefix} ${Math.floor(size)}px roboto condensed`.trim();
+    this.ctx.font = `${prefix} ${Math.round(size)}px roboto condensed`.trim();
+    this.font_size = size;
   }
 
   draw_image(path: string, x: number, y: number, w: number, h: number) {

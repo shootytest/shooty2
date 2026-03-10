@@ -125,7 +125,7 @@ export default function () {
             },
         },
         angle: -360 / 14,
-        enemy_detect_range: 360,
+        detect_range: 360,
         focus_camera: true,
         health: {
             capacity: 750,
@@ -176,7 +176,7 @@ export default function () {
                 face_smoothness: 0.05,
             },
         },
-        enemy_detect_range: 500,
+        detect_range: 500,
         health: {
             capacity: 250,
         },
@@ -212,7 +212,7 @@ export default function () {
                 face_smoothness: 0.05,
             },
         },
-        enemy_detect_range: 500,
+        detect_range: 500,
         health: {
             capacity: 450,
         },
@@ -239,7 +239,7 @@ export default function () {
                 move_mode: "direct",
             }
         },
-        enemy_detect_range: 0,
+        detect_range: 0,
         style_: {
             opacity: 0.6,
         },
@@ -260,7 +260,7 @@ export default function () {
                 move_speed: 0.5,
             }
         },
-        enemy_detect_range: 0,
+        detect_range: 0,
         style: "breakable",
     };
     make_shapes.enemy_tutorial_big = [{
@@ -278,7 +278,7 @@ export default function () {
                 shoot_mode: "normal",
             }
         },
-        enemy_detect_range: 350,
+        detect_range: 350,
     };
     make_shapes.enemy_tutorial_down = [{
             type: "polygon",
@@ -312,7 +312,7 @@ export default function () {
                 }],
         },
         movable: false,
-        enemy_detect_range: 0,
+        detect_range: 0,
         focus_camera: true,
         zzz_sleeping: true,
         repel_range: 200,
@@ -412,7 +412,7 @@ export default function () {
                 move_mode: "direct",
             }
         },
-        enemy_detect_range: 0,
+        detect_range: 0,
         style_: {
             opacity: 0.6,
         },
@@ -432,6 +432,7 @@ export default function () {
                 move_mode: "direct",
                 face_mode: "direct",
                 move_speed: 2.5,
+                face_smoothness: 0.3,
             },
             idle: {
                 face_mode: "spin",
@@ -440,7 +441,7 @@ export default function () {
                 face_smoothness: 0.05,
             },
         },
-        enemy_detect_range: 400,
+        detect_range: 400,
         health: {
             capacity: 360,
         },
@@ -478,6 +479,7 @@ export default function () {
                 move_mode: "direct",
                 face_mode: "direct",
                 move_speed: 3,
+                face_smoothness: 0.2,
             },
             idle: {
                 face_mode: "wander",
@@ -489,7 +491,7 @@ export default function () {
                 face_smoothness: 0.05,
             },
         },
-        enemy_detect_range: 400,
+        detect_range: 400,
         health: {
             capacity: 480,
         },
@@ -531,7 +533,7 @@ export default function () {
                 face_smoothness: 0.05,
             },
         },
-        enemy_detect_range: 300,
+        detect_range: 300,
         health: {
             capacity: 250,
         },
@@ -582,7 +584,7 @@ export default function () {
                 face_smoothness: 0.04,
             },
         },
-        enemy_detect_range: 500,
+        detect_range: 500,
         health: {
             capacity: 650,
         },
@@ -619,7 +621,7 @@ export default function () {
                 shoot_mode: "normal",
             },
         },
-        enemy_detect_range: 400,
+        detect_range: 400,
         health: {
             capacity: 200,
         },
@@ -670,7 +672,7 @@ export default function () {
                 face_smoothness: 0.05,
             },
         },
-        enemy_detect_range: 400,
+        detect_range: 400,
         enemy_safe: true,
         health: {
             capacity: 250,
